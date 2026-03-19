@@ -7,6 +7,7 @@ from harness.models import Subject, Target
 class MockAdapter(BenchmarkAdapter):
     def checkout_subject(self, subject: Subject, workdir: str) -> None:
         Path(workdir).mkdir(parents=True, exist_ok=True)
+        self.reset_subject(workdir)
 
     def build(self, workdir: str) -> tuple[bool, str]:
         source_file = Path(workdir) / "mock_source.java"
@@ -21,8 +22,16 @@ class MockAdapter(BenchmarkAdapter):
         source_file = Path(workdir) / "mock_source.java"
         content = source_file.read_text(encoding="utf-8")
 
-        if "return true;" in content and "str == null" in content:
-            return False, "Mock test failed: mutant killed"
+        # Null-handling mutant: changed baseline guard to return true
+        if "if (str == null) {" in content and "return true;" in content:
+            null_block = """if (str == null) {
+        return true;"""
+            if null_block in content:
+                return False, "Mock test failed: mutant killed (null handling)"
+
+        # Character-check mutant: accepts digits instead of rejecting non-letters
+        if "Character.isDigit(str.charAt(i))" in content:
+            return False, "Mock test failed: mutant killed (digit handling)"
 
         return True, "Mock tests passed: mutant survived"
 

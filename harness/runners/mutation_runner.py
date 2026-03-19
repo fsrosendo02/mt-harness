@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 from harness.evaluators.mutant import MutantEvaluator
@@ -64,8 +65,16 @@ class MutationRunner:
 
             print(f"Running mutant {mutant.mutant_id}")
 
+            snapshotdir = f"{workdir_base}_{mutant.mutant_id}_snapshot"
             workdir = f"{workdir_base}_{mutant.mutant_id}"
             log_path = str(run_path / f"{mutant.mutant_id}.log")
+
+            self.adapter.checkout_subject(subject, snapshotdir)
+            original_code = extract_target_code(snapshotdir, target)
+
+            if Path(workdir).exists():
+                shutil.rmtree(workdir)
+            shutil.copytree(snapshotdir, workdir)
 
             result = self.evaluator.evaluate(
                 subject=subject,
@@ -77,10 +86,6 @@ class MutationRunner:
 
             append_result_csv(csv_path, result)
 
-            artifact_checkout = f"{workdir}_artifact"
-            self.adapter.checkout_subject(subject, artifact_checkout)
-            original_code = extract_target_code(artifact_checkout, target)
-
             save_mutant_artifacts(
                 run_dir=run_path,
                 subject=subject,
@@ -90,8 +95,8 @@ class MutationRunner:
                 original_code=original_code,
             )
 
+            created_tmp_paths.append(snapshotdir)
             created_tmp_paths.append(workdir)
-            created_tmp_paths.append(artifact_checkout)
 
         if csv_path.exists():
             summarize_results_csv(

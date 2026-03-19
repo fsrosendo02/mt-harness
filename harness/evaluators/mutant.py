@@ -18,8 +18,6 @@ class MutantEvaluator:
         workdir: str,
         log_path: str,
     ) -> MutantResult:
-        self.adapter.checkout_subject(subject, workdir)
-
         baseline = self.baseline_evaluator.evaluate(subject, workdir)
         if not baseline.build_ok or not baseline.test_ok:
             full_log = (
