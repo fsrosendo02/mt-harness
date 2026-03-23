@@ -28,6 +28,7 @@ class MutationRunner:
         mutants,
         run_dir,
         workdir_base,
+        base_snapshot_dir,
         run_mode="fresh",
         extra_metadata=None,
         cleanup_tmp=True,
@@ -56,6 +57,12 @@ class MutationRunner:
                     f"in {csv_path}"
                 )
 
+        base_snapshot_path = Path(base_snapshot_dir)
+        if not base_snapshot_path.exists():
+            raise FileNotFoundError(f"Base snapshot directory not found: {base_snapshot_dir}")
+
+        original_code = extract_target_code(base_snapshot_dir, target)
+
         created_tmp_paths = []
 
         for mutant in mutants:
@@ -65,16 +72,14 @@ class MutationRunner:
 
             print(f"Running mutant {mutant.mutant_id}")
 
-            snapshotdir = f"{workdir_base}_{mutant.mutant_id}_snapshot"
             workdir = f"{workdir_base}_{mutant.mutant_id}"
             log_path = str(run_path / f"{mutant.mutant_id}.log")
 
-            self.adapter.checkout_subject(subject, snapshotdir)
-            original_code = extract_target_code(snapshotdir, target)
+            workdir_path = Path(workdir)
+            if workdir_path.exists():
+                shutil.rmtree(workdir_path)
 
-            if Path(workdir).exists():
-                shutil.rmtree(workdir)
-            shutil.copytree(snapshotdir, workdir)
+            shutil.copytree(base_snapshot_path, workdir_path)
 
             result = self.evaluator.evaluate(
                 subject=subject,
@@ -95,7 +100,6 @@ class MutationRunner:
                 original_code=original_code,
             )
 
-            created_tmp_paths.append(snapshotdir)
             created_tmp_paths.append(workdir)
 
         if csv_path.exists():
@@ -111,7 +115,9 @@ class MutationRunner:
             print(f"Run validation passed: {validation_result}")
 
         if cleanup_tmp:
-            cleanup_paths(created_tmp_paths, print_to_stdout=True)
+            cleanup_targets = list(created_tmp_paths)
+            cleanup_targets.append(base_snapshot_dir)
+            cleanup_paths(cleanup_targets, print_to_stdout=True)
 
         if rebuild_index:
             index_path = build_experiment_index(print_to_stdout=True)

@@ -17,10 +17,11 @@ def save_generation_artifacts(
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    (output_path / "system_prompt.txt").write_text(
-        (system_prompt or "").strip() + "\n",
-        encoding="utf-8",
-    )
+    if system_prompt:
+        (output_path / "system_prompt.txt").write_text(
+            system_prompt.rstrip() + "\n",
+            encoding="utf-8",
+        )
 
     (output_path / "user_prompt.txt").write_text(
         user_prompt.rstrip() + "\n",

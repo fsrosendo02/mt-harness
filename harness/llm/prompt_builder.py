@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from harness.models import Subject, Target
 
@@ -8,6 +9,7 @@ class BuiltPrompt:
     system_prompt: str | None
     user_prompt: str
     target_code: str
+    prompt_file: str
 
 
 def _add_line_numbers(code: str) -> str:
@@ -17,6 +19,9 @@ def _add_line_numbers(code: str) -> str:
 
 
 class PromptBuilder:
+    def __init__(self, prompt_file: str):
+        self.prompt_file = prompt_file
+
     def build(
         self,
         *,
@@ -26,46 +31,27 @@ class PromptBuilder:
         context_code: str | None,
         num_mutants: int,
     ) -> BuiltPrompt:
-        system_prompt = (
-            "Return valid JSON only. "
-            "Do not include markdown fences. "
-            "Do not include any text outside the JSON."
-        )
+        template = Path(self.prompt_file).read_text(encoding="utf-8")
 
-        numbered_method = _add_line_numbers(target_code)
+        replacements = {
+            "{WHOLEJAVAMETHOD}": target_code.rstrip(),
+            "{WHOLEJAVAMETHOD_NUMBERED}": _add_line_numbers(target_code),
+            "{MUTNUMBER}": str(num_mutants),
+            "{DATASET}": str(subject.dataset),
+            "{SUBJECT_ID}": str(subject.subject_id),
+            "{FUNCTION_NAME}": str(target.function_name),
+            "{FILE_PATH}": str(target.file_path),
+            "{START_LINE}": str(target.start_line),
+            "{END_LINE}": str(target.end_line),
+        }
 
-        user_prompt = f"""You are an expert in software mutation testing.
+        prompt_text = template
+        for placeholder, value in replacements.items():
+            prompt_text = prompt_text.replace(placeholder, value)
 
-Below is a Java method. Before generating mutants, reason briefly about
-its behavior: identify the key computational properties and boundary
-conditions that a test should verify.
-
-Method:
-{numbered_method}
-
-Then, generate exactly {num_mutants} mutants. Each mutant must:
-- Violate a distinct behavioral property identified in your reasoning
-- Change executable code (not only comments)
-- Compile successfully
-
-The "line" field must refer to the numbered method lines shown above.
-The "precode" field must match the original line content without the numeric prefix.
-
-Output format (JSON):
-{{
-  "mutants": [
-    {{
-      "id": 1,
-      "reasoning": "<one sentence: which behavioral property is violated>",
-      "line": <line number>,
-      "precode": "<original line>",
-      "aftercode": "<mutated line>"
-    }}
-  ]
-}}
-"""
         return BuiltPrompt(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            system_prompt=None,
+            user_prompt=prompt_text,
             target_code=target_code,
+            prompt_file=self.prompt_file,
         )

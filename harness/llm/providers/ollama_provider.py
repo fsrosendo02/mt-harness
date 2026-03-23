@@ -55,16 +55,6 @@ class OllamaProvider(LLMProvider):
         system_prompt: str | None,
         user_prompt: str,
     ) -> str:
-        parts = []
-
         if system_prompt:
-            parts.append(system_prompt.strip())
-
-        parts.append(user_prompt.strip())
-        parts.append(
-            "Final reminder: return exactly one valid JSON object only. "
-            "Do not use markdown fences. "
-            "Do not add explanation before or after the JSON."
-        )
-
-        return "\n\n".join(parts)
+            return system_prompt.rstrip() + "\n\n" + user_prompt.lstrip()
+        return user_prompt

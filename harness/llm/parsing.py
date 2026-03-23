@@ -81,6 +81,10 @@ class LLMResponseParser:
                 rejections.append(RejectedMutant(idx_item, "missing_or_invalid_aftercode", item))
                 continue
 
+            if self._is_non_executable_change(precode, aftercode):
+                rejections.append(RejectedMutant(idx_item, "non_executable_change", item))
+                continue
+
             full_code, resolution_reason = self._apply_line_edit(
                 original_lines=original_lines,
                 line_number=line_value,
@@ -184,6 +188,25 @@ class LLMResponseParser:
         if len(matches) == 0:
             return None, "precode_not_found"
         return None, "ambiguous_precode_match"
+
+    def _is_non_executable_change(self, precode: str, aftercode: str) -> bool:
+        pre_exec = self._normalize_executable_content(precode)
+        after_exec = self._normalize_executable_content(aftercode)
+        return pre_exec == after_exec
+
+    def _normalize_executable_content(self, line: str) -> str:
+        text = line
+
+        # Remove block comments on the same line
+        text = re.sub(r"/\*.*?\*/", "", text)
+
+        # Remove single-line comments
+        text = re.sub(r"//.*$", "", text)
+
+        # Normalize whitespace
+        text = " ".join(text.strip().split())
+
+        return text
 
     def _load_json(self, raw_text: str) -> dict[str, Any]:
         text = raw_text.strip()

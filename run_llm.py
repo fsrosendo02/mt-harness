@@ -1,4 +1,5 @@
-import argparse
+import json
+import sys
 from pathlib import Path
 
 from harness.adapters.defects4j import Defects4JAdapter
@@ -13,71 +14,101 @@ from harness.runners.mutation_runner import MutationRunner
 from harness.utils.source import extract_target_code
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Run LLM-generated mutants on a Defects4J target.")
-    parser.add_argument("--subject", required=True, help="Defects4J subject id, e.g. Lang_1")
-    parser.add_argument("--version", default="f", help="Program version, default: f")
-    parser.add_argument("--file", required=True, help="Target source file path inside the checked out project")
-    parser.add_argument("--function", required=True, help="Target function name")
-    parser.add_argument("--start-line", type=int, required=True, help="Start line of target region")
-    parser.add_argument("--end-line", type=int, required=True, help="End line of target region")
-    parser.add_argument("--model", required=True, help="Ollama model name")
-    parser.add_argument("--num-mutants", type=int, default=1, help="Number of mutants to request")
-    parser.add_argument("--timeout", type=int, default=420, help="Ollama timeout in seconds")
-    parser.add_argument("--run-name", required=True, help="Run folder name under harness/runs")
-    parser.add_argument("--prompt-file", required=True, help="Path to prompt template file")
-    return parser.parse_args()
+REQUIRED_FIELDS = [
+    "dataset",
+    "subject",
+    "version",
+    "file",
+    "function",
+    "start_line",
+    "end_line",
+    "model",
+    "num_mutants",
+    "timeout",
+    "run_name",
+    "prompt_file",
+]
+
+
+def load_config(config_path: str) -> dict:
+    path = Path(config_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    missing = [field for field in REQUIRED_FIELDS if field not in data]
+    if missing:
+        raise ValueError(f"Missing required config fields: {missing}")
+
+    return data
+
+
+def build_adapter(dataset: str):
+    if dataset == "defects4j":
+        return Defects4JAdapter()
+
+    raise ValueError(f"Unsupported dataset: {dataset}")
 
 
 def main():
-    args = parse_args()
+    if len(sys.argv) != 2:
+        print("Usage: python3 run_llm.py <config.json>")
+        sys.exit(1)
+
+    config_path = sys.argv[1]
+    cfg = load_config(config_path)
+
+    adapter = build_adapter(cfg["dataset"])
 
     subject = Subject(
-        dataset="defects4j",
-        subject_id=args.subject,
-        language="java",
-        version=args.version,
+        dataset=cfg["dataset"],
+        subject_id=cfg["subject"],
+        language=cfg.get("language", "java"),
+        version=cfg["version"],
     )
 
     target = Target(
-        file_path=args.file,
-        function_name=args.function,
-        start_line=args.start_line,
-        end_line=args.end_line,
+        file_path=cfg["file"],
+        function_name=cfg["function"],
+        start_line=cfg["start_line"],
+        end_line=cfg["end_line"],
     )
 
-    run_dir = f"harness/runs/{args.run_name}"
+    run_dir = f"harness/runs/{cfg['run_name']}"
 
-    adapter = Defects4JAdapter()
-    provider = OllamaProvider(args.model, timeout_seconds=args.timeout)
-    prompt_builder = PromptBuilder(args.prompt_file)
+    provider = OllamaProvider(cfg["model"], timeout_seconds=cfg["timeout"])
+    prompt_builder = PromptBuilder(cfg["prompt_file"])
     generator = LLMMutantGenerator(provider=provider, prompt_builder=prompt_builder)
     runner = MutationRunner(adapter)
 
-    extract_workdir = f"tmp/llm_extract_{args.run_name}"
-    adapter.checkout_subject(subject, extract_workdir)
-    target_code = extract_target_code(extract_workdir, target)
+    base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
+    adapter.checkout_subject(subject, base_snapshot_dir)
+    target_code = extract_target_code(base_snapshot_dir, target)
 
     built_prompt = generator.prompt_builder.build(
         subject=subject,
         target=target,
         target_code=target_code,
         context_code=None,
-        num_mutants=args.num_mutants,
+        num_mutants=cfg["num_mutants"],
     )
 
+    print(f"Config file: {config_path}")
+    print(f"Dataset: {cfg['dataset']}")
     print(f"Prompt file: {built_prompt.prompt_file}")
     print(f"Prompt length: {len(built_prompt.user_prompt)} chars")
 
     raw_text = provider.generate(
         system_prompt=built_prompt.system_prompt,
         user_prompt=built_prompt.user_prompt,
-        temperature=0.0,
+        temperature=cfg.get("temperature", 0.0),
     )
 
     mutants, report = generator.parser.parse_with_report(
         raw_text=raw_text,
-        requested_count=args.num_mutants,
+        requested_count=cfg["num_mutants"],
         original_target_code=target_code,
     )
 
@@ -108,7 +139,7 @@ def main():
         print(f"Generation artifacts saved to: {generation_dir}")
         return
 
-    workdir_base = f"tmp/{args.run_name}"
+    workdir_base = f"tmp/{cfg['run_name']}"
 
     runner.run(
         subject=subject,
@@ -116,23 +147,27 @@ def main():
         mutants=mutants,
         run_dir=run_dir,
         workdir_base=workdir_base,
-        run_mode="overwrite",
+        base_snapshot_dir=base_snapshot_dir,
+        run_mode=cfg.get("run_mode", "overwrite"),
         extra_metadata=build_experiment_metadata(
-            experiment_name=args.run_name,
+            experiment_name=cfg["run_name"],
             mutant_source="llm",
-            model_name=args.model,
-            model_provider="ollama",
-            prompt_name=Path(args.prompt_file).stem,
-            prompt_version="file_based",
-            temperature=0.0,
-            n_requested_mutants=args.num_mutants,
-            generation_mode="batch_once",
-            dataset_split=None,
-            notes=f"Prompt file: {args.prompt_file}",
+            model_name=cfg["model"],
+            model_provider=cfg.get("model_provider", "ollama"),
+            prompt_name=Path(cfg["prompt_file"]).stem,
+            prompt_version=cfg.get("prompt_version", "file_based"),
+            temperature=cfg.get("temperature", 0.0),
+            n_requested_mutants=cfg["num_mutants"],
+            generation_mode=cfg.get("generation_mode", "batch_once"),
+            dataset_split=cfg.get("dataset_split"),
+            notes=cfg.get(
+                "notes",
+                f"Prompt file: {cfg['prompt_file']}; Config file: {config_path}",
+            ),
         ),
-        cleanup_tmp=True,
-        validate_after_run=True,
-        rebuild_index=True,
+        cleanup_tmp=cfg.get("cleanup_tmp", True),
+        validate_after_run=cfg.get("validate_after_run", True),
+        rebuild_index=cfg.get("rebuild_index", True),
     )
 
     generation_dir = Path(run_dir) / "generation"
