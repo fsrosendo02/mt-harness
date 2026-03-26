@@ -29,6 +29,7 @@ def save_mutant_artifacts(
         "subject_id": subject.subject_id,
         "language": subject.language,
         "version": getattr(subject, "version", None),
+        "target_id": getattr(target, "target_id", None),
         "file_path": target.file_path,
         "function_name": target.function_name,
         "start_line": target.start_line,

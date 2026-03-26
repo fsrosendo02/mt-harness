@@ -9,12 +9,15 @@ class Subject:
     language: str
     version: str = "f"
 
+
 @dataclass
 class Target:
     file_path: str
     function_name: str
-    start_line: int
-    end_line: int
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
+    language: str = "java"
+    target_id: Optional[str] = None
 
 
 @dataclass

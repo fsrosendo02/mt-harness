@@ -26,7 +26,6 @@ def prepare_run_dir(run_dir, mode="fresh"):
         run_path.mkdir(parents=True, exist_ok=False)
         return run_path
 
-    # resume
     run_path.mkdir(parents=True, exist_ok=True)
     return run_path
 
@@ -64,10 +63,12 @@ def write_run_manifest(
             "version": getattr(subject, "version", None),
         },
         "target": {
+            "target_id": getattr(target, "target_id", None),
             "function_name": getattr(target, "function_name", None),
             "file_path": getattr(target, "file_path", None),
             "start_line": getattr(target, "start_line", None),
             "end_line": getattr(target, "end_line", None),
+            "language": getattr(target, "language", None),
         },
         "mutant_ids": [getattr(m, "mutant_id", None) for m in mutants],
         "extra_metadata": extra_metadata or {},

@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass, asdict
 from typing import Any
 
+from harness.llm.syntax_sanity import validate_syntax_fragment
 from harness.models import Mutant
 
 
@@ -28,11 +29,13 @@ class LLMResponseParser:
         raw_text: str,
         requested_count: int,
         original_target_code: str,
+        language: str = "java",
     ) -> list[Mutant]:
         mutants, _ = self.parse_with_report(
             raw_text=raw_text,
             requested_count=requested_count,
             original_target_code=original_target_code,
+            language=language,
         )
         return mutants
 
@@ -42,6 +45,7 @@ class LLMResponseParser:
         raw_text: str,
         requested_count: int,
         original_target_code: str,
+        language: str = "java",
     ) -> tuple[list[Mutant], ParseReport]:
         data = self._load_json(raw_text)
         items = data.get("mutants", [])
@@ -97,6 +101,17 @@ class LLMResponseParser:
                     RejectedMutant(
                         idx_item,
                         resolution_reason or "line_resolution_failed",
+                        item,
+                    )
+                )
+                continue
+
+            syntax_ok, syntax_reason = validate_syntax_fragment(full_code, language)
+            if not syntax_ok:
+                rejections.append(
+                    RejectedMutant(
+                        idx_item,
+                        f"non_executable_structural_change: {syntax_reason}",
                         item,
                     )
                 )
@@ -165,6 +180,13 @@ class LLMResponseParser:
 
         return "\n".join(mutated_lines), None
 
+    def _clean_model_line(self, text: str) -> str:
+        text = text.strip()
+        text = re.sub(r"^\s*\d+\s*[:|]\s*", "", text)
+        text = re.sub(r"^\s*\d+\s+", "", text)
+        return text.strip()
+
+
     def _resolve_target_line_index(
         self,
         *,
@@ -172,22 +194,55 @@ class LLMResponseParser:
         line_number: int,
         expected_original_line: str,
     ) -> tuple[int | None, str | None]:
-        expected_norm = expected_original_line.strip()
+        expected_norm = self._clean_model_line(expected_original_line)
 
+        # 1) exact local line
         if 1 <= line_number <= len(original_lines):
             idx = line_number - 1
             if original_lines[idx].strip() == expected_norm:
                 return idx, None
 
-        matches = [
+        # 2) exact full-line match anywhere
+        exact_matches = [
             i for i, line in enumerate(original_lines)
             if line.strip() == expected_norm
         ]
-        if len(matches) == 1:
-            return matches[0], None
-        if len(matches) == 0:
-            return None, "precode_not_found"
-        return None, "ambiguous_precode_match"
+        if len(exact_matches) == 1:
+            return exact_matches[0], None
+        if len(exact_matches) > 1:
+            if 1 <= line_number <= len(original_lines):
+                return min(exact_matches, key=lambda i: abs(i - (line_number - 1))), None
+            return None, "ambiguous_precode_match"
+
+        # 3) whitespace-insensitive match
+        expected_ws = " ".join(expected_norm.split())
+        ws_matches = [
+            i for i, line in enumerate(original_lines)
+            if " ".join(line.strip().split()) == expected_ws
+        ]
+        if len(ws_matches) == 1:
+            return ws_matches[0], None
+        if len(ws_matches) > 1:
+            if 1 <= line_number <= len(original_lines):
+                return min(ws_matches, key=lambda i: abs(i - (line_number - 1))), None
+            return None, "ambiguous_precode_match"
+
+        # 4) executable-content match (ignores comments)
+        expected_exec = self._normalize_executable_content(expected_norm)
+        exec_matches = [
+            i for i, line in enumerate(original_lines)
+            if self._normalize_executable_content(line) == expected_exec
+        ]
+        if len(exec_matches) == 1:
+            return exec_matches[0], None
+        if len(exec_matches) > 1:
+            if 1 <= line_number <= len(original_lines):
+                return min(exec_matches, key=lambda i: abs(i - (line_number - 1))), None
+            return None, "ambiguous_precode_match"
+
+        return None, "precode_not_found"
+    
+
 
     def _is_non_executable_change(self, precode: str, aftercode: str) -> bool:
         pre_exec = self._normalize_executable_content(precode)
@@ -196,16 +251,9 @@ class LLMResponseParser:
 
     def _normalize_executable_content(self, line: str) -> str:
         text = line
-
-        # Remove block comments on the same line
         text = re.sub(r"/\*.*?\*/", "", text)
-
-        # Remove single-line comments
         text = re.sub(r"//.*$", "", text)
-
-        # Normalize whitespace
         text = " ".join(text.strip().split())
-
         return text
 
     def _load_json(self, raw_text: str) -> dict[str, Any]:

@@ -41,8 +41,8 @@ class PromptBuilder:
             "{SUBJECT_ID}": str(subject.subject_id),
             "{FUNCTION_NAME}": str(target.function_name),
             "{FILE_PATH}": str(target.file_path),
-            "{START_LINE}": str(target.start_line),
-            "{END_LINE}": str(target.end_line),
+            "{START_LINE}": "" if target.start_line is None else str(target.start_line),
+            "{END_LINE}": "" if target.end_line is None else str(target.end_line),
         }
 
         prompt_text = template

@@ -9,19 +9,15 @@ from harness.llm.io import save_generation_artifacts
 from harness.llm.parsing import parse_report_to_dict
 from harness.llm.prompt_builder import PromptBuilder
 from harness.llm.providers.ollama_provider import OllamaProvider
-from harness.models import Subject, Target
+from harness.models import Subject
 from harness.runners.mutation_runner import MutationRunner
-from harness.utils.source import extract_target_code
+from harness.targets.resolver import resolve_target
 
 
-REQUIRED_FIELDS = [
+BASE_REQUIRED_FIELDS = [
     "dataset",
     "subject",
     "version",
-    "file",
-    "function",
-    "start_line",
-    "end_line",
     "model",
     "num_mutants",
     "timeout",
@@ -38,9 +34,23 @@ def load_config(config_path: str) -> dict:
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
-    missing = [field for field in REQUIRED_FIELDS if field not in data]
+    missing = [field for field in BASE_REQUIRED_FIELDS if field not in data]
     if missing:
         raise ValueError(f"Missing required config fields: {missing}")
+
+    has_catalog_target = "target_id" in data
+    has_manual_target = "file" in data and "function" in data
+
+    if not has_catalog_target and not has_manual_target:
+        raise ValueError(
+            "Config must define either:\n"
+            "  - target_id + catalog_file\n"
+            "or\n"
+            "  - file + function"
+        )
+
+    if has_catalog_target and "catalog_file" not in data:
+        raise ValueError("Config uses target_id but is missing catalog_file")
 
     return data
 
@@ -69,23 +79,18 @@ def main():
         version=cfg["version"],
     )
 
-    target = Target(
-        file_path=cfg["file"],
-        function_name=cfg["function"],
-        start_line=cfg["start_line"],
-        end_line=cfg["end_line"],
-    )
-
     run_dir = f"harness/runs/{cfg['run_name']}"
+    base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
+    workdir_base = f"tmp/{cfg['run_name']}"
 
     provider = OllamaProvider(cfg["model"], timeout_seconds=cfg["timeout"])
     prompt_builder = PromptBuilder(cfg["prompt_file"])
     generator = LLMMutantGenerator(provider=provider, prompt_builder=prompt_builder)
     runner = MutationRunner(adapter)
 
-    base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
     adapter.checkout_subject(subject, base_snapshot_dir)
-    target_code = extract_target_code(base_snapshot_dir, target)
+
+    target, target_code = resolve_target(cfg, base_snapshot_dir)
 
     built_prompt = generator.prompt_builder.build(
         subject=subject,
@@ -97,6 +102,14 @@ def main():
 
     print(f"Config file: {config_path}")
     print(f"Dataset: {cfg['dataset']}")
+    print(f"Subject: {cfg['subject']}")
+    print(f"Version: {cfg['version']}")
+    if cfg.get("target_id"):
+        print(f"Target ID: {cfg['target_id']}")
+    print(f"Resolved file: {target.file_path}")
+    print(f"Resolved function: {target.function_name}")
+    print(f"Resolved start_line: {target.start_line}")
+    print(f"Resolved end_line: {target.end_line}")
     print(f"Prompt file: {built_prompt.prompt_file}")
     print(f"Prompt length: {len(built_prompt.user_prompt)} chars")
 
@@ -110,6 +123,7 @@ def main():
         raw_text=raw_text,
         requested_count=cfg["num_mutants"],
         original_target_code=target_code,
+        language=target.language,
     )
 
     print("Generated valid mutants:", len(mutants))
@@ -138,8 +152,6 @@ def main():
         print("No valid mutants were parsed from the LLM output.")
         print(f"Generation artifacts saved to: {generation_dir}")
         return
-
-    workdir_base = f"tmp/{cfg['run_name']}"
 
     runner.run(
         subject=subject,
