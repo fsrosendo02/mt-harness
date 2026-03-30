@@ -75,7 +75,7 @@ def main():
 
         cfg = dict(base_cfg)
 
-        # target-specific fields from the catalog entry
+        # target-specific fields
         cfg["target_id"] = entry["target_id"]
         cfg["dataset"] = entry["dataset"]
         cfg["subject"] = entry["subject"]
@@ -91,9 +91,14 @@ def main():
         if "signature" in entry:
             cfg["signature"] = entry["signature"]
 
-        # batch/run metadata
+        # batch metadata
         cfg["batch_id"] = batch_id
         cfg["run_name"] = run_name
+
+        # ✅ NEW: store config inside run folder
+        run_dir = Path(f"harness/runs/{run_name}")
+        run_dir.mkdir(parents=True, exist_ok=True)
+        save_json(run_dir / "run_config.json", cfg)
 
         tmp_config = Path("configs/tmp_batch_config.json")
         tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")

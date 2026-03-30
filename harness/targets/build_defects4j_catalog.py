@@ -245,7 +245,7 @@ def extract_methods(file_path: Path):
         methods.append({
             "function": entry["name"],
             "start_line": start + 1,
-            "end_line": end,
+            "end_line": end + 1,
             "signature": signature,
             "metadata": {
                 "loc": loc,
@@ -359,21 +359,25 @@ def main():
 
     args = parser.parse_args()
 
-    project = args.projects.strip()
+    projects = [p.strip() for p in args.projects.split(",") if p.strip()]
     bug_ids = [b.strip() for b in args.bug_ids.split(",") if b.strip()]
     version = args.versions.strip()
 
-    catalog = build_catalog(
-        project=project,
-        bug_ids=bug_ids,
-        version=version,
-        max_per_project=args.max_per_project,
-        max_per_function=args.max_per_function,
-        max_per_file=args.max_per_file,
-    )
+    all_catalog = []
 
-    Path(args.output).write_text(json.dumps(catalog, indent=2), encoding="utf-8")
-    print(f"Saved {len(catalog)} targets to {args.output}")
+    for project in projects:
+        project_catalog = build_catalog(
+            project=project,
+            bug_ids=bug_ids,
+            version=version,
+            max_per_project=args.max_per_project,
+            max_per_function=args.max_per_function,
+            max_per_file=args.max_per_file,
+        )
+        all_catalog.extend(project_catalog)
+
+    Path(args.output).write_text(json.dumps(all_catalog, indent=2), encoding="utf-8")
+    print(f"Saved {len(all_catalog)} targets to {args.output}")
 
 
 if __name__ == "__main__":
