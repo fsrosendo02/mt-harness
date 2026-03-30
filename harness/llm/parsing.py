@@ -175,9 +175,29 @@ class LLMResponseParser:
             return None, match_reason
 
         actual_line = original_lines[idx]
+
+        # Reject dangerous structure-changing replacements
+        if self._changes_block_structure(actual_line, replacement_line):
+            return None, "non_executable_structural_change: block_structure_change"
+
         mutated_lines = list(original_lines)
+
         indent = actual_line[: len(actual_line) - len(actual_line.lstrip())]
-        mutated_lines[idx] = indent + replacement_line.strip()
+        actual_suffix = self._extract_trailing_structural_suffix(actual_line)
+
+        replacement_clean = replacement_line.strip()
+
+        # If the model omitted a trailing "{" or trailing comment that exists in the
+        # actual source line, preserve it safely.
+        if actual_suffix:
+            repl_no_comment = replacement_clean.split("//", 1)[0].rstrip()
+            if not repl_no_comment.endswith("{") and "{" in actual_suffix:
+                replacement_clean += " {"
+
+            if "//" in actual_suffix and "//" not in replacement_clean:
+                replacement_clean += actual_suffix[actual_suffix.index("//"):]
+
+        mutated_lines[idx] = indent + replacement_clean
 
         return "\n".join(mutated_lines), match_reason
 
@@ -344,6 +364,55 @@ class LLMResponseParser:
                     return text[start:i + 1]
 
         return None
+    
+    def _extract_trailing_structural_suffix(self, original_line: str) -> str:
+        """
+        Preserve a safe trailing suffix from the original line when the LLM
+        omits it, e.g.:
+        if (x) {          -> preserve " {"
+        while (...) { // comment -> preserve " { // comment"
+
+        We only preserve suffixes that start at the first unmatched structural
+        token after the logical code content, typically '{' and/or trailing comment.
+        """
+        stripped = original_line.rstrip("\n")
+        if not stripped.strip():
+            return ""
+
+        # Preserve trailing inline comment if present
+        comment = ""
+        if "//" in stripped:
+            code_part, comment_part = stripped.split("//", 1)
+            stripped = code_part.rstrip()
+            comment = " //" + comment_part.rstrip()
+
+        # Preserve trailing opening brace if present
+        brace = ""
+        if stripped.rstrip().endswith("{"):
+            brace = " {"
+
+        return f"{brace}{comment}"
+    
+    def _changes_block_structure(self, actual_line: str, replacement_line: str) -> bool:
+        """
+        Reject obviously dangerous single-line edits that alter block structure.
+        """
+        actual = actual_line.strip()
+        repl = replacement_line.strip()
+
+        actual_has_open = "{" in actual
+        repl_has_open = "{" in repl
+        actual_has_close = "}" in actual
+        repl_has_close = "}" in repl
+
+        # If replacement introduces a new brace pattern not present in the original line,
+        # it is risky for single-line mutation and should be rejected.
+        if repl_has_open and not actual_has_open:
+            return True
+        if repl_has_close and not actual_has_close:
+            return True
+
+        return False
 
     def _normalize_code(self, code: str) -> str:
         return code.strip().replace("\r\n", "\n").replace("\r", "\n")
@@ -368,3 +437,5 @@ def parse_report_to_dict(report: ParseReport) -> dict[str, Any]:
         "rejected_count": report.rejected_count,
         "rejections": [asdict(r) for r in report.rejections],
     }
+
+    
