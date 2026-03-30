@@ -12,6 +12,17 @@ DEFAULT_EXPERIMENT_METADATA = {
     "n_requested_mutants": None,
     "generation_mode": None,
     "dataset_split": None,
+    "batch_id": None,
+    "target_id": None,
+    "n_accepted_mutants": None,
+    "n_rejected_mutants": None,
+    "acceptance_rate": None,
+    "rej_duplicate_mutant": 0,
+    "rej_unchanged_mutant": 0,
+    "rej_non_executable_change": 0,
+    "rej_non_executable_structural_change": 0,
+    "rej_precode_not_found": 0,
+    "rej_ambiguous_precode_match": 0,
     "notes": "",
 }
 

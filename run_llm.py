@@ -1,6 +1,8 @@
 import json
 import sys
 from pathlib import Path
+import csv
+import json
 
 from harness.adapters.defects4j import Defects4JAdapter
 from harness.experiments.metadata import build_experiment_metadata
@@ -12,6 +14,7 @@ from harness.llm.providers.ollama_provider import OllamaProvider
 from harness.models import Subject
 from harness.runners.mutation_runner import MutationRunner
 from harness.targets.resolver import resolve_target
+from harness.storage.run_state import write_run_manifest
 
 
 BASE_REQUIRED_FIELDS = [
@@ -61,6 +64,59 @@ def build_adapter(dataset: str):
 
     raise ValueError(f"Unsupported dataset: {dataset}")
 
+def write_empty_results_csv(run_dir: str):
+    run_path = Path(run_dir)
+    run_path.mkdir(parents=True, exist_ok=True)
+
+    csv_path = run_path / "results.csv"
+
+    fieldnames = [
+        "dataset",
+        "subject_id",
+        "function_name",
+        "mutant_id",
+        "build_status",
+        "test_status",
+        "killed",
+        "executable",
+        "log_path",
+    ]
+
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+    return csv_path
+
+
+def write_empty_summary_json(run_dir: str):
+    run_path = Path(run_dir)
+    run_path.mkdir(parents=True, exist_ok=True)
+
+    summary_path = run_path / "summary.json"
+
+    payload = {
+        "csv_path": str(run_path / "results.csv"),
+        "json_path": str(summary_path),
+        "deduplicated": True,
+        "input_row_count": 0,
+        "used_row_count": 0,
+        "overall": {
+            "total_mutants": 0,
+            "build_successes": 0,
+            "executable_mutants": 0,
+            "killed_mutants": 0,
+            "survived_mutants": 0,
+            "baseline_failures": 0,
+            "build_success_rate": 0.0,
+            "executable_yield": 0.0,
+            "mutation_score": None,
+        },
+        "by_subject_function": [],
+    }
+
+    summary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return summary_path
 
 def main():
     if len(sys.argv) != 2:
@@ -119,12 +175,43 @@ def main():
         temperature=cfg.get("temperature", 0.0),
     )
 
-    mutants, report = generator.parser.parse_with_report(
-        raw_text=raw_text,
-        requested_count=cfg["num_mutants"],
-        original_target_code=target_code,
-        language=target.language,
+    parse_failed = False
+    parse_error_message = None
+
+    try:
+        mutants, report = generator.parser.parse_with_report(
+            raw_text=raw_text,
+            requested_count=cfg["num_mutants"],
+            original_target_code=target_code,
+            language=target.language,
+        )
+    except Exception as e:
+        parse_failed = True
+        parse_error_message = str(e)
+        mutants = []
+
+        from harness.llm.parsing import ParseReport
+        report = ParseReport(
+            requested_count=cfg["num_mutants"],
+            accepted_count=0,
+            rejected_count=cfg["num_mutants"],
+            rejections=[],
+        )
+
+    n_requested_mutants = cfg["num_mutants"]
+    n_accepted_mutants = len(mutants)
+    n_rejected_mutants = report.rejected_count
+    acceptance_rate = (
+        n_accepted_mutants / n_requested_mutants
+        if n_requested_mutants > 0 else None
     )
+
+    rejection_reason_counts = {}
+    for rej in report.rejections:
+        rejection_reason_counts[rej.reason] = rejection_reason_counts.get(rej.reason, 0) + 1
+
+    if parse_failed:
+        rejection_reason_counts["invalid_json_response"] = 1
 
     print("Generated valid mutants:", len(mutants))
     print("Rejected candidates:", report.rejected_count)
@@ -147,10 +234,105 @@ def main():
         parse_report=parse_report_to_dict(report),
     )
 
+    extra_metadata = build_experiment_metadata(
+        experiment_name=cfg["run_name"],
+        mutant_source="llm",
+        model_name=cfg["model"],
+        model_provider=cfg.get("model_provider", "ollama"),
+        prompt_name=Path(cfg["prompt_file"]).stem,
+        prompt_version=cfg.get("prompt_version", "file_based"),
+        temperature=cfg.get("temperature", 0.0),
+        n_requested_mutants=n_requested_mutants,
+        generation_mode=cfg.get("generation_mode", "batch_once"),
+        dataset_split=cfg.get("dataset_split"),
+        batch_id=cfg.get("batch_id"),
+        target_id=getattr(target, "target_id", None),
+        n_accepted_mutants=n_accepted_mutants,
+        n_rejected_mutants=n_rejected_mutants,
+        acceptance_rate=acceptance_rate,
+        rej_duplicate_mutant=rejection_reason_counts.get("duplicate_mutant", 0),
+        rej_unchanged_mutant=rejection_reason_counts.get("unchanged_mutant", 0),
+        rej_non_executable_change=rejection_reason_counts.get("non_executable_change", 0),
+        rej_non_executable_structural_change=sum(
+            count for reason, count in rejection_reason_counts.items()
+            if str(reason).startswith("non_executable_structural_change")
+        ),
+        rej_precode_not_found=rejection_reason_counts.get("precode_not_found", 0),
+        rej_ambiguous_precode_match=rejection_reason_counts.get("ambiguous_precode_match", 0),
+        rej_invalid_json_response=rejection_reason_counts.get("invalid_json_response", 0),
+        parse_failed=parse_failed,
+        parse_error_message=parse_error_message,
+        notes=cfg.get(
+            "notes",
+            f"Prompt file: {cfg['prompt_file']}; Config file: {config_path}",
+        ),
+    )
+
     if not mutants:
+        run_path = Path(run_dir)
+        run_path.mkdir(parents=True, exist_ok=True)
+
+        extra_metadata = build_experiment_metadata(
+            experiment_name=cfg["run_name"],
+            mutant_source="llm",
+            model_name=cfg["model"],
+            model_provider=cfg.get("model_provider", "ollama"),
+            prompt_name=Path(cfg["prompt_file"]).stem,
+            prompt_version=cfg.get("prompt_version", "file_based"),
+            temperature=cfg.get("temperature", 0.0),
+            n_requested_mutants=n_requested_mutants,
+            generation_mode=cfg.get("generation_mode", "batch_once"),
+            dataset_split=cfg.get("dataset_split"),
+            batch_id=cfg.get("batch_id"),
+            target_id=getattr(target, "target_id", None),
+            n_accepted_mutants=n_accepted_mutants,
+            n_rejected_mutants=n_rejected_mutants,
+            acceptance_rate=acceptance_rate,
+            rej_duplicate_mutant=rejection_reason_counts.get("duplicate_mutant", 0),
+            rej_unchanged_mutant=rejection_reason_counts.get("unchanged_mutant", 0),
+            rej_non_executable_change=rejection_reason_counts.get("non_executable_change", 0),
+            rej_non_executable_structural_change=sum(
+                count for reason, count in rejection_reason_counts.items()
+                if str(reason).startswith("non_executable_structural_change")
+            ),
+            rej_precode_not_found=rejection_reason_counts.get("precode_not_found", 0),
+            rej_ambiguous_precode_match=rejection_reason_counts.get("ambiguous_precode_match", 0),
+            rej_invalid_json_response=rejection_reason_counts.get("invalid_json_response", 0),
+            parse_failed=parse_failed,
+            parse_error_message=parse_error_message,
+            notes=cfg.get(
+                "notes",
+                f"Prompt file: {cfg['prompt_file']}; Config file: {config_path}",
+            ),
+        )
+
+        write_run_manifest(
+            run_dir=run_dir,
+            subject=subject,
+            target=target,
+            mutants=[],
+            run_mode=cfg.get("run_mode", "overwrite"),
+            workdir_base=workdir_base,
+            extra_metadata=extra_metadata,
+        )
+
+        write_empty_results_csv(run_dir)
+        write_empty_summary_json(run_dir)
+
+        if parse_failed:
+            (generation_dir / "parse_error.txt").write_text(
+                parse_error_message or "unknown parse error",
+                encoding="utf-8",
+            )
+
+        if cfg.get("rebuild_index", True):
+            from harness.experiments.build_experiment_index import build_experiment_index
+            build_experiment_index()
+
         print()
         print("No valid mutants were parsed from the LLM output.")
         print(f"Generation artifacts saved to: {generation_dir}")
+        print(f"Empty run artifacts stored in: {run_dir}")
         return
 
     runner.run(
@@ -161,22 +343,7 @@ def main():
         workdir_base=workdir_base,
         base_snapshot_dir=base_snapshot_dir,
         run_mode=cfg.get("run_mode", "overwrite"),
-        extra_metadata=build_experiment_metadata(
-            experiment_name=cfg["run_name"],
-            mutant_source="llm",
-            model_name=cfg["model"],
-            model_provider=cfg.get("model_provider", "ollama"),
-            prompt_name=Path(cfg["prompt_file"]).stem,
-            prompt_version=cfg.get("prompt_version", "file_based"),
-            temperature=cfg.get("temperature", 0.0),
-            n_requested_mutants=cfg["num_mutants"],
-            generation_mode=cfg.get("generation_mode", "batch_once"),
-            dataset_split=cfg.get("dataset_split"),
-            notes=cfg.get(
-                "notes",
-                f"Prompt file: {cfg['prompt_file']}; Config file: {config_path}",
-            ),
-        ),
+        extra_metadata=extra_metadata,
         cleanup_tmp=cfg.get("cleanup_tmp", True),
         validate_after_run=cfg.get("validate_after_run", True),
         rebuild_index=cfg.get("rebuild_index", True),
@@ -191,6 +358,12 @@ def main():
         mutants=mutants,
         parse_report=parse_report_to_dict(report),
     )
+
+    if parse_failed:
+        (generation_dir / "parse_error.txt").write_text(
+            parse_error_message or "unknown parse error",
+            encoding="utf-8",
+        )
 
     print()
     print("Done.")

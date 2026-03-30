@@ -89,6 +89,7 @@ class LLMResponseParser:
                 rejections.append(RejectedMutant(idx_item, "non_executable_change", item))
                 continue
 
+            
             full_code, resolution_reason = self._apply_line_edit(
                 original_lines=original_lines,
                 line_number=line_value,
@@ -105,6 +106,7 @@ class LLMResponseParser:
                     )
                 )
                 continue
+
 
             syntax_ok, syntax_reason = validate_syntax_fragment(full_code, language)
             if not syntax_ok:
@@ -164,24 +166,31 @@ class LLMResponseParser:
         expected_original_line: str,
         replacement_line: str,
     ) -> tuple[str | None, str | None]:
-        resolution = self._resolve_target_line_index(
+        idx, match_reason = self._resolve_target_line_index(
             original_lines=original_lines,
             line_number=line_number,
             expected_original_line=expected_original_line,
         )
-        idx, reason = resolution
         if idx is None:
-            return None, reason
+            return None, match_reason
 
         actual_line = original_lines[idx]
         mutated_lines = list(original_lines)
         indent = actual_line[: len(actual_line) - len(actual_line.lstrip())]
         mutated_lines[idx] = indent + replacement_line.strip()
 
-        return "\n".join(mutated_lines), None
+        return "\n".join(mutated_lines), match_reason
 
     def _clean_model_line(self, text: str) -> str:
         text = text.strip()
+        text = re.sub(r"^\s*\d+\s*[:|]\s*", "", text)
+        text = re.sub(r"^\s*\d+\s+", "", text)
+        return text.strip()
+
+
+    def _clean_model_line(self, text: str) -> str:
+        text = text.strip()
+        # Remove accidental line-number prefixes copied from numbered prompts
         text = re.sub(r"^\s*\d+\s*[:|]\s*", "", text)
         text = re.sub(r"^\s*\d+\s+", "", text)
         return text.strip()
@@ -196,11 +205,11 @@ class LLMResponseParser:
     ) -> tuple[int | None, str | None]:
         expected_norm = self._clean_model_line(expected_original_line)
 
-        # 1) exact local line
+        # 1) exact local line match
         if 1 <= line_number <= len(original_lines):
             idx = line_number - 1
             if original_lines[idx].strip() == expected_norm:
-                return idx, None
+                return idx, "exact_line_match"
 
         # 2) exact full-line match anywhere
         exact_matches = [
@@ -208,10 +217,10 @@ class LLMResponseParser:
             if line.strip() == expected_norm
         ]
         if len(exact_matches) == 1:
-            return exact_matches[0], None
+            return exact_matches[0], "exact_search_match"
         if len(exact_matches) > 1:
             if 1 <= line_number <= len(original_lines):
-                return min(exact_matches, key=lambda i: abs(i - (line_number - 1))), None
+                return min(exact_matches, key=lambda i: abs(i - (line_number - 1))), "exact_search_nearest_match"
             return None, "ambiguous_precode_match"
 
         # 3) whitespace-insensitive match
@@ -221,24 +230,28 @@ class LLMResponseParser:
             if " ".join(line.strip().split()) == expected_ws
         ]
         if len(ws_matches) == 1:
-            return ws_matches[0], None
+            return ws_matches[0], "whitespace_match"
         if len(ws_matches) > 1:
             if 1 <= line_number <= len(original_lines):
-                return min(ws_matches, key=lambda i: abs(i - (line_number - 1))), None
+                return min(ws_matches, key=lambda i: abs(i - (line_number - 1))), "whitespace_nearest_match"
             return None, "ambiguous_precode_match"
 
-        # 4) executable-content match (ignores comments)
+        # 4) executable-content match (ignores comments + whitespace-only differences)
         expected_exec = self._normalize_executable_content(expected_norm)
         exec_matches = [
             i for i, line in enumerate(original_lines)
             if self._normalize_executable_content(line) == expected_exec
         ]
         if len(exec_matches) == 1:
-            return exec_matches[0], None
+            return exec_matches[0], "comment_insensitive_match"
         if len(exec_matches) > 1:
             if 1 <= line_number <= len(original_lines):
-                return min(exec_matches, key=lambda i: abs(i - (line_number - 1))), None
+                return min(exec_matches, key=lambda i: abs(i - (line_number - 1))), "comment_insensitive_nearest_match"
             return None, "ambiguous_precode_match"
+
+        # 5) fallback: trust the reported line number if it points inside the extracted method
+        if 1 <= line_number <= len(original_lines):
+            return line_number - 1, "line_fallback"
 
         return None, "precode_not_found"
     

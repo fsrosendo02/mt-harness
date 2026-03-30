@@ -21,6 +21,10 @@ class Summary:
     baseline_failures: int
 
     @property
+    def survived_mutants(self) -> int:
+        return self.executable_mutants - self.killed_mutants
+
+    @property
     def build_success_rate(self) -> float:
         return self.build_successes / self.total_mutants if self.total_mutants else 0.0
 
@@ -36,6 +40,7 @@ class Summary:
 
     def to_dict(self) -> dict:
         data = asdict(self)
+        data["survived_mutants"] = self.survived_mutants
         data["build_success_rate"] = self.build_success_rate
         data["executable_yield"] = self.executable_yield
         data["mutation_score"] = self.mutation_score
@@ -98,6 +103,7 @@ def print_summary(title: str, summary: Summary) -> None:
     print(f"  Build successes:     {summary.build_successes} ({format_pct(summary.build_success_rate)})")
     print(f"  Executable mutants:  {summary.executable_mutants} ({format_pct(summary.executable_yield)})")
     print(f"  Killed mutants:      {summary.killed_mutants}")
+    print(f"  Survived mutants:    {summary.survived_mutants}")
     print(f"  Mutation score:      {format_pct(summary.mutation_score)}")
     print(f"  Baseline failures:   {summary.baseline_failures}")
 
