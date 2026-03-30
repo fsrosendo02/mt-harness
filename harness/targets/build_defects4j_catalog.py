@@ -1,200 +1,379 @@
 import argparse
 import json
-import shutil
+import re
 import subprocess
 import tempfile
+from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterable, List
 
-from harness.targets.java_method_extractor import find_method_end, normalize_start_idx, parse_ctags_methods
+# ---- Fix imports when running as script ----
+import sys
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from harness.targets.java_method_extractor import (
+    find_method_end,
+    normalize_start_idx,
+    parse_ctags_methods,
+)
 
 
-def run(cmd: List[str], cwd: Path | None = None) -> str:
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+# -----------------------------
+# Utils
+# -----------------------------
+
+def run(cmd):
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(
-            f"Command failed: {' '.join(cmd)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
-        )
+        raise RuntimeError(result.stderr)
     return result.stdout
 
 
-def list_bug_ids(project: str) -> List[str]:
-    out = run(["defects4j", "bids", "-p", project])
-    return [line.strip() for line in out.splitlines() if line.strip().isdigit()]
+def checkout_defects4j(project, bug_id, version, out_dir):
+    run([
+        "defects4j", "checkout",
+        "-p", project,
+        "-v", f"{bug_id}{version}",
+        "-w", str(out_dir)
+    ])
 
 
-def checkout(project: str, bug_id: str, version: str, workdir: Path) -> None:
-    if workdir.exists():
-        shutil.rmtree(workdir)
-    workdir.parent.mkdir(parents=True, exist_ok=True)
-    run(["defects4j", "checkout", "-p", project, "-v", f"{bug_id}{version}", "-w", str(workdir)])
-
-
-def iter_java_files(repo_root: Path) -> Iterable[Path]:
-    for path in repo_root.rglob("*.java"):
-        rel = path.relative_to(repo_root).as_posix().lower()
-        if "/src/test/" in rel or "/test/" in rel or rel.endswith("test.java"):
+def list_java_files(root: Path):
+    files = []
+    for p in root.rglob("*.java"):
+        low = str(p).lower().replace("\\", "/")
+        if "/src/test/" in low or "/test/" in low or p.name.endswith("Test.java"):
             continue
-        yield path
+        files.append(p)
+    return files
 
 
-def method_loc(start_line: int, end_line: int) -> int:
-    return end_line - start_line + 1
+# -----------------------------
+# Feature extraction
+# -----------------------------
+
+def count_branches(code: str) -> int:
+    patterns = [
+        r"\bif\b",
+        r"\belse\b",
+        r"\bswitch\b",
+        r"\bcase\b",
+        r"\bfor\b",
+        r"\bwhile\b",
+        r"\bcatch\b",
+        r"\?",
+        r"&&",
+        r"\|\|",
+    ]
+    return sum(len(re.findall(p, code)) for p in patterns)
 
 
-def count_branch_tokens(code: str) -> int:
-    needles = ["if (", "if(", "switch(", "switch (", "for(", "for (", "while(", "while (", "catch(", "catch (", "&&", "||", "?"]
-    return sum(code.count(n) for n in needles)
-
-
-def count_params(signature_line: str) -> int:
-    if "(" not in signature_line or ")" not in signature_line:
+def count_params(signature: str) -> int:
+    m = re.search(r"\((.*)\)", signature, flags=re.DOTALL)
+    if not m:
         return 0
-    inside = signature_line.split("(", 1)[1].rsplit(")", 1)[0].strip()
+
+    inside = m.group(1).strip()
     if not inside:
         return 0
-    return len([part for part in inside.split(",") if part.strip()])
+
+    depth_angle = 0
+    depth_paren = 0
+    depth_brack = 0
+    current = []
+    parts = []
+
+    for ch in inside:
+        if ch == "<":
+            depth_angle += 1
+        elif ch == ">":
+            depth_angle = max(0, depth_angle - 1)
+        elif ch == "(":
+            depth_paren += 1
+        elif ch == ")":
+            depth_paren = max(0, depth_paren - 1)
+        elif ch == "[":
+            depth_brack += 1
+        elif ch == "]":
+            depth_brack = max(0, depth_brack - 1)
+
+        if ch == "," and depth_angle == 0 and depth_paren == 0 and depth_brack == 0:
+            part = "".join(current).strip()
+            if part:
+                parts.append(part)
+            current = []
+        else:
+            current.append(ch)
+
+    tail = "".join(current).strip()
+    if tail:
+        parts.append(tail)
+
+    return len(parts)
 
 
-def looks_trivial(name: str, code: str) -> bool:
-    lowered = name.lower()
-    if lowered.startswith(("get", "set")):
-        return True
-    if lowered in {"tostring", "hashcode", "equals"}:
-        return True
-
-    compact = " ".join(code.split())
-    return (
-        compact.startswith("return this.")
-        or compact.startswith("this.") and compact.count(";") == 1
-    )
-
-
-def compute_score(name: str, loc: int, branches: int, params: int) -> float:
+def compute_score(loc: int, branches: int, params: int) -> float:
     score = 0.0
-    if 8 <= loc <= 60:
-        score += 0.4
-    elif 5 <= loc <= 100:
-        score += 0.2
 
-    score += min(branches, 8) * 0.08
-    score += 0.1 if params <= 3 else 0.05 if params <= 5 else 0.0
+    # size
+    if 12 <= loc <= 35:
+        score += 0.30
+    elif 8 <= loc <= 50:
+        score += 0.22
+    elif 6 <= loc <= 70:
+        score += 0.12
 
-    lowered = name.lower()
-    for token in ["parse", "validate", "check", "create", "convert", "normalize", "compare"]:
-        if token in lowered:
-            score += 0.08
-    return round(min(score, 1.0), 3)
+    # branch richness
+    if branches >= 10:
+        score += 0.30
+    elif branches >= 7:
+        score += 0.22
+    elif branches >= 4:
+        score += 0.14
+    elif branches >= 2:
+        score += 0.06
 
+    # params
+    if 1 <= params <= 3:
+        score += 0.14
+    elif params == 0:
+        score += 0.05
+    elif 4 <= params <= 5:
+        score += 0.09
 
-def build_target_id(project: str, bug_id: str, version: str, function: str, start_line: int) -> str:
-    return f"{project.lower()}_{bug_id}{version}_{function}__line{start_line}"
-
-
-def extract_candidates(subject: str, version: str, repo_root: Path) -> List[Dict[str, object]]:
-    project, bug_id = subject.split("_", 1)
-    targets: List[Dict[str, object]] = []
-
-    for java_file in iter_java_files(repo_root):
-        rel_file = java_file.relative_to(repo_root).as_posix()
-        lines = java_file.read_text(encoding="utf-8", errors="ignore").splitlines(keepends=True)
-
-        for entry in parse_ctags_methods(str(java_file)):
-            if entry["kind"] != "method":
-                continue
-
-            start_idx = normalize_start_idx(lines, int(entry["line"]) - 1)
-            try:
-                end_idx = find_method_end(lines, start_idx)
-            except ValueError:
-                continue
-
-            start_line = start_idx + 1
-            end_line = end_idx + 1
-            code = "".join(lines[start_idx : end_idx + 1])
-            loc = method_loc(start_line, end_line)
-            if loc < 5 or loc > 120:
-                continue
-
-            name = str(entry["name"])
-            if looks_trivial(name, code):
-                continue
-
-            branches = count_branch_tokens(code)
-            sig_line = lines[int(entry["line"]) - 1] if int(entry["line"]) - 1 < len(lines) else ""
-            params = count_params(sig_line)
-            score = compute_score(name, loc, branches, params)
-            if score < 0.30:
-                continue
-
-            targets.append({
-                "target_id": build_target_id(project, bug_id, version, name, start_line),
-                "dataset": "defects4j",
-                "subject": subject,
-                "version": version,
-                "language": "java",
-                "file": rel_file,
-                "function": name,
-                "start_line": start_line,
-                "end_line": end_line,
-                "metadata": {
-                    "loc": loc,
-                    "branch_count": branches,
-                    "param_count": params,
-                    "score": score,
-                },
-            })
-
-    targets.sort(key=lambda t: (-float(t["metadata"]["score"]), str(t["file"]), int(t["start_line"])))
-    return targets
+    return round(score, 3)
 
 
-def main() -> None:
+# -----------------------------
+# Declaration / signature helpers
+# -----------------------------
+
+def collect_signature(lines, raw_idx):
+    """
+    Reconstruct a possibly multiline Java method declaration starting at raw_idx.
+    Stops when it sees '{' or a terminating ';'.
+    """
+    parts = []
+    for i in range(raw_idx, len(lines)):
+        stripped = lines[i].strip()
+        if not stripped:
+            continue
+        parts.append(stripped)
+
+        joined = " ".join(parts)
+        if "{" in stripped or stripped.endswith(";"):
+            joined = joined.split("{")[0].strip()
+            if joined.endswith(";"):
+                joined = joined[:-1].strip()
+            return joined
+
+    return " ".join(parts).strip()
+
+
+def looks_trivial(function_name: str, code: str) -> bool:
+    lowered = function_name.lower().strip()
+
+    if lowered.startswith("get") or lowered.startswith("set"):
+        return True
+    if lowered in {"tostring", "hashcode"}:
+        return True
+
+    compact = re.sub(r"\s+", " ", code).strip()
+
+    trivial_patterns = [
+        r"^\{?\s*return\s+this\.[A-Za-z_][A-Za-z0-9_]*\s*;\s*\}?$",
+        r"^\{?\s*this\.[A-Za-z_][A-Za-z0-9_]*\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s*;\s*\}?$",
+    ]
+    return any(re.search(p, compact) for p in trivial_patterns)
+
+
+# -----------------------------
+# Main extraction
+# -----------------------------
+
+def extract_methods(file_path: Path):
+    lines = file_path.read_text(errors="ignore").splitlines()
+    methods = []
+    class_name = file_path.stem
+
+    for entry in parse_ctags_methods(str(file_path)):
+        if entry["kind"].lower() != "method":
+            continue
+
+        if entry["name"] and entry["name"][0].isupper():
+            continue
+
+        raw_idx = entry["line"] - 1
+        if raw_idx < 0 or raw_idx >= len(lines):
+            continue
+
+        # Exclude constructors for this phase
+        if entry["name"] == class_name:
+            continue
+
+        start = normalize_start_idx(lines, raw_idx)
+
+        signature = collect_signature(lines, raw_idx)
+        if not signature:
+            continue
+
+        # Skip declarations without body
+        if signature.endswith(";"):
+            continue
+
+        try:
+            end = find_method_end(lines, start)
+        except ValueError:
+            continue
+
+        if not end or end <= start:
+            continue
+
+        code = "\n".join(lines[start:end])
+        loc = end - start
+        params = count_params(signature)
+        branches = count_branches(code)
+
+        # Hard filters
+        if loc < 6 or loc > 100:
+            continue
+        if looks_trivial(entry["name"], code):
+            continue
+
+        score = compute_score(loc, branches, params)
+
+        methods.append({
+            "function": entry["name"],
+            "start_line": start + 1,
+            "end_line": end,
+            "signature": signature,
+            "metadata": {
+                "loc": loc,
+                "branch_count": branches,
+                "param_count": params,
+                "score": score,
+            }
+        })
+
+    return methods
+
+
+# -----------------------------
+# Deduplication / selection
+# -----------------------------
+
+def deduplicate(methods, max_per_function: int, max_per_file: int):
+    by_function = defaultdict(list)
+    for m in methods:
+        key = (m["file"], m["function"])
+        by_function[key].append(m)
+
+    # First collapse overload families / repeated same-name functions per file
+    collapsed = []
+    for group in by_function.values():
+        group_sorted = sorted(
+            group,
+            key=lambda x: (
+                -x["metadata"]["score"],
+                x["metadata"]["loc"],
+                x["start_line"],
+            )
+        )
+        collapsed.extend(group_sorted[:max_per_function])
+
+    # Then cap number of selected methods per file
+    by_file = defaultdict(list)
+    for m in collapsed:
+        by_file[m["file"]].append(m)
+
+    final = []
+    for group in by_file.values():
+        group_sorted = sorted(
+            group,
+            key=lambda x: (
+                -x["metadata"]["score"],
+                x["function"],
+                x["start_line"],
+            )
+        )
+        final.extend(group_sorted[:max_per_file])
+
+    return final
+
+
+# -----------------------------
+# Main builder
+# -----------------------------
+
+def build_catalog(project, bug_ids, version, max_per_project, max_per_function, max_per_file):
+    all_targets = []
+
+    for bug_id in bug_ids:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            checkout_defects4j(project, bug_id, version, tmp_path)
+
+            for java_file in list_java_files(tmp_path):
+                methods = extract_methods(java_file)
+
+                for m in methods:
+                    m["file"] = str(java_file.relative_to(tmp_path))
+                    m["dataset"] = "defects4j"
+                    m["subject"] = f"{project}_{bug_id}"
+                    m["version"] = version
+                    m["language"] = "java"
+                    m["target_id"] = (
+                        f"{project.lower()}_{bug_id}{version}_"
+                        f"{m['function']}__line{m['start_line']}"
+                    )
+                    all_targets.append(m)
+
+    all_targets = deduplicate(all_targets, max_per_function, max_per_file)
+
+    all_targets = sorted(
+        all_targets,
+        key=lambda x: (
+            -x["metadata"]["score"],
+            x["file"],
+            x["function"],
+            x["start_line"],
+        )
+    )[:max_per_project]
+
+    return all_targets
+
+
+# -----------------------------
+# CLI
+# -----------------------------
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True)
-    parser.add_argument("--projects", required=True, help="Comma-separated, e.g. Lang,Math,Cli")
+    parser.add_argument("--projects", required=True, help="Single Defects4J project for now, e.g. Lang")
+    parser.add_argument("--bug-ids", required=True, help="Comma-separated bug ids, e.g. 1,2,3")
     parser.add_argument("--versions", default="f")
-    parser.add_argument("--bug-ids", default="", help="Optional comma-separated bug IDs to limit the build")
-    parser.add_argument("--max-per-project", type=int, default=50)
+    parser.add_argument("--max-per-project", type=int, default=20)
+    parser.add_argument("--max-per-function", type=int, default=1)
+    parser.add_argument("--max-per-file", type=int, default=2)
+
     args = parser.parse_args()
 
-    projects = [part.strip() for part in args.projects.split(",") if part.strip()]
-    versions = [part.strip() for part in args.versions.split(",") if part.strip()]
-    forced_bug_ids = [part.strip() for part in args.bug_ids.split(",") if part.strip()]
+    project = args.projects.strip()
+    bug_ids = [b.strip() for b in args.bug_ids.split(",") if b.strip()]
+    version = args.versions.strip()
 
-    final_catalog: List[Dict[str, object]] = []
+    catalog = build_catalog(
+        project=project,
+        bug_ids=bug_ids,
+        version=version,
+        max_per_project=args.max_per_project,
+        max_per_function=args.max_per_function,
+        max_per_file=args.max_per_file,
+    )
 
-    with tempfile.TemporaryDirectory(prefix="d4j_catalog_") as tmp_dir:
-        tmp_root = Path(tmp_dir)
-
-        for project in projects:
-            bug_ids = forced_bug_ids or list_bug_ids(project)
-            project_targets: List[Dict[str, object]] = []
-
-            for bug_id in bug_ids:
-                for version in versions:
-                    subject = f"{project}_{bug_id}"
-                    checkout_dir = tmp_root / f"{project}_{bug_id}{version}"
-                    try:
-                        checkout(project, bug_id, version, checkout_dir)
-                        project_targets.extend(extract_candidates(subject, version, checkout_dir))
-                    except Exception as exc:  # noqa: BLE001
-                        print(f"[WARN] Skipping {subject}{version}: {exc}")
-
-            project_targets.sort(
-                key=lambda t: (
-                    -float(t["metadata"]["score"]),
-                    str(t["subject"]),
-                    str(t["file"]),
-                    int(t["start_line"]),
-                )
-            )
-            final_catalog.extend(project_targets[: args.max_per_project])
-
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(final_catalog, indent=2), encoding="utf-8")
-    print(f"Wrote {len(final_catalog)} targets to {output_path}")
+    Path(args.output).write_text(json.dumps(catalog, indent=2), encoding="utf-8")
+    print(f"Saved {len(catalog)} targets to {args.output}")
 
 
 if __name__ == "__main__":

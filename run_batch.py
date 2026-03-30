@@ -74,7 +74,24 @@ def main():
         run_name = f"{batch_id}__{slug(subject)}__{slug(function)}"
 
         cfg = dict(base_cfg)
-        cfg["target_id"] = target_id
+
+        # target-specific fields from the catalog entry
+        cfg["target_id"] = entry["target_id"]
+        cfg["dataset"] = entry["dataset"]
+        cfg["subject"] = entry["subject"]
+        cfg["version"] = entry["version"]
+        cfg["language"] = entry["language"]
+        cfg["file"] = entry["file"]
+        cfg["function"] = entry["function"]
+
+        if "start_line" in entry:
+            cfg["start_line"] = entry["start_line"]
+        if "end_line" in entry:
+            cfg["end_line"] = entry["end_line"]
+        if "signature" in entry:
+            cfg["signature"] = entry["signature"]
+
+        # batch/run metadata
         cfg["batch_id"] = batch_id
         cfg["run_name"] = run_name
 
