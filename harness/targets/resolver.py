@@ -2,7 +2,7 @@ import os
 
 from harness.models import Target
 from harness.targets.catalog import get_target_by_id
-from harness.targets.java_method_extractor import extract_method
+from harness.targets.java_method_extractor import extract_method, extract_method_by_lines
 
 
 def resolve_target(config, checkout_dir):
@@ -16,10 +16,6 @@ def resolve_target(config, checkout_dir):
     else:
         entry = config
 
-    dataset = entry["dataset"]
-    if dataset != "defects4j":
-        raise NotImplementedError(f"Dataset '{dataset}' not supported yet")
-
     file_path = entry["file"]
     function = entry["function"]
     language = entry.get("language", config.get("language", "java"))
@@ -31,14 +27,21 @@ def resolve_target(config, checkout_dir):
     with open(abs_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    if "start_line" in entry and "end_line" in entry:
-        start_line = entry["start_line"]
-        end_line = entry["end_line"]
-        method_code = "".join(lines[start_line - 1:end_line])
+    start_line = entry.get("start_line")
+    end_line = entry.get("end_line")
+
+    if (start_line is None) ^ (end_line is None):
+        raise ValueError(
+            "Catalog entry must define both start_line and end_line, or neither"
+        )
+
+    if start_line is not None and end_line is not None:
+        method_code = extract_method_by_lines(lines, start_line, end_line)
     else:
         if language != "java":
             raise NotImplementedError(
-                "Automatic method extraction currently supports only Java"
+                "Automatic method extraction currently supports only Java. "
+                "For other languages, store start_line/end_line in the catalog."
             )
 
         start_line, end_line, method_code = extract_method(

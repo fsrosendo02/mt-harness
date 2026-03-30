@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 import subprocess
 
+from harness.targets.catalog import load_catalog_entries
+
 
 def load_json(path: str):
     with open(path, "r", encoding="utf-8") as f:
@@ -43,9 +45,9 @@ def main():
     base_config_path = sys.argv[1]
 
     base_cfg = load_json(base_config_path)
-    
+
     catalog_path = base_cfg["catalog_file"]
-    catalog = load_json(catalog_path)
+    catalog = load_catalog_entries(catalog_path)
 
     batches_dir = Path("harness/experiments/batches")
     batch_id = next_batch_id(batches_dir)
@@ -80,7 +82,7 @@ def main():
         tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
         print(f"\n=== Running {target_id} -> {run_name} ===")
-        
+
         result = subprocess.run(
             ["python3", "run_llm.py", str(tmp_config)],
             check=False
