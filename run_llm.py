@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 import csv
 import json
+import re
 
 from harness.adapters.defects4j import Defects4JAdapter
 from harness.experiments.metadata import build_experiment_metadata
@@ -11,10 +12,14 @@ from harness.llm.io import save_generation_artifacts
 from harness.llm.parsing import parse_report_to_dict
 from harness.llm.prompt_builder import PromptBuilder
 from harness.llm.providers.ollama_provider import OllamaProvider
+from harness.llm.providers.gpt4o_provider import GPT4oProvider
 from harness.models import Subject
 from harness.runners.mutation_runner import MutationRunner
 from harness.targets.resolver import resolve_target
 from harness.storage.run_state import write_run_manifest
+
+
+
 
 
 BASE_REQUIRED_FIELDS = [
@@ -28,6 +33,9 @@ BASE_REQUIRED_FIELDS = [
     "prompt_file",
 ]
 
+def extract_json(text: str) -> str:
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    return match.group(0) if match else text
 
 def load_config(config_path: str) -> dict:
     path = Path(config_path)
@@ -139,7 +147,16 @@ def main():
     base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
     workdir_base = f"tmp/{cfg['run_name']}"
 
-    provider = OllamaProvider(cfg["model"], timeout_seconds=cfg["timeout"])
+    provider_type = cfg.get("provider", "ollama")
+
+    if provider_type == "ollama":
+        provider = OllamaProvider(cfg["model"], timeout_seconds=cfg["timeout"])
+
+    elif provider_type == "gpt4o":
+        provider = GPT4oProvider(cfg["model"], timeout_seconds=cfg["timeout"])
+
+    else:
+        raise ValueError(f"Unknown provider: {provider_type}")
     prompt_builder = PromptBuilder(cfg["prompt_file"])
     generator = LLMMutantGenerator(provider=provider, prompt_builder=prompt_builder)
     runner = MutationRunner(adapter)
@@ -174,6 +191,8 @@ def main():
         user_prompt=built_prompt.user_prompt,
         temperature=cfg.get("temperature", 0.0),
     )
+
+    raw_text = extract_json(raw_text)
 
     parse_failed = False
     parse_error_message = None
