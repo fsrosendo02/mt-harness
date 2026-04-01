@@ -17,8 +17,11 @@ class MutantEvaluator:
         mutant: Mutant,
         workdir: str,
         log_path: str,
+        baseline=None,
     ) -> MutantResult:
-        baseline = self.baseline_evaluator.evaluate(subject, workdir)
+        if baseline is None:
+            baseline = self.baseline_evaluator.evaluate(subject, workdir)
+
         if not baseline.build_ok or not baseline.test_ok:
             full_log = (
                 "=== BASELINE BUILD ===\n\n"

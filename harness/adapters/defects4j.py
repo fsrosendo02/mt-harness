@@ -1,12 +1,25 @@
 import shutil
 import subprocess
+import time
+from datetime import datetime
 from pathlib import Path
 
 from harness.adapters.base import BenchmarkAdapter
 from harness.models import Subject, Target
 
 
+def ts() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def log(msg: str) -> None:
+    print(f"[{ts()}] {msg}", flush=True)
+
+
 class Defects4JAdapter(BenchmarkAdapter):
+
+    BUILD_TIMEOUT = 120
+    TEST_TIMEOUT = 300
 
     def checkout_subject(self, subject: Subject, workdir: str) -> None:
         project, bug_id = subject.subject_id.split("_", 1)
@@ -30,28 +43,48 @@ class Defects4JAdapter(BenchmarkAdapter):
         subprocess.run(cmd, check=True)
 
     def build(self, workdir: str) -> tuple[bool, str]:
-        result = subprocess.run(
-            ["defects4j", "compile"],
-            cwd=workdir,
-            capture_output=True,
-            text=True,
-        )
+        log("[build] start")
+        t = time.time()
 
-        log = result.stdout + "\n" + result.stderr
-        return result.returncode == 0, log
+        try:
+            result = subprocess.run(
+                ["defects4j", "compile"],
+                cwd=workdir,
+                capture_output=True,
+                text=True,
+                timeout=self.BUILD_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired as e:
+            log("[build] TIMEOUT")
+            return False, f"TIMEOUT after {self.BUILD_TIMEOUT}s\n{e}"
+
+        log(f"[build] finished in {time.time() - t:.2f}s")
+
+        log_output = result.stdout + "\n" + result.stderr
+        return result.returncode == 0, log_output
 
     def test(self, workdir: str) -> tuple[bool, str]:
-        result = subprocess.run(
-            ["defects4j", "test"],
-            cwd=workdir,
-            capture_output=True,
-            text=True,
-        )
+        log("[test] start")
+        t = time.time()
 
-        log = result.stdout + "\n" + result.stderr
+        try:
+            result = subprocess.run(
+                ["defects4j", "test"],
+                cwd=workdir,
+                capture_output=True,
+                text=True,
+                timeout=self.TEST_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired as e:
+            log("[test] TIMEOUT")
+            return False, f"TIMEOUT after {self.TEST_TIMEOUT}s\n{e}"
+
+        log(f"[test] finished in {time.time() - t:.2f}s")
+
+        log_output = result.stdout + "\n" + result.stderr
 
         failing_tests = None
-        for line in log.splitlines():
+        for line in log_output.splitlines():
             line = line.strip()
             if line.startswith("Failing tests:"):
                 try:
@@ -61,9 +94,9 @@ class Defects4JAdapter(BenchmarkAdapter):
                 break
 
         if failing_tests is not None:
-            return failing_tests == 0, log
+            return failing_tests == 0, log_output
 
-        return result.returncode == 0, log
+        return result.returncode == 0, log_output
 
     def apply_mutant(self, workdir: str, target: Target, mutant_code: str) -> None:
         file_path = Path(workdir) / target.file_path
@@ -80,4 +113,4 @@ class Defects4JAdapter(BenchmarkAdapter):
         file_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
     def reset_subject(self, workdir: str) -> None:
-        raise NotImplementedError("Reset not implemented for Defects4JAdapter yet.") 
+        raise NotImplementedError("Reset not implemented for Defects4JAdapter yet.")

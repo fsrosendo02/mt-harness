@@ -87,6 +87,11 @@ class MutationRunner:
         original_code = extract_target_code(base_snapshot_dir, target)
         log_duration("Extract original target code", t)
 
+        log("Running baseline once for all mutants")
+        baseline_start = time.time()
+        baseline = self.evaluator.baseline_evaluator.evaluate(subject, base_snapshot_dir)
+        log_duration("Shared baseline evaluation", baseline_start)
+
         created_tmp_paths = []
 
         for mutant in mutants:
@@ -117,6 +122,7 @@ class MutationRunner:
                 mutant=mutant,
                 workdir=workdir,
                 log_path=log_path,
+                baseline=baseline,
             )
             log_duration(f"Evaluate {mutant.mutant_id}", eval_start)
 
