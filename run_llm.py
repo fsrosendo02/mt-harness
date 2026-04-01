@@ -186,11 +186,14 @@ def main():
     print(f"Prompt file: {built_prompt.prompt_file}")
     print(f"Prompt length: {len(built_prompt.user_prompt)} chars")
 
+    from datetime import datetime
+    print("DEBUG before provider.generate", datetime.now().isoformat())
     raw_text = provider.generate(
         system_prompt=built_prompt.system_prompt,
         user_prompt=built_prompt.user_prompt,
         temperature=cfg.get("temperature", 0.0),
     )
+    print("DEBUG after provider.generate", datetime.now().isoformat())
 
     raw_text = extract_json(raw_text)
 
