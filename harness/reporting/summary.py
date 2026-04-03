@@ -117,6 +117,9 @@ def summarize_results_csv(
     keep_duplicates: bool = False,
     json_out: Path | None = None,
     print_to_stdout: bool = True,
+    run_status: str = "ok",
+    failure_reason: str | None = None,
+    failure_message: str | None = None,
 ) -> dict:
     csv_path = Path(csv_path)
     json_path = Path(json_out) if json_out is not None else default_json_path(csv_path)
@@ -165,6 +168,9 @@ def summarize_results_csv(
     payload = {
         "csv_path": str(csv_path),
         "json_path": str(json_path),
+        "run_status": run_status,
+        "failure_reason": failure_reason,
+        "failure_message": failure_message,
         "deduplicated": not keep_duplicates,
         "input_row_count": input_count,
         "used_row_count": len(rows),

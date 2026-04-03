@@ -48,13 +48,31 @@ def write_run_manifest(
     run_mode,
     workdir_base,
     extra_metadata=None,
+    status=None,
+    failure_reason=None,
+    failure_message=None,
+    started_at_utc=None,
+    completed_at_utc=None,
 ):
     run_path = Path(run_dir)
     manifest_path = run_path / "run_manifest.json"
+    created_at_utc = datetime.now(timezone.utc).isoformat()
+
+    if manifest_path.exists():
+        try:
+            existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+            created_at_utc = existing.get("created_at_utc", created_at_utc)
+        except Exception:
+            pass
 
     payload = {
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": created_at_utc,
+        "started_at_utc": started_at_utc,
+        "completed_at_utc": completed_at_utc,
         "run_mode": run_mode,
+        "status": status or "unknown",
+        "failure_reason": failure_reason,
+        "failure_message": failure_message,
         "workdir_base": workdir_base,
         "requested_mutant_count": len(mutants),
         "subject": {

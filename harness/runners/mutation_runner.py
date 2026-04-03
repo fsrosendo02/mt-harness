@@ -87,7 +87,7 @@ class MutationRunner:
         original_code = extract_target_code(base_snapshot_dir, target)
         log_duration("Extract original target code", t)
 
-        log("Running baseline once for all mutants")
+        log("[baseline] running shared baseline once for all mutants")
         baseline_start = time.time()
         baseline = self.evaluator.baseline_evaluator.evaluate(subject, base_snapshot_dir)
         log_duration("Shared baseline evaluation", baseline_start)
@@ -96,11 +96,11 @@ class MutationRunner:
 
         for mutant in mutants:
             if mutant.mutant_id in completed_mutant_ids:
-                log(f"Skipping already completed mutant {mutant.mutant_id}")
+                log(f"[mutant {mutant.mutant_id}] skip already completed")
                 continue
 
             mutant_start = time.time()
-            log(f"Running mutant {mutant.mutant_id}")
+            log(f"[mutant {mutant.mutant_id}] start")
 
             workdir = f"{workdir_base}_{mutant.mutant_id}"
             log_path = str(run_path / f"{mutant.mutant_id}.log")
@@ -109,11 +109,11 @@ class MutationRunner:
             if workdir_path.exists():
                 t = time.time()
                 shutil.rmtree(workdir_path)
-                log_duration(f"Remove existing workdir for {mutant.mutant_id}", t)
+                log_duration(f"[mutant {mutant.mutant_id}] remove existing workdir", t)
 
             t = time.time()
             shutil.copytree(base_snapshot_path, workdir_path)
-            log_duration(f"Copy base snapshot for {mutant.mutant_id}", t)
+            log_duration(f"[mutant {mutant.mutant_id}] copy base snapshot", t)
 
             eval_start = time.time()
             result = self.evaluator.evaluate(
@@ -124,11 +124,11 @@ class MutationRunner:
                 log_path=log_path,
                 baseline=baseline,
             )
-            log_duration(f"Evaluate {mutant.mutant_id}", eval_start)
+            log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
 
             t = time.time()
             append_result_csv(csv_path, result)
-            log_duration(f"Append CSV for {mutant.mutant_id}", t)
+            log_duration(f"[mutant {mutant.mutant_id}] append CSV", t)
 
             t = time.time()
             save_mutant_artifacts(
@@ -139,10 +139,10 @@ class MutationRunner:
                 result=result,
                 original_code=original_code,
             )
-            log_duration(f"Save artifacts for {mutant.mutant_id}", t)
+            log_duration(f"[mutant {mutant.mutant_id}] save artifacts", t)
 
             created_tmp_paths.append(workdir)
-            log_duration(f"Mutant {mutant.mutant_id}", mutant_start)
+            log_duration(f"[mutant {mutant.mutant_id}] total", mutant_start)
 
         if csv_path.exists():
             t = time.time()

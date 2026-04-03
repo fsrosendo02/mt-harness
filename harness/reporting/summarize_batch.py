@@ -102,6 +102,7 @@ def main():
         "runs_with_summary": 0,
         "runs_with_parse_report": 0,
         "runs_with_accepted": 0,
+        "run_status_counts": Counter(),
         "requested": 0,
         "accepted": 0,
         "rejected": 0,
@@ -114,6 +115,7 @@ def main():
 
     project_stats = defaultdict(lambda: {
         "runs": 0,
+        "run_status_counts": Counter(),
         "requested": 0,
         "accepted": 0,
         "rejected": 0,
@@ -135,8 +137,10 @@ def main():
         summary_path = run_dir / "summary.json"
         config_path = run_dir / "run_config.json"
         parse_report_path = run_dir / "generation" / "parse_report.json"
+        manifest_path = run_dir / "run_manifest.json"
 
         cfg = load_json(config_path) if config_path.exists() else {}
+        manifest = load_json(manifest_path) if manifest_path.exists() else {}
 
         subject = cfg.get("subject", run_info.get("subject", "unknown"))
         target_id = cfg.get("target_id", run_info.get("target_id", run_name))
@@ -144,6 +148,16 @@ def main():
         dataset = cfg.get("dataset", "unknown")
         version = cfg.get("version", "unknown")
         project = infer_project(subject)
+        run_status = (
+            manifest.get("status")
+            or run_info.get("status")
+            or "unknown"
+        )
+        failure_reason = (
+            manifest.get("failure_reason")
+            or run_info.get("failure_reason")
+            or ""
+        )
 
         requested = accepted = rejected = 0
         reasons = Counter()
@@ -180,8 +194,11 @@ def main():
             overall["killed"] += exec_metrics["killed_mutants"]
             overall["survived"] += exec_metrics["survived_mutants"]
 
+        overall["run_status_counts"][run_status] += 1
+
         p = project_stats[project]
         p["runs"] += 1
+        p["run_status_counts"][run_status] += 1
         p["requested"] += requested
         p["accepted"] += accepted
         p["rejected"] += rejected
@@ -202,6 +219,8 @@ def main():
             "version": version,
             "target_id": target_id,
             "function": function,
+            "run_status": run_status,
+            "failure_reason": failure_reason,
             "requested_mutants": requested,
             "accepted_mutants": accepted,
             "rejected_mutants": rejected,
@@ -223,6 +242,7 @@ def main():
     print(f"Runs with parse report: {overall['runs_with_parse_report']}")
     print(f"Runs with summary: {overall['runs_with_summary']}")
     print(f"Runs with >=1 accepted mutant: {overall['runs_with_accepted']}")
+    print(f"Run status counts: {dict(overall['run_status_counts'])}")
     print(f"Requested mutants: {overall['requested']}")
     print(f"Accepted mutants: {overall['accepted']}")
     print(f"Rejected mutants: {overall['rejected']}")
@@ -254,6 +274,7 @@ def main():
 
         print(f"\n[{project}]")
         print(f"Runs: {p['runs']}")
+        print(f"Run status counts: {dict(p['run_status_counts'])}")
         print(f"Requested: {p['requested']}")
         print(f"Accepted: {p['accepted']}")
         print(f"Rejected: {p['rejected']}")
@@ -291,6 +312,8 @@ def main():
                 "version",
                 "target_id",
                 "function",
+                "run_status",
+                "failure_reason",
                 "requested_mutants",
                 "accepted_mutants",
                 "rejected_mutants",
@@ -367,6 +390,7 @@ def main():
         "runs_with_parse_report": overall["runs_with_parse_report"],
         "runs_with_summary": overall["runs_with_summary"],
         "runs_with_accepted": overall["runs_with_accepted"],
+        "run_status_counts": dict(overall["run_status_counts"]),
         "requested_mutants": overall["requested"],
         "accepted_mutants": overall["accepted"],
         "rejected_mutants": overall["rejected"],
@@ -388,6 +412,7 @@ def main():
         p = project_stats[project]
         global_summary["projects"][project] = {
             "runs": p["runs"],
+            "run_status_counts": dict(p["run_status_counts"]),
             "requested_mutants": p["requested"],
             "accepted_mutants": p["accepted"],
             "rejected_mutants": p["rejected"],

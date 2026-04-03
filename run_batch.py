@@ -4,10 +4,12 @@ import re
 import signal
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
 
+from harness.models import Subject, Target
+from harness.storage.run_state import write_run_manifest
 from harness.targets.catalog import load_catalog_entries
 
 
@@ -100,6 +102,166 @@ def kill_process_tree(pid: int) -> None:
         pass
 
 
+def write_empty_results_csv(run_dir: Path) -> None:
+    csv_path = run_dir / "results.csv"
+    csv_path.write_text(
+        "dataset,subject_id,function_name,mutant_id,build_status,test_status,killed,executable,log_path\n",
+        encoding="utf-8",
+    )
+
+
+def write_empty_summary_json(
+    run_dir: Path,
+    *,
+    run_status: str,
+    failure_reason: str | None,
+    failure_message: str | None,
+) -> None:
+    payload = {
+        "csv_path": str(run_dir / "results.csv"),
+        "json_path": str(run_dir / "summary.json"),
+        "run_status": run_status,
+        "failure_reason": failure_reason,
+        "failure_message": failure_message,
+        "deduplicated": True,
+        "input_row_count": 0,
+        "used_row_count": 0,
+        "overall": {
+            "total_mutants": 0,
+            "build_successes": 0,
+            "executable_mutants": 0,
+            "killed_mutants": 0,
+            "survived_mutants": 0,
+            "baseline_failures": 0,
+            "build_success_rate": 0.0,
+            "executable_yield": 0.0,
+            "mutation_score": None,
+        },
+        "by_subject_function": [],
+    }
+    save_json(run_dir / "summary.json", payload)
+
+
+def ensure_timeout_artifacts(run_dir: Path, cfg: dict, batch_timeout: int) -> None:
+    subject = Subject(
+        dataset=cfg.get("dataset", "unknown"),
+        subject_id=cfg.get("subject", "unknown"),
+        language=cfg.get("language", "java"),
+        version=cfg.get("version", "unknown"),
+    )
+    target = Target(
+        file_path=cfg.get("file", ""),
+        function_name=cfg.get("function", ""),
+        start_line=cfg.get("start_line"),
+        end_line=cfg.get("end_line"),
+        language=cfg.get("language", "java"),
+        target_id=cfg.get("target_id"),
+    )
+    message = f"Batch timeout after {batch_timeout} seconds"
+
+    write_run_manifest(
+        run_dir=run_dir,
+        subject=subject,
+        target=target,
+        mutants=[],
+        run_mode=cfg.get("run_mode", "overwrite"),
+        workdir_base=f"tmp/{cfg['run_name']}",
+        extra_metadata={
+            "batch_id": cfg.get("batch_id"),
+            "target_id": cfg.get("target_id"),
+            "model_name": cfg.get("model"),
+            "model_provider": cfg.get("provider"),
+            "n_requested_mutants": cfg.get("num_mutants"),
+            "notes": message,
+        },
+        status="timeout",
+        failure_reason="batch_timeout",
+        failure_message=message,
+        started_at_utc=datetime.now(timezone.utc).isoformat(),
+        completed_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    write_empty_results_csv(run_dir)
+    write_empty_summary_json(
+        run_dir,
+        run_status="timeout",
+        failure_reason="batch_timeout",
+        failure_message=message,
+    )
+    (run_dir / "run_error.txt").write_text(message + "\n", encoding="utf-8")
+
+
+def ensure_failed_artifacts(
+    run_dir: Path,
+    cfg: dict,
+    *,
+    run_status: str,
+    failure_reason: str | None,
+    failure_message: str,
+) -> None:
+    if (run_dir / "run_manifest.json").exists():
+        return
+
+    subject = Subject(
+        dataset=cfg.get("dataset", "unknown"),
+        subject_id=cfg.get("subject", "unknown"),
+        language=cfg.get("language", "java"),
+        version=cfg.get("version", "unknown"),
+    )
+    target = Target(
+        file_path=cfg.get("file", ""),
+        function_name=cfg.get("function", ""),
+        start_line=cfg.get("start_line"),
+        end_line=cfg.get("end_line"),
+        language=cfg.get("language", "java"),
+        target_id=cfg.get("target_id"),
+    )
+
+    write_run_manifest(
+        run_dir=run_dir,
+        subject=subject,
+        target=target,
+        mutants=[],
+        run_mode=cfg.get("run_mode", "overwrite"),
+        workdir_base=f"tmp/{cfg['run_name']}",
+        extra_metadata={
+            "batch_id": cfg.get("batch_id"),
+            "target_id": cfg.get("target_id"),
+            "model_name": cfg.get("model"),
+            "model_provider": cfg.get("provider"),
+            "n_requested_mutants": cfg.get("num_mutants"),
+            "notes": failure_message,
+        },
+        status=run_status,
+        failure_reason=failure_reason,
+        failure_message=failure_message,
+        started_at_utc=datetime.now(timezone.utc).isoformat(),
+        completed_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    write_empty_results_csv(run_dir)
+    write_empty_summary_json(
+        run_dir,
+        run_status=run_status,
+        failure_reason=failure_reason,
+        failure_message=failure_message,
+    )
+    (run_dir / "run_error.txt").write_text(failure_message + "\n", encoding="utf-8")
+
+
+def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[str, str | None]:
+    if timed_out:
+        return "timeout", "batch_timeout"
+
+    manifest_path = run_dir / "run_manifest.json"
+    if manifest_path.exists():
+        try:
+            manifest = load_json(manifest_path)
+            return manifest.get("status", "ok" if return_code == 0 else "failed"), manifest.get("failure_reason")
+        except Exception:
+            pass
+
+    return ("ok" if return_code == 0 else "failed"), None
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python3 run_batch.py <config_file>")
@@ -132,6 +294,8 @@ def main():
             "ok": 0,
             "failed": 0,
             "timeout": 0,
+            "parse_failed": 0,
+            "no_valid_mutants": 0,
             "total": 0,
         },
     }
@@ -194,7 +358,21 @@ def main():
 
             return_code = 124
 
-        status = "timeout" if timed_out else ("ok" if return_code == 0 else "failed")
+        if timed_out:
+            ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
+
+        status, failure_reason = load_run_status(run_dir, return_code, timed_out)
+        if status != "ok":
+            ensure_failed_artifacts(
+                run_dir,
+                cfg,
+                run_status=status,
+                failure_reason=failure_reason,
+                failure_message=(
+                    f"run_llm.py exited with return code {return_code}"
+                    if not timed_out else f"Batch timeout after {batch_timeout} seconds"
+                ),
+            )
 
         batch_manifest["runs"].append({
             "target_id": target_id,
@@ -204,15 +382,16 @@ def main():
             "run_dir": f"harness/runs/{run_name}",
             "return_code": return_code,
             "status": status,
+            "failure_reason": failure_reason,
         })
 
         batch_manifest["summary"]["total"] += 1
-        if status == "ok":
-            batch_manifest["summary"]["ok"] += 1
-        elif status == "failed":
-            batch_manifest["summary"]["failed"] += 1
+        if status in batch_manifest["summary"]:
+            batch_manifest["summary"][status] += 1
         elif status == "timeout":
             batch_manifest["summary"]["timeout"] += 1
+        else:
+            batch_manifest["summary"]["failed"] += 1
 
         save_json(batches_dir / f"{batch_id}.json", batch_manifest)
 
