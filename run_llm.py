@@ -18,6 +18,7 @@ from harness.llm.providers.ollama_provider import OllamaProvider
 from harness.models import Subject
 from harness.models import Target
 from harness.runners.mutation_runner import MutationRunner
+from harness.storage.artifacts import save_rejected_mutant_artifacts
 from harness.storage.run_state import write_run_manifest
 from harness.targets.resolver import resolve_target
 
@@ -380,6 +381,7 @@ def main():
         run_path = Path(run_dir)
         generation_dir = run_path / "generation"
         generation_dir.mkdir(parents=True, exist_ok=True)
+        parse_report_dict = parse_report_to_dict(report)
 
         t = time.time()
         save_generation_artifacts(
@@ -388,9 +390,20 @@ def main():
             user_prompt=built_prompt.user_prompt,
             raw_response=raw_text,
             mutants=mutants,
-            parse_report=parse_report_to_dict(report),
+            parse_report=parse_report_dict,
         )
         log_duration("Save generation artifacts", t)
+
+        t = time.time()
+        save_rejected_mutant_artifacts(
+            run_dir=run_path,
+            subject=subject,
+            target=target,
+            original_code=target_code,
+            rejections=parse_report_dict.get("rejections", []),
+            raw_response_path=str(generation_dir / "raw_response.txt"),
+        )
+        log_duration("Save rejected mutant artifacts", t)
 
         extra_metadata = build_experiment_metadata(
             experiment_name=cfg["run_name"],
@@ -525,7 +538,7 @@ def main():
             user_prompt=built_prompt.user_prompt,
             raw_response=raw_text,
             mutants=mutants,
-            parse_report=parse_report_to_dict(report),
+            parse_report=parse_report_dict,
         )
         log_duration("Final generation artifact save", t)
 

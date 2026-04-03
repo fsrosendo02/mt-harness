@@ -4,6 +4,8 @@ import csv
 import json
 from pathlib import Path
 
+from harness.reporting.summary import deduplicate_rows
+
 
 REQUIRED_FILES = (
     "results.csv",
@@ -58,14 +60,23 @@ def validate_run_dir(run_dir: str | Path) -> dict:
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
     summary_total = summary["overall"]["total_mutants"]
-    if summary_total != len(rows):
+    summary_deduplicated = bool(summary.get("deduplicated", False))
+    summary_used_row_count = summary.get("used_row_count")
+    expected_total = (
+        summary_used_row_count
+        if summary_used_row_count is not None
+        else len(deduplicate_rows(rows)) if summary_deduplicated else len(rows)
+    )
+
+    if summary_total != expected_total:
         raise ValueError(
-            f"Summary total_mutants ({summary_total}) != CSV row count ({len(rows)})"
+            f"Summary total_mutants ({summary_total}) != effective CSV row count ({expected_total})"
         )
 
     return {
         "run_dir": str(run_path),
         "csv_row_count": len(rows),
+        "effective_csv_row_count": expected_total,
         "summary_total_mutants": summary_total,
         "manifest_ok": True,
         "run_status": run_status,

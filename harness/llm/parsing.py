@@ -23,6 +23,23 @@ class ParseReport:
 
 
 class LLMResponseParser:
+    def _build_rejection_payload(
+        self,
+        item: dict[str, Any] | Any,
+        *,
+        candidate_code: str | None = None,
+        resolution_reason: str | None = None,
+    ) -> dict[str, Any] | Any:
+        if not isinstance(item, dict):
+            return item
+
+        payload = dict(item)
+        if candidate_code is not None:
+            payload["candidate_code"] = candidate_code.rstrip() + "\n"
+        if resolution_reason is not None:
+            payload["resolution_reason"] = resolution_reason
+        return payload
+
     def parse(
         self,
         *,
@@ -89,7 +106,6 @@ class LLMResponseParser:
                 rejections.append(RejectedMutant(idx_item, "non_executable_change", item))
                 continue
 
-            
             full_code, resolution_reason = self._apply_line_edit(
                 original_lines=original_lines,
                 line_number=line_value,
@@ -102,11 +118,13 @@ class LLMResponseParser:
                     RejectedMutant(
                         idx_item,
                         resolution_reason or "line_resolution_failed",
-                        item,
+                        self._build_rejection_payload(
+                            item,
+                            resolution_reason=resolution_reason,
+                        ),
                     )
                 )
                 continue
-
 
             syntax_ok, syntax_reason = validate_syntax_fragment(full_code, language)
             if not syntax_ok:
@@ -114,7 +132,11 @@ class LLMResponseParser:
                     RejectedMutant(
                         idx_item,
                         f"non_executable_structural_change: {syntax_reason}",
-                        item,
+                        self._build_rejection_payload(
+                            item,
+                            candidate_code=full_code,
+                            resolution_reason=resolution_reason,
+                        ),
                     )
                 )
                 continue
@@ -122,11 +144,31 @@ class LLMResponseParser:
             norm_code = self._normalize_code(full_code)
 
             if norm_code == original_norm:
-                rejections.append(RejectedMutant(idx_item, "unchanged_mutant", item))
+                rejections.append(
+                    RejectedMutant(
+                        idx_item,
+                        "unchanged_mutant",
+                        self._build_rejection_payload(
+                            item,
+                            candidate_code=full_code,
+                            resolution_reason=resolution_reason,
+                        ),
+                    )
+                )
                 continue
 
             if norm_code in seen_codes:
-                rejections.append(RejectedMutant(idx_item, "duplicate_mutant", item))
+                rejections.append(
+                    RejectedMutant(
+                        idx_item,
+                        "duplicate_mutant",
+                        self._build_rejection_payload(
+                            item,
+                            candidate_code=full_code,
+                            resolution_reason=resolution_reason,
+                        ),
+                    )
+                )
                 continue
 
             seen_codes.add(norm_code)

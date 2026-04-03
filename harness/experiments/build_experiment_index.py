@@ -14,6 +14,13 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def count_rejected_artifacts(run_dir: Path) -> int:
+    rejected_dir = run_dir / "rejected"
+    if not rejected_dir.exists():
+        return 0
+    return len(list(rejected_dir.glob("rej*.json")))
+
+
 def collect_run_row(run_dir: Path) -> dict | None:
     manifest_path = run_dir / "run_manifest.json"
     summary_path = run_dir / "summary.json"
@@ -38,6 +45,14 @@ def collect_run_row(run_dir: Path) -> dict | None:
     subject = manifest.get("subject", {})
     target = manifest.get("target", {})
     overall = summary.get("overall", {})
+    rejected_artifact_count = count_rejected_artifacts(run_dir)
+    expected_rejected_count = extra.get("n_rejected_mutants")
+
+    if expected_rejected_count is not None and rejected_artifact_count not in (0, expected_rejected_count):
+        raise ValueError(
+            f"Rejected artifact count mismatch in {run_dir.name}: "
+            f"expected {expected_rejected_count}, found {rejected_artifact_count}"
+        )
 
     return {
         "run_name": run_dir.name,
@@ -96,7 +111,25 @@ def collect_run_row(run_dir: Path) -> dict | None:
         "parse_failed": extra.get("parse_failed"),
         "parse_error_message": extra.get("parse_error_message"),
         "rej_invalid_json_response": extra.get("rej_invalid_json_response"),
+        "indexed_rejected_artifact_count": rejected_artifact_count,
     }
+
+
+def validate_index_rows(rows: list[dict]) -> None:
+    seen_run_names: set[str] = set()
+    seen_run_dirs: set[str] = set()
+
+    for row in rows:
+        run_name = str(row.get("run_name"))
+        run_dir = str(row.get("run_dir"))
+
+        if run_name in seen_run_names:
+            raise ValueError(f"Duplicate run_name while building experiment index: {run_name}")
+        if run_dir in seen_run_dirs:
+            raise ValueError(f"Duplicate run_dir while building experiment index: {run_dir}")
+
+        seen_run_names.add(run_name)
+        seen_run_dirs.add(run_dir)
 
 
 def build_experiment_index(
@@ -124,6 +157,8 @@ def build_experiment_index(
         if print_to_stdout:
             print("No valid runs found to index.")
         return output_csv
+
+    validate_index_rows(rows)
 
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
