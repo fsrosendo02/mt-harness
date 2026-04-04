@@ -245,13 +245,6 @@ class LLMResponseParser:
 
     def _clean_model_line(self, text: str) -> str:
         text = text.strip()
-        text = re.sub(r"^\s*\d+\s*[:|]\s*", "", text)
-        text = re.sub(r"^\s*\d+\s+", "", text)
-        return text.strip()
-
-
-    def _clean_model_line(self, text: str) -> str:
-        text = text.strip()
         # Remove accidental line-number prefixes copied from numbered prompts
         text = re.sub(r"^\s*\d+\s*[:|]\s*", "", text)
         text = re.sub(r"^\s*\d+\s+", "", text)

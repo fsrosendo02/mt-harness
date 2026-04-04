@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 
 from harness.models import Subject, Target
+from harness.reporting.validation import validate_run_dir
 from harness.storage.run_state import write_run_manifest
 from harness.targets.catalog import load_catalog_entries
 
@@ -21,6 +22,10 @@ def load_json(path: str):
 def save_json(path: Path, data: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def load_json_path(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def slug(text: str) -> str:
@@ -198,23 +203,48 @@ def ensure_failed_artifacts(
     failure_reason: str | None,
     failure_message: str,
 ) -> None:
-    if (run_dir / "run_manifest.json").exists():
-        return
+    manifest_path = run_dir / "run_manifest.json"
+    existing_manifest = None
+    if manifest_path.exists():
+        try:
+            existing_manifest = load_json_path(manifest_path)
+        except Exception:
+            existing_manifest = None
+
+    subject_data = (existing_manifest or {}).get("subject", {})
+    target_data = (existing_manifest or {}).get("target", {})
+    existing_extra = ((existing_manifest or {}).get("extra_metadata") or {})
 
     subject = Subject(
-        dataset=cfg.get("dataset", "unknown"),
-        subject_id=cfg.get("subject", "unknown"),
+        dataset=subject_data.get("dataset") or cfg.get("dataset", "unknown"),
+        subject_id=subject_data.get("subject_id") or cfg.get("subject", "unknown"),
         language=cfg.get("language", "java"),
-        version=cfg.get("version", "unknown"),
+        version=subject_data.get("version") or cfg.get("version", "unknown"),
     )
     target = Target(
-        file_path=cfg.get("file", ""),
-        function_name=cfg.get("function", ""),
-        start_line=cfg.get("start_line"),
-        end_line=cfg.get("end_line"),
-        language=cfg.get("language", "java"),
-        target_id=cfg.get("target_id"),
+        file_path=target_data.get("file_path") or cfg.get("file", ""),
+        function_name=target_data.get("function_name") or cfg.get("function", ""),
+        start_line=target_data.get("start_line", cfg.get("start_line")),
+        end_line=target_data.get("end_line", cfg.get("end_line")),
+        language=target_data.get("language") or cfg.get("language", "java"),
+        target_id=target_data.get("target_id") or cfg.get("target_id"),
     )
+
+    extra_metadata = {
+        "batch_id": cfg.get("batch_id"),
+        "target_id": cfg.get("target_id"),
+        "model_name": cfg.get("model"),
+        "model_provider": cfg.get("provider"),
+        "n_requested_mutants": cfg.get("num_mutants"),
+        "notes": failure_message,
+    }
+    extra_metadata.update(existing_extra)
+    extra_metadata["batch_id"] = cfg.get("batch_id", extra_metadata.get("batch_id"))
+    extra_metadata["target_id"] = cfg.get("target_id", extra_metadata.get("target_id"))
+    extra_metadata["model_name"] = cfg.get("model", extra_metadata.get("model_name"))
+    extra_metadata["model_provider"] = cfg.get("provider", extra_metadata.get("model_provider"))
+    extra_metadata["n_requested_mutants"] = cfg.get("num_mutants", extra_metadata.get("n_requested_mutants"))
+    extra_metadata["notes"] = failure_message
 
     write_run_manifest(
         run_dir=run_dir,
@@ -223,20 +253,18 @@ def ensure_failed_artifacts(
         mutants=[],
         run_mode=cfg.get("run_mode", "overwrite"),
         workdir_base=f"tmp/{cfg['run_name']}",
-        extra_metadata={
-            "batch_id": cfg.get("batch_id"),
-            "target_id": cfg.get("target_id"),
-            "model_name": cfg.get("model"),
-            "model_provider": cfg.get("provider"),
-            "n_requested_mutants": cfg.get("num_mutants"),
-            "notes": failure_message,
-        },
+        extra_metadata=extra_metadata,
         status=run_status,
         failure_reason=failure_reason,
         failure_message=failure_message,
-        started_at_utc=datetime.now(timezone.utc).isoformat(),
+        started_at_utc=(existing_manifest or {}).get("started_at_utc") or datetime.now(timezone.utc).isoformat(),
         completed_at_utc=datetime.now(timezone.utc).isoformat(),
     )
+
+    manifest = load_json_path(manifest_path)
+    manifest["requested_mutant_count"] = cfg.get("num_mutants", manifest.get("requested_mutant_count", 0))
+    save_json(manifest_path, manifest)
+
     write_empty_results_csv(run_dir)
     write_empty_summary_json(
         run_dir,
@@ -247,19 +275,26 @@ def ensure_failed_artifacts(
     (run_dir / "run_error.txt").write_text(failure_message + "\n", encoding="utf-8")
 
 
-def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[str, str | None]:
+def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[str, str | None, str | None]:
     if timed_out:
-        return "timeout", "batch_timeout"
+        return "timeout", "batch_timeout", None
 
     manifest_path = run_dir / "run_manifest.json"
     if manifest_path.exists():
         try:
+            validate_run_dir(run_dir)
             manifest = load_json(manifest_path)
-            return manifest.get("status", "ok" if return_code == 0 else "failed"), manifest.get("failure_reason")
-        except Exception:
-            pass
+            return (
+                manifest.get("status", "ok" if return_code == 0 else "failed"),
+                manifest.get("failure_reason"),
+                manifest.get("failure_message"),
+            )
+        except FileNotFoundError as exc:
+            return "failed", "missing_run_artifacts", str(exc)
+        except Exception as exc:
+            return "failed", "final_validation_failed", str(exc)
 
-    return ("ok" if return_code == 0 else "failed"), None
+    return ("ok" if return_code == 0 else "failed"), None, None
 
 
 def main():
@@ -361,17 +396,19 @@ def main():
         if timed_out:
             ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
 
-        status, failure_reason = load_run_status(run_dir, return_code, timed_out)
+        status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
         if status != "ok":
+            failure_message = (
+                f"Batch timeout after {batch_timeout} seconds"
+                if timed_out
+                else detected_failure_message or f"run_llm.py exited with return code {return_code}"
+            )
             ensure_failed_artifacts(
                 run_dir,
                 cfg,
                 run_status=status,
                 failure_reason=failure_reason,
-                failure_message=(
-                    f"run_llm.py exited with return code {return_code}"
-                    if not timed_out else f"Batch timeout after {batch_timeout} seconds"
-                ),
+                failure_message=failure_message,
             )
 
         batch_manifest["runs"].append({

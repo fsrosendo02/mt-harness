@@ -50,6 +50,8 @@ class MutationRunner:
         rebuild_index=True,
     ):
         total_start = time.time()
+        created_tmp_paths: list[str] = []
+        cleanup_targets: list[str] = []
 
         run_path = prepare_run_dir(run_dir, mode=run_mode)
         csv_path = run_path / "results.csv"
@@ -91,86 +93,85 @@ class MutationRunner:
         baseline_start = time.time()
         baseline = self.evaluator.baseline_evaluator.evaluate(subject, base_snapshot_dir)
         log_duration("Shared baseline evaluation", baseline_start)
+        try:
+            for mutant in mutants:
+                if mutant.mutant_id in completed_mutant_ids:
+                    log(f"[mutant {mutant.mutant_id}] skip already completed")
+                    continue
 
-        created_tmp_paths = []
+                mutant_start = time.time()
+                log(f"[mutant {mutant.mutant_id}] start")
 
-        for mutant in mutants:
-            if mutant.mutant_id in completed_mutant_ids:
-                log(f"[mutant {mutant.mutant_id}] skip already completed")
-                continue
+                workdir = f"{workdir_base}_{mutant.mutant_id}"
+                log_path = str(run_path / f"{mutant.mutant_id}.log")
 
-            mutant_start = time.time()
-            log(f"[mutant {mutant.mutant_id}] start")
+                workdir_path = Path(workdir)
+                if workdir_path.exists():
+                    t = time.time()
+                    shutil.rmtree(workdir_path)
+                    log_duration(f"[mutant {mutant.mutant_id}] remove existing workdir", t)
 
-            workdir = f"{workdir_base}_{mutant.mutant_id}"
-            log_path = str(run_path / f"{mutant.mutant_id}.log")
-
-            workdir_path = Path(workdir)
-            if workdir_path.exists():
                 t = time.time()
-                shutil.rmtree(workdir_path)
-                log_duration(f"[mutant {mutant.mutant_id}] remove existing workdir", t)
+                shutil.copytree(base_snapshot_path, workdir_path)
+                created_tmp_paths.append(workdir)
+                log_duration(f"[mutant {mutant.mutant_id}] copy base snapshot", t)
 
-            t = time.time()
-            shutil.copytree(base_snapshot_path, workdir_path)
-            log_duration(f"[mutant {mutant.mutant_id}] copy base snapshot", t)
+                eval_start = time.time()
+                result = self.evaluator.evaluate(
+                    subject=subject,
+                    target=target,
+                    mutant=mutant,
+                    workdir=workdir,
+                    log_path=log_path,
+                    baseline=baseline,
+                )
+                log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
 
-            eval_start = time.time()
-            result = self.evaluator.evaluate(
-                subject=subject,
-                target=target,
-                mutant=mutant,
-                workdir=workdir,
-                log_path=log_path,
-                baseline=baseline,
-            )
-            log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
+                t = time.time()
+                append_result_csv(csv_path, result)
+                log_duration(f"[mutant {mutant.mutant_id}] append CSV", t)
 
-            t = time.time()
-            append_result_csv(csv_path, result)
-            log_duration(f"[mutant {mutant.mutant_id}] append CSV", t)
+                t = time.time()
+                save_mutant_artifacts(
+                    run_dir=run_path,
+                    subject=subject,
+                    target=target,
+                    mutant=mutant,
+                    result=result,
+                    original_code=original_code,
+                )
+                log_duration(f"[mutant {mutant.mutant_id}] save artifacts", t)
 
-            t = time.time()
-            save_mutant_artifacts(
-                run_dir=run_path,
-                subject=subject,
-                target=target,
-                mutant=mutant,
-                result=result,
-                original_code=original_code,
-            )
-            log_duration(f"[mutant {mutant.mutant_id}] save artifacts", t)
+                log_duration(f"[mutant {mutant.mutant_id}] total", mutant_start)
 
-            created_tmp_paths.append(workdir)
-            log_duration(f"[mutant {mutant.mutant_id}] total", mutant_start)
+            if csv_path.exists():
+                t = time.time()
+                summarize_results_csv(
+                    csv_path=csv_path,
+                    keep_duplicates=False,
+                    json_out=run_path / "summary.json",
+                    print_to_stdout=True,
+                )
+                log_duration("Summarize results CSV", t)
 
-        if csv_path.exists():
-            t = time.time()
-            summarize_results_csv(
-                csv_path=csv_path,
-                keep_duplicates=False,
-                json_out=run_path / "summary.json",
-                print_to_stdout=True,
-            )
-            log_duration("Summarize results CSV", t)
+            if validate_after_run:
+                t = time.time()
+                validation_result = validate_run_dir(run_path)
+                log(f"Run validation passed: {validation_result}")
+                log_duration("Validate run dir", t)
 
-        if validate_after_run:
-            t = time.time()
-            validation_result = validate_run_dir(run_path)
-            log(f"Run validation passed: {validation_result}")
-            log_duration("Validate run dir", t)
+            if rebuild_index:
+                t = time.time()
+                index_path = build_experiment_index(print_to_stdout=True)
+                log(f"Experiment index updated: {index_path}")
+                log_duration("Rebuild experiment index", t)
 
-        if cleanup_tmp:
-            t = time.time()
-            cleanup_targets = list(created_tmp_paths)
-            cleanup_targets.append(base_snapshot_dir)
-            cleanup_paths(cleanup_targets, print_to_stdout=True)
-            log_duration("Cleanup tmp paths", t)
-
-        if rebuild_index:
-            t = time.time()
-            index_path = build_experiment_index(print_to_stdout=True)
-            log(f"Experiment index updated: {index_path}")
-            log_duration("Rebuild experiment index", t)
-
-        log_duration("MutationRunner total", total_start)
+            log_duration("MutationRunner total", total_start)
+        finally:
+            if cleanup_tmp:
+                cleanup_targets = list(created_tmp_paths)
+                cleanup_targets.append(base_snapshot_dir)
+                if cleanup_targets:
+                    t = time.time()
+                    cleanup_paths(cleanup_targets, print_to_stdout=True)
+                    log_duration("Cleanup tmp paths", t)

@@ -18,6 +18,7 @@ from harness.llm.providers.ollama_provider import OllamaProvider
 from harness.models import Subject
 from harness.models import Target
 from harness.runners.mutation_runner import MutationRunner
+from harness.storage.cleanup import cleanup_paths
 from harness.storage.artifacts import save_rejected_mutant_artifacts
 from harness.storage.run_state import write_run_manifest
 from harness.targets.resolver import resolve_target
@@ -240,6 +241,7 @@ def main():
     extra_metadata = None
     run_dir = None
     workdir_base = None
+    base_snapshot_dir = None
 
     try:
         t = time.time()
@@ -580,6 +582,13 @@ def main():
                 log_duration("Rebuild experiment index", t)
 
         raise
+    finally:
+        if cfg.get("cleanup_tmp", True) and base_snapshot_dir:
+            base_snapshot_path = Path(base_snapshot_dir)
+            if base_snapshot_path.exists():
+                t = time.time()
+                cleanup_paths([base_snapshot_path], print_to_stdout=True)
+                log_duration("Final cleanup tmp paths", t)
 
 
 if __name__ == "__main__":
