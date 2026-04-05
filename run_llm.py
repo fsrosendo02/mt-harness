@@ -21,7 +21,7 @@ from harness.runners.mutation_runner import MutationRunner
 from harness.storage.cleanup import cleanup_paths
 from harness.storage.artifacts import save_rejected_mutant_artifacts
 from harness.storage.layout import execution_results_path, execution_summary_path, generation_dir, manifest_path
-from harness.storage.run_state import write_run_manifest
+from harness.storage.run_state import prepare_run_dir, write_run_manifest
 from harness.targets.resolver import resolve_target
 
 
@@ -277,6 +277,7 @@ def main():
         run_dir = f"harness/runs/{cfg['run_name']}"
         base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
         workdir_base = f"tmp/{cfg['run_name']}"
+        run_path = prepare_run_dir(run_dir, mode=cfg.get("run_mode", "overwrite"))
 
         t = time.time()
         provider_type = cfg.get("provider", "ollama")
@@ -393,7 +394,6 @@ def main():
         for m in mutants:
             log(f"accepted mutant: {m.mutant_id}")
 
-        run_path = Path(run_dir)
         generation_path = generation_dir(run_path)
         generation_path.mkdir(parents=True, exist_ok=True)
         parse_report_dict = parse_report_to_dict(report)
@@ -519,7 +519,7 @@ def main():
             subject=subject,
             target=target,
             mutants=mutants,
-            run_dir=run_dir,
+            run_dir=run_path,
             workdir_base=workdir_base,
             base_snapshot_dir=base_snapshot_dir,
             run_mode=cfg.get("run_mode", "overwrite"),
@@ -527,6 +527,7 @@ def main():
             cleanup_tmp=cfg.get("cleanup_tmp", True),
             validate_after_run=cfg.get("validate_after_run", True),
             rebuild_index=cfg.get("rebuild_index", True),
+            prepare_run_dir_on_start=False,
         )
         log_duration("[execution] mutation execution", exec_start)
 

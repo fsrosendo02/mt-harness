@@ -49,12 +49,17 @@ class MutationRunner:
         cleanup_tmp=True,
         validate_after_run=True,
         rebuild_index=True,
+        prepare_run_dir_on_start=True,
     ):
         total_start = time.time()
         created_tmp_paths: list[str] = []
         cleanup_targets: list[str] = []
 
-        run_path = prepare_run_dir(run_dir, mode=run_mode)
+        if prepare_run_dir_on_start:
+            run_path = prepare_run_dir(run_dir, mode=run_mode)
+        else:
+            run_path = Path(run_dir)
+            run_path.mkdir(parents=True, exist_ok=True)
         execution_path = execution_dir(run_path)
         execution_path.mkdir(parents=True, exist_ok=True)
         csv_path = execution_results_path(run_path)
