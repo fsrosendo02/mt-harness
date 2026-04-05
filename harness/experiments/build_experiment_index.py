@@ -4,6 +4,7 @@ import csv
 import json
 from pathlib import Path
 
+from harness.storage.layout import manifest_path, resolve_results_path, resolve_summary_path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RUNS_DIR = BASE_DIR / "runs"
@@ -55,24 +56,24 @@ def execution_metrics_for_index(run_status: str, summary: dict, overall: dict) -
 
 
 def collect_run_row(run_dir: Path) -> dict | None:
-    manifest_path = run_dir / "run_manifest.json"
-    summary_path = run_dir / "summary.json"
-    results_path = run_dir / "results.csv"
+    manifest_file = manifest_path(run_dir)
+    summary_file = resolve_summary_path(run_dir)
+    results_file = resolve_results_path(run_dir)
 
-    if not manifest_path.exists():
+    if not manifest_file.exists():
         print(f"[SKIP] Missing manifest: {run_dir}")
         return None
 
-    if not summary_path.exists():
+    if not summary_file.exists():
         print(f"[SKIP] Missing summary: {run_dir}")
         return None
 
-    if not results_path.exists():
+    if not results_file.exists():
         print(f"[SKIP] Missing results.csv: {run_dir}")
         return None
 
-    manifest = load_json(manifest_path)
-    summary = load_json(summary_path)
+    manifest = load_json(manifest_file)
+    summary = load_json(summary_file)
 
     extra = manifest.get("extra_metadata", {})
     subject = manifest.get("subject", {})

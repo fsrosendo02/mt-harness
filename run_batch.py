@@ -11,6 +11,7 @@ import subprocess
 
 from harness.models import Subject, Target
 from harness.reporting.validation import validate_run_dir
+from harness.storage.layout import execution_results_path, execution_summary_path, manifest_path
 from harness.storage.run_state import write_run_manifest
 from harness.targets.catalog import load_catalog_entries
 
@@ -109,7 +110,8 @@ def kill_process_tree(pid: int) -> None:
 
 
 def write_empty_results_csv(run_dir: Path) -> None:
-    csv_path = run_dir / "results.csv"
+    csv_path = execution_results_path(run_dir)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
     csv_path.write_text(
         "dataset,subject_id,function_name,mutant_id,build_status,test_status,killed,executable,log_path\n",
         encoding="utf-8",
@@ -159,8 +161,8 @@ def write_empty_summary_json(
     }
 
     payload = {
-        "csv_path": str(run_dir / "results.csv"),
-        "json_path": str(run_dir / "summary.json"),
+        "csv_path": str(execution_results_path(run_dir)),
+        "json_path": str(execution_summary_path(run_dir)),
         "run_status": run_status,
         "failure_reason": failure_reason,
         "failure_message": failure_message,
@@ -170,7 +172,9 @@ def write_empty_summary_json(
         "overall": execution_fields,
         "by_subject_function": [],
     }
-    save_json(run_dir / "summary.json", payload)
+    summary_path = execution_summary_path(run_dir)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    save_json(summary_path, payload)
 
 
 def ensure_timeout_artifacts(run_dir: Path, cfg: dict, batch_timeout: int) -> None:
@@ -229,11 +233,11 @@ def ensure_failed_artifacts(
     failure_reason: str | None,
     failure_message: str,
 ) -> None:
-    manifest_path = run_dir / "run_manifest.json"
+    manifest_file = manifest_path(run_dir)
     existing_manifest = None
-    if manifest_path.exists():
+    if manifest_file.exists():
         try:
-            existing_manifest = load_json_path(manifest_path)
+            existing_manifest = load_json_path(manifest_file)
         except Exception:
             existing_manifest = None
 
@@ -287,9 +291,9 @@ def ensure_failed_artifacts(
         completed_at_utc=datetime.now(timezone.utc).isoformat(),
     )
 
-    manifest = load_json_path(manifest_path)
+    manifest = load_json_path(manifest_file)
     manifest["requested_mutant_count"] = cfg.get("num_mutants", manifest.get("requested_mutant_count", 0))
-    save_json(manifest_path, manifest)
+    save_json(manifest_file, manifest)
 
     write_empty_results_csv(run_dir)
     write_empty_summary_json(
@@ -305,11 +309,11 @@ def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[s
     if timed_out:
         return "failure", "batch_timeout", None
 
-    manifest_path = run_dir / "run_manifest.json"
-    if manifest_path.exists():
+    manifest_file = manifest_path(run_dir)
+    if manifest_file.exists():
         try:
             validate_run_dir(run_dir)
-            manifest = load_json(manifest_path)
+            manifest = load_json(manifest_file)
             return (
                 manifest.get("status", "ok" if return_code == 0 else "failure"),
                 manifest.get("failure_reason"),

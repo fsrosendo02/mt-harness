@@ -20,6 +20,7 @@ from harness.models import Target
 from harness.runners.mutation_runner import MutationRunner
 from harness.storage.cleanup import cleanup_paths
 from harness.storage.artifacts import save_rejected_mutant_artifacts
+from harness.storage.layout import execution_results_path, execution_summary_path, generation_dir, manifest_path
 from harness.storage.run_state import write_run_manifest
 from harness.targets.resolver import resolve_target
 
@@ -90,10 +91,8 @@ def build_adapter(dataset: str):
 
 
 def write_empty_results_csv(run_dir: str):
-    run_path = Path(run_dir)
-    run_path.mkdir(parents=True, exist_ok=True)
-
-    csv_path = run_path / "results.csv"
+    csv_path = execution_results_path(run_dir)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
 
     fieldnames = [
         "dataset",
@@ -124,7 +123,8 @@ def write_empty_summary_json(
     run_path = Path(run_dir)
     run_path.mkdir(parents=True, exist_ok=True)
 
-    summary_path = run_path / "summary.json"
+    summary_path = execution_summary_path(run_dir)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
     execution_fields = {
         "total_mutants": None,
         "build_successes": None,
@@ -138,7 +138,7 @@ def write_empty_summary_json(
     }
 
     payload = {
-        "csv_path": str(run_path / "results.csv"),
+        "csv_path": str(execution_results_path(run_dir)),
         "json_path": str(summary_path),
         "run_status": run_status,
         "failure_reason": failure_reason,
@@ -190,7 +190,7 @@ def ensure_failed_run_artifacts(
 ) -> None:
     run_path = Path(run_dir)
     run_path.mkdir(parents=True, exist_ok=True)
-    manifest_path = run_path / "run_manifest.json"
+    manifest_file = manifest_path(run_dir)
 
     resolved_subject = subject or Subject(
         dataset=cfg.get("dataset", "unknown"),
@@ -216,12 +216,12 @@ def ensure_failed_run_artifacts(
     )
 
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         manifest["requested_mutant_count"] = cfg.get(
             "num_mutants",
             manifest.get("requested_mutant_count", 0),
         )
-        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     except Exception:
         pass
 
@@ -394,13 +394,13 @@ def main():
             log(f"accepted mutant: {m.mutant_id}")
 
         run_path = Path(run_dir)
-        generation_dir = run_path / "generation"
-        generation_dir.mkdir(parents=True, exist_ok=True)
+        generation_path = generation_dir(run_path)
+        generation_path.mkdir(parents=True, exist_ok=True)
         parse_report_dict = parse_report_to_dict(report)
 
         t = time.time()
         save_generation_artifacts(
-            output_dir=generation_dir,
+            output_dir=generation_path,
             system_prompt=built_prompt.system_prompt,
             user_prompt=built_prompt.user_prompt,
             raw_response=raw_text,
@@ -416,7 +416,7 @@ def main():
             target=target,
             original_code=target_code,
             rejections=parse_report_dict.get("rejections", []),
-            raw_response_path=str(generation_dir / "raw_response.txt"),
+            raw_response_path=str(generation_path / "raw_response.txt"),
         )
         log_duration("Save rejected mutant artifacts", t)
 
@@ -492,10 +492,11 @@ def main():
             log_duration("Write empty run artifacts", t)
 
             if parse_failed:
-                (generation_dir / "parse_error.txt").write_text(
+                (generation_path / "parse_error.txt").write_text(
                     parse_error_message or "unknown parse error",
                     encoding="utf-8",
                 )
+                
 
             if cfg.get("rebuild_index", True):
                 t = time.time()
@@ -507,7 +508,7 @@ def main():
                 log_duration("Rebuild experiment index", t)
 
             log(f"Run finished with status: {run_status}")
-            log(f"Generation artifacts saved to: {generation_dir}")
+            log(f"Generation artifacts saved to: {generation_path}")
             log(f"Empty run artifacts stored in: {run_dir}")
             log_duration("Total run", total_start)
             return
@@ -546,7 +547,7 @@ def main():
 
         t = time.time()
         save_generation_artifacts(
-            output_dir=generation_dir,
+            output_dir=generation_path,
             system_prompt=built_prompt.system_prompt,
             user_prompt=built_prompt.user_prompt,
             raw_response=raw_text,
@@ -556,13 +557,13 @@ def main():
         log_duration("Final generation artifact save", t)
 
         if parse_failed:
-            (generation_dir / "parse_error.txt").write_text(
+            (generation_path / "parse_error.txt").write_text(
                 parse_error_message or "unknown parse error",
                 encoding="utf-8",
             )
 
         log("Done.")
-        log(f"Generation artifacts: {generation_dir}")
+        log(f"Generation artifacts: {generation_path}")
         log(f"Results stored in: {run_dir}")
         log_duration("Total run", total_start)
     except Exception as exc:

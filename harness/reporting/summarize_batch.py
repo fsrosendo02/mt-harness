@@ -4,6 +4,7 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from harness.storage.layout import manifest_path, resolve_summary_path
 
 RUNS_DIR = Path("harness/runs")
 BATCHES_DIR = Path("harness/experiments/batches")
@@ -134,13 +135,13 @@ def main():
         run_name = run_info["run_name"]
         run_dir = RUNS_DIR / run_name
 
-        summary_path = run_dir / "summary.json"
+        summary_path = resolve_summary_path(run_dir)
         config_path = run_dir / "run_config.json"
         parse_report_path = run_dir / "generation" / "parse_report.json"
-        manifest_path = run_dir / "run_manifest.json"
+        manifest_file = manifest_path(run_dir)
 
         cfg = load_json(config_path) if config_path.exists() else {}
-        manifest = load_json(manifest_path) if manifest_path.exists() else {}
+        manifest = load_json(manifest_file) if manifest_file.exists() else {}
 
         subject = cfg.get("subject", run_info.get("subject", "unknown"))
         target_id = cfg.get("target_id", run_info.get("target_id", run_name))

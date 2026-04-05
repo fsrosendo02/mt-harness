@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from harness.models import Subject, Target, Mutant, MutantResult
+from harness.storage.layout import execution_dir, rejected_dir
 
 
 def _ensure_shared_original(path: Path, original_code: str) -> Path:
@@ -20,14 +21,14 @@ def save_mutant_artifacts(
     result: MutantResult,
     original_code: str,
 ) -> None:
-    run_path = Path(run_dir)
-    run_path.mkdir(parents=True, exist_ok=True)
+    artifacts_dir = execution_dir(run_dir)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     base_name = mutant.mutant_id
 
-    original_path = _ensure_shared_original(run_path / "original.txt", original_code)
-    mutant_path = run_path / f"{base_name}.mutant.txt"
-    meta_path = run_path / f"{base_name}.json"
+    original_path = _ensure_shared_original(artifacts_dir / "original.txt", original_code)
+    mutant_path = artifacts_dir / f"{base_name}.mutant.txt"
+    meta_path = artifacts_dir / f"{base_name}.json"
 
     mutant_path.write_text(mutant.code, encoding="utf-8")
 
@@ -64,8 +65,8 @@ def save_rejected_mutant_artifacts(
     if not rejections:
         return
 
-    rejected_dir = Path(run_dir) / "rejected"
-    rejected_dir.mkdir(parents=True, exist_ok=True)
+    artifacts_dir = rejected_dir(run_dir)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     for idx, rejection in enumerate(rejections, start=1):
         rejection_index = rejection.get("index")
@@ -77,14 +78,14 @@ def save_rejected_mutant_artifacts(
         payload_dict = payload if isinstance(payload, dict) else {"raw_payload": payload}
         candidate_code = payload_dict.get("candidate_code")
 
-        original_path = _ensure_shared_original(rejected_dir / "original.txt", original_code)
+        original_path = _ensure_shared_original(artifacts_dir / "original.txt", original_code)
 
         mutant_text = (
             candidate_code
             if isinstance(candidate_code, str) and candidate_code.strip()
             else json.dumps(payload, indent=2, ensure_ascii=False)
         )
-        (rejected_dir / f"{base_name}.mutant.txt").write_text(
+        (artifacts_dir / f"{base_name}.mutant.txt").write_text(
             mutant_text.rstrip() + "\n",
             encoding="utf-8",
         )
@@ -105,7 +106,7 @@ def save_rejected_mutant_artifacts(
         if payload_dict.get("aftercode") is not None:
             log_lines.append(f"aftercode: {payload_dict['aftercode']}")
 
-        (rejected_dir / f"{base_name}.log").write_text(
+        (artifacts_dir / f"{base_name}.log").write_text(
             "\n".join(log_lines).rstrip() + "\n",
             encoding="utf-8",
         )
@@ -127,12 +128,12 @@ def save_rejected_mutant_artifacts(
             "rejection_reason": rejection.get("reason"),
             "raw_response_path": raw_response_path,
             "payload": payload,
-            "log_path": str(rejected_dir / f"{base_name}.log"),
-            "mutant_path": str(rejected_dir / f"{base_name}.mutant.txt"),
+            "log_path": str(artifacts_dir / f"{base_name}.log"),
+            "mutant_path": str(artifacts_dir / f"{base_name}.mutant.txt"),
             "original_path": str(original_path),
         }
 
-        (rejected_dir / f"{base_name}.json").write_text(
+        (artifacts_dir / f"{base_name}.json").write_text(
             json.dumps(metadata, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )

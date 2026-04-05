@@ -9,6 +9,7 @@ from harness.reporting.summary import summarize_results_csv
 from harness.reporting.validation import validate_run_dir
 from harness.storage.artifacts import save_mutant_artifacts
 from harness.storage.cleanup import cleanup_paths
+from harness.storage.layout import execution_dir, execution_results_path, execution_summary_path
 from harness.storage.results import append_result_csv
 from harness.storage.run_state import (
     load_completed_mutant_ids,
@@ -54,7 +55,9 @@ class MutationRunner:
         cleanup_targets: list[str] = []
 
         run_path = prepare_run_dir(run_dir, mode=run_mode)
-        csv_path = run_path / "results.csv"
+        execution_path = execution_dir(run_path)
+        execution_path.mkdir(parents=True, exist_ok=True)
+        csv_path = execution_results_path(run_path)
 
         t = time.time()
         write_run_manifest(
@@ -103,7 +106,7 @@ class MutationRunner:
                 log(f"[mutant {mutant.mutant_id}] start")
 
                 workdir = f"{workdir_base}_{mutant.mutant_id}"
-                log_path = str(run_path / f"{mutant.mutant_id}.log")
+                log_path = str(execution_path / f"{mutant.mutant_id}.log")
 
                 workdir_path = Path(workdir)
                 if workdir_path.exists():
@@ -149,7 +152,7 @@ class MutationRunner:
                 summarize_results_csv(
                     csv_path=csv_path,
                     keep_duplicates=False,
-                    json_out=run_path / "summary.json",
+                    json_out=execution_summary_path(run_path),
                     print_to_stdout=True,
                 )
                 log_duration("Summarize results CSV", t)

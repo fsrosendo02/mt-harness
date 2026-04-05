@@ -5,13 +5,7 @@ import json
 from pathlib import Path
 
 from harness.reporting.summary import deduplicate_rows
-
-
-REQUIRED_FILES = (
-    "results.csv",
-    "summary.json",
-    "run_manifest.json",
-)
+from harness.storage.layout import manifest_path, resolve_results_path, resolve_summary_path
 
 
 def validate_run_dir(run_dir: str | Path) -> dict:
@@ -20,17 +14,21 @@ def validate_run_dir(run_dir: str | Path) -> dict:
     if not run_path.exists():
         raise FileNotFoundError(f"Run directory does not exist: {run_path}")
 
-    for name in REQUIRED_FILES:
-        path = run_path / name
+    required_paths = (
+        manifest_path(run_path),
+        resolve_results_path(run_path),
+        resolve_summary_path(run_path),
+    )
+    for path in required_paths:
         if not path.exists():
             raise FileNotFoundError(f"Missing required file: {path}")
 
-    csv_path = run_path / "results.csv"
+    csv_path = resolve_results_path(run_path)
     with csv_path.open("r", encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
 
-    manifest_path = run_path / "run_manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_file = manifest_path(run_path)
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
     run_status = manifest.get("status", "unknown")
 
     required_manifest_fields = (
@@ -56,8 +54,8 @@ def validate_run_dir(run_dir: str | Path) -> dict:
             "run_status": run_status,
         }
 
-    summary_path = run_path / "summary.json"
-    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary_file = resolve_summary_path(run_path)
+    summary = json.loads(summary_file.read_text(encoding="utf-8"))
 
     summary_total = summary["overall"]["total_mutants"]
     summary_deduplicated = bool(summary.get("deduplicated", False))
