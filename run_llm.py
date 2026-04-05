@@ -190,6 +190,7 @@ def ensure_failed_run_artifacts(
 ) -> None:
     run_path = Path(run_dir)
     run_path.mkdir(parents=True, exist_ok=True)
+    manifest_path = run_path / "run_manifest.json"
 
     resolved_subject = subject or Subject(
         dataset=cfg.get("dataset", "unknown"),
@@ -213,6 +214,17 @@ def ensure_failed_run_artifacts(
         started_at_utc=started_at_utc,
         completed_at_utc=datetime.now(timezone.utc).isoformat(),
     )
+
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["requested_mutant_count"] = cfg.get(
+            "num_mutants",
+            manifest.get("requested_mutant_count", 0),
+        )
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
     write_empty_results_csv(run_dir)
     write_empty_summary_json(
         run_dir,

@@ -2,6 +2,7 @@ import json
 import os
 import re
 import signal
+import shutil
 import sys
 import time
 from datetime import datetime, timezone
@@ -113,6 +114,29 @@ def write_empty_results_csv(run_dir: Path) -> None:
         "dataset,subject_id,function_name,mutant_id,build_status,test_status,killed,executable,log_path\n",
         encoding="utf-8",
     )
+
+
+def cleanup_killed_run_tmp_paths(cfg: dict) -> list[str]:
+    run_name = cfg.get("run_name")
+    if not run_name:
+        return []
+
+    removed = []
+    tmp_root = Path("tmp")
+
+    cleanup_targets = [tmp_root / f"base_{run_name}"]
+    cleanup_targets.extend(sorted(tmp_root.glob(f"{run_name}_*")))
+
+    for path in cleanup_targets:
+        if not path.exists():
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+        removed.append(str(path))
+
+    return removed
 
 
 def write_empty_summary_json(
@@ -396,6 +420,9 @@ def main():
 
         if timed_out:
             ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
+            removed_tmp = cleanup_killed_run_tmp_paths(cfg)
+            for path in removed_tmp:
+                print(f"[CLEANUP] Removed temp path after forced stop: {path}")
 
         status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
         if status == "failure":
@@ -411,6 +438,9 @@ def main():
                 failure_reason=failure_reason,
                 failure_message=failure_message,
             )
+            removed_tmp = cleanup_killed_run_tmp_paths(cfg)
+            for path in removed_tmp:
+                print(f"[CLEANUP] Removed leftover temp path after failure: {path}")
 
         batch_manifest["runs"].append({
             "target_id": target_id,
