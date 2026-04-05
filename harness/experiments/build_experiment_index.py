@@ -21,6 +21,39 @@ def count_rejected_artifacts(run_dir: Path) -> int:
     return len(list(rejected_dir.glob("rej*.json")))
 
 
+def execution_metrics_for_index(run_status: str, summary: dict, overall: dict) -> dict:
+    if run_status != "ok":
+        return {
+            "indexed_input_row_count": "",
+            "indexed_used_row_count": "",
+            "deduplicated": "",
+            "total_mutants": "",
+            "build_successes": "",
+            "executable_mutants": "",
+            "killed_mutants": "",
+            "survived_mutants": "",
+            "baseline_failures": "",
+            "build_success_rate": "",
+            "executable_yield": "",
+            "mutation_score": "",
+        }
+
+    return {
+        "indexed_input_row_count": summary.get("input_row_count"),
+        "indexed_used_row_count": summary.get("used_row_count"),
+        "deduplicated": summary.get("deduplicated"),
+        "total_mutants": overall.get("total_mutants"),
+        "build_successes": overall.get("build_successes"),
+        "executable_mutants": overall.get("executable_mutants"),
+        "killed_mutants": overall.get("killed_mutants"),
+        "survived_mutants": overall.get("survived_mutants"),
+        "baseline_failures": overall.get("baseline_failures"),
+        "build_success_rate": overall.get("build_success_rate"),
+        "executable_yield": overall.get("executable_yield"),
+        "mutation_score": overall.get("mutation_score"),
+    }
+
+
 def collect_run_row(run_dir: Path) -> dict | None:
     manifest_path = run_dir / "run_manifest.json"
     summary_path = run_dir / "summary.json"
@@ -45,8 +78,10 @@ def collect_run_row(run_dir: Path) -> dict | None:
     subject = manifest.get("subject", {})
     target = manifest.get("target", {})
     overall = summary.get("overall", {})
+    run_status = manifest.get("status", summary.get("run_status"))
     rejected_artifact_count = count_rejected_artifacts(run_dir)
     expected_rejected_count = extra.get("n_rejected_mutants")
+    execution_metrics = execution_metrics_for_index(run_status, summary, overall)
 
     if expected_rejected_count is not None and rejected_artifact_count not in (0, expected_rejected_count):
         raise ValueError(
@@ -61,7 +96,7 @@ def collect_run_row(run_dir: Path) -> dict | None:
         "started_at_utc": manifest.get("started_at_utc"),
         "completed_at_utc": manifest.get("completed_at_utc"),
         "run_mode": manifest.get("run_mode"),
-        "run_status": manifest.get("status", summary.get("run_status")),
+        "run_status": run_status,
         "failure_reason": manifest.get("failure_reason", summary.get("failure_reason")),
         "failure_message": manifest.get("failure_message", summary.get("failure_message")),
         "dataset": subject.get("dataset"),
@@ -96,18 +131,7 @@ def collect_run_row(run_dir: Path) -> dict | None:
         "dataset_split": extra.get("dataset_split"),
         "notes": extra.get("notes"),
         "requested_mutant_count": manifest.get("requested_mutant_count"),
-        "indexed_input_row_count": summary.get("input_row_count"),
-        "indexed_used_row_count": summary.get("used_row_count"),
-        "deduplicated": summary.get("deduplicated"),
-        "total_mutants": overall.get("total_mutants"),
-        "build_successes": overall.get("build_successes"),
-        "executable_mutants": overall.get("executable_mutants"),
-        "killed_mutants": overall.get("killed_mutants"),
-        "survived_mutants": overall.get("survived_mutants"),
-        "baseline_failures": overall.get("baseline_failures"),
-        "build_success_rate": overall.get("build_success_rate"),
-        "executable_yield": overall.get("executable_yield"),
-        "mutation_score": overall.get("mutation_score"),
+        **execution_metrics,
         "parse_failed": extra.get("parse_failed"),
         "parse_error_message": extra.get("parse_error_message"),
         "rej_invalid_json_response": extra.get("rej_invalid_json_response"),

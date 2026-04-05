@@ -122,26 +122,28 @@ def write_empty_summary_json(
     failure_reason: str | None,
     failure_message: str | None,
 ) -> None:
+    execution_fields = {
+        "total_mutants": None,
+        "build_successes": None,
+        "executable_mutants": None,
+        "killed_mutants": None,
+        "survived_mutants": None,
+        "baseline_failures": None,
+        "build_success_rate": None,
+        "executable_yield": None,
+        "mutation_score": None,
+    }
+
     payload = {
         "csv_path": str(run_dir / "results.csv"),
         "json_path": str(run_dir / "summary.json"),
         "run_status": run_status,
         "failure_reason": failure_reason,
         "failure_message": failure_message,
-        "deduplicated": True,
-        "input_row_count": 0,
-        "used_row_count": 0,
-        "overall": {
-            "total_mutants": 0,
-            "build_successes": 0,
-            "executable_mutants": 0,
-            "killed_mutants": 0,
-            "survived_mutants": 0,
-            "baseline_failures": 0,
-            "build_success_rate": 0.0,
-            "executable_yield": 0.0,
-            "mutation_score": None,
-        },
+        "deduplicated": None,
+        "input_row_count": None,
+        "used_row_count": None,
+        "overall": execution_fields,
         "by_subject_function": [],
     }
     save_json(run_dir / "summary.json", payload)
@@ -179,7 +181,7 @@ def ensure_timeout_artifacts(run_dir: Path, cfg: dict, batch_timeout: int) -> No
             "n_requested_mutants": cfg.get("num_mutants"),
             "notes": message,
         },
-        status="timeout",
+        status="failure",
         failure_reason="batch_timeout",
         failure_message=message,
         started_at_utc=datetime.now(timezone.utc).isoformat(),
@@ -188,7 +190,7 @@ def ensure_timeout_artifacts(run_dir: Path, cfg: dict, batch_timeout: int) -> No
     write_empty_results_csv(run_dir)
     write_empty_summary_json(
         run_dir,
-        run_status="timeout",
+        run_status="failure",
         failure_reason="batch_timeout",
         failure_message=message,
     )
@@ -277,7 +279,7 @@ def ensure_failed_artifacts(
 
 def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[str, str | None, str | None]:
     if timed_out:
-        return "timeout", "batch_timeout", None
+        return "failure", "batch_timeout", None
 
     manifest_path = run_dir / "run_manifest.json"
     if manifest_path.exists():
@@ -285,16 +287,16 @@ def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[s
             validate_run_dir(run_dir)
             manifest = load_json(manifest_path)
             return (
-                manifest.get("status", "ok" if return_code == 0 else "failed"),
+                manifest.get("status", "ok" if return_code == 0 else "failure"),
                 manifest.get("failure_reason"),
                 manifest.get("failure_message"),
             )
         except FileNotFoundError as exc:
-            return "failed", "missing_run_artifacts", str(exc)
+            return "failure", "missing_run_artifacts", str(exc)
         except Exception as exc:
-            return "failed", "final_validation_failed", str(exc)
+            return "failure", "final_validation_failed", str(exc)
 
-    return ("ok" if return_code == 0 else "failed"), None, None
+    return ("ok" if return_code == 0 else "failure"), None, None
 
 
 def main():
@@ -327,11 +329,10 @@ def main():
         "runs": [],
         "summary": {
             "ok": 0,
-            "failed": 0,
-            "timeout": 0,
-            "parse_failed": 0,
+            "failure": 0,
             "no_valid_mutants": 0,
             "total": 0,
+            "failure_reason_counts": {},
         },
     }
 
@@ -397,7 +398,7 @@ def main():
             ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
 
         status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
-        if status != "ok":
+        if status == "failure":
             failure_message = (
                 f"Batch timeout after {batch_timeout} seconds"
                 if timed_out
@@ -425,10 +426,10 @@ def main():
         batch_manifest["summary"]["total"] += 1
         if status in batch_manifest["summary"]:
             batch_manifest["summary"][status] += 1
-        elif status == "timeout":
-            batch_manifest["summary"]["timeout"] += 1
-        else:
-            batch_manifest["summary"]["failed"] += 1
+
+        if status == "failure" and failure_reason:
+            counts = batch_manifest["summary"]["failure_reason_counts"]
+            counts[failure_reason] = counts.get(failure_reason, 0) + 1
 
         save_json(batches_dir / f"{batch_id}.json", batch_manifest)
 

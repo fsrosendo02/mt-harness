@@ -125,6 +125,17 @@ def write_empty_summary_json(
     run_path.mkdir(parents=True, exist_ok=True)
 
     summary_path = run_path / "summary.json"
+    execution_fields = {
+        "total_mutants": None,
+        "build_successes": None,
+        "executable_mutants": None,
+        "killed_mutants": None,
+        "survived_mutants": None,
+        "baseline_failures": None,
+        "build_success_rate": None,
+        "executable_yield": None,
+        "mutation_score": None,
+    }
 
     payload = {
         "csv_path": str(run_path / "results.csv"),
@@ -132,20 +143,10 @@ def write_empty_summary_json(
         "run_status": run_status,
         "failure_reason": failure_reason,
         "failure_message": failure_message,
-        "deduplicated": True,
-        "input_row_count": 0,
-        "used_row_count": 0,
-        "overall": {
-            "total_mutants": 0,
-            "build_successes": 0,
-            "executable_mutants": 0,
-            "killed_mutants": 0,
-            "survived_mutants": 0,
-            "baseline_failures": 0,
-            "build_success_rate": 0.0,
-            "executable_yield": 0.0,
-            "mutation_score": None,
-        },
+        "deduplicated": None,
+        "input_row_count": None,
+        "used_row_count": None,
+        "overall": execution_fields,
         "by_subject_function": [],
     }
 
@@ -158,9 +159,9 @@ def classify_exception(exc: Exception) -> tuple[str, str, str]:
     lowered = message.lower()
 
     if "timed out" in lowered or lowered.endswith("_timeout") or " timeout" in lowered:
-        return "timeout", "timeout", message
+        return "failure", "timeout", message
 
-    return "failed", exc.__class__.__name__, message
+    return "failure", exc.__class__.__name__, message
 
 
 def build_target_stub(cfg: dict) -> Target:
@@ -449,11 +450,9 @@ def main():
         )
 
         if not mutants:
-            run_status = "parse_failed" if parse_failed else "no_valid_mutants"
-            failure_reason = "invalid_json_response" if parse_failed else "no_valid_mutants"
-            failure_message = (
-                parse_error_message or "No valid mutants were accepted from the model output."
-            )
+            run_status = "no_valid_mutants"
+            failure_reason = None
+            failure_message = None
 
             write_run_manifest(
                 run_dir=run_dir,
