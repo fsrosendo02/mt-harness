@@ -2,7 +2,7 @@ from pathlib import Path
 
 from harness.generators.llm import LLMMutantGenerator
 from harness.llm.io import save_generation_artifacts
-from harness.llm.providers.ollama_provider import OllamaProvider
+from harness.llm.providers.ollama_api_provider import OllamaApiProvider
 from harness.models import Subject, Target
 
 
@@ -33,7 +33,7 @@ def main():
     return true;
 }"""
 
-    provider = OllamaProvider("qwen2.5-coder:7b")
+    provider = OllamaApiProvider("qwen2.5-coder:7b")
     generator = LLMMutantGenerator(provider=provider)
 
     built_prompt = generator.prompt_builder.build(

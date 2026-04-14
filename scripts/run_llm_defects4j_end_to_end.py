@@ -7,7 +7,7 @@ from harness.generators.llm import LLMMutantGenerator
 from harness.llm.io import save_generation_artifacts
 from harness.llm.parsing import parse_report_to_dict
 from harness.llm.prompt_builder import PromptBuilder
-from harness.llm.providers.ollama_provider import OllamaProvider
+from harness.llm.providers.ollama_api_provider import OllamaApiProvider
 from harness.models import Subject, Target
 from harness.runners.mutation_runner import MutationRunner
 from harness.utils.source import extract_target_code
@@ -49,7 +49,7 @@ def main():
     run_dir = f"harness/runs/{args.run_name}"
 
     adapter = Defects4JAdapter()
-    provider = OllamaProvider(args.model, timeout_seconds=args.timeout)
+    provider = OllamaApiProvider(args.model, timeout_seconds=args.timeout)
     prompt_builder = PromptBuilder(args.prompt_file)
     generator = LLMMutantGenerator(provider=provider, prompt_builder=prompt_builder)
     runner = MutationRunner(adapter)

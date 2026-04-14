@@ -3,7 +3,7 @@ from pathlib import Path
 from harness.adapters.mock import MockAdapter
 from harness.generators.llm import LLMMutantGenerator
 from harness.llm.io import save_generation_artifacts
-from harness.llm.providers.ollama_provider import OllamaProvider
+from harness.llm.providers.ollama_api_provider import OllamaApiProvider
 from harness.models import Subject, Target
 from harness.runners.mutation_runner import MutationRunner
 
@@ -35,7 +35,7 @@ def main():
     return true;
 }"""
 
-    provider = OllamaProvider("qwen2.5-coder:7b", timeout_seconds=120)
+    provider = OllamaApiProvider("qwen2.5-coder:7b", timeout_seconds=120)
     generator = LLMMutantGenerator(provider=provider)
     adapter = MockAdapter()
     runner = MutationRunner(adapter)

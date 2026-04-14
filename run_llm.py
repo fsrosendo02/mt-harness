@@ -14,7 +14,6 @@ from harness.llm.parsing import parse_report_to_dict
 from harness.llm.prompt_builder import PromptBuilder
 from harness.llm.providers.gemini_provider import GeminiProvider
 from harness.llm.providers.gpt4o_provider import GPT4oProvider
-from harness.llm.providers.ollama_provider import OllamaProvider
 from harness.llm.providers.ollama_api_provider import OllamaApiProvider
 from harness.models import Subject
 from harness.models import Target
@@ -283,10 +282,8 @@ def main():
         t = time.time()
         provider_type = cfg.get("provider", "ollama")
 
-        if provider_type == "ollama":
+        if provider_type in {"ollama", "ollama_old"}:
             provider = OllamaApiProvider(cfg["model"], timeout_seconds=cfg["timeout"])
-        elif provider_type == "ollama_old":
-            provider = OllamaProvider(cfg["model"], timeout_seconds=cfg["timeout"])
         elif provider_type == "gpt4o":
             provider = GPT4oProvider(cfg["model"], timeout_seconds=cfg["timeout"])
         elif provider_type == "gemini":
