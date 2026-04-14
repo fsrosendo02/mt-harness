@@ -462,9 +462,9 @@ def main():
         )
 
         if not mutants:
-            run_status = "no_valid_mutants"
-            failure_reason = None
-            failure_message = None
+            run_status = "failure" if parse_failed else "no_valid_mutants"
+            failure_reason = "invalid_json_response" if parse_failed else None
+            failure_message = parse_error_message if parse_failed else None
 
             write_run_manifest(
                 run_dir=run_dir,

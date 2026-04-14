@@ -369,7 +369,7 @@ def main():
         subject = entry["subject"]
         function = entry["function"]
 
-        run_name = f"{batch_id}__{slug(subject)}__{slug(function)}"
+        run_name = f"{batch_id}__{slug(subject)}__{slug(function)}__{slug(target_id)}"
 
         cfg = dict(base_cfg)
 
