@@ -64,6 +64,7 @@ class MutationRunner:
     def _evaluate_mutant_in_workdir(
         self,
         *,
+        worker_id: int,
         subject,
         target,
         mutant,
@@ -74,26 +75,42 @@ class MutationRunner:
         run_name: str,
     ):
         mutant_start = time.time()
-        log(f"[mutant {mutant.mutant_id}] start in {workdir_path}")
+        worker_label = f"worker {worker_id:02d}"
+        log(f"[{worker_label}] [mutant {mutant.mutant_id}] start in {workdir_path}")
 
         if not baseline.build_ok or not baseline.test_ok:
             result = self._baseline_fail_result(subject, target, mutant, log_path, baseline)
             result.run_name = run_name
             result.mutant_hash = compute_mutant_hash(mutant.code)
-            log_duration(f"[mutant {mutant.mutant_id}] baseline-fail result", mutant_start)
+            log_duration(
+                f"[{worker_label}] [mutant {mutant.mutant_id}] baseline-fail result",
+                mutant_start,
+            )
             return mutant, result
 
         if workdir_path.exists():
             t = time.time()
+            log(f"[{worker_label}] resetting {workdir_path} before mutant {mutant.mutant_id}")
             shutil.rmtree(workdir_path)
-            log_duration(f"[mutant {mutant.mutant_id}] remove existing worker workdir", t)
+            log_duration(
+                f"[{worker_label}] [mutant {mutant.mutant_id}] remove existing worker workdir",
+                t,
+            )
 
         t = time.time()
+        log(
+            f"[{worker_label}] cloning base snapshot into {workdir_path} "
+            f"for mutant {mutant.mutant_id}"
+        )
         shutil.copytree(base_snapshot_path, workdir_path)
-        log_duration(f"[mutant {mutant.mutant_id}] copy base snapshot", t)
+        log_duration(
+            f"[{worker_label}] [mutant {mutant.mutant_id}] copy base snapshot",
+            t,
+        )
 
         evaluator = MutantEvaluator(self.adapter)
         eval_start = time.time()
+        log(f"[{worker_label}] evaluating mutant {mutant.mutant_id}")
         result = evaluator.evaluate(
             subject=subject,
             target=target,
@@ -105,8 +122,12 @@ class MutationRunner:
         result.target_id = getattr(target, "target_id", None)
         result.run_name = run_name
         result.mutant_hash = compute_mutant_hash(mutant.code)
-        log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
-        log_duration(f"[mutant {mutant.mutant_id}] total", mutant_start)
+        log_duration(f"[{worker_label}] [mutant {mutant.mutant_id}] evaluate", eval_start)
+        log(
+            f"[{worker_label}] finished mutant {mutant.mutant_id} "
+            f"with build={result.build_status} test={result.test_status}"
+        )
+        log_duration(f"[{worker_label}] [mutant {mutant.mutant_id}] total", mutant_start)
 
         return mutant, result
 
@@ -125,12 +146,21 @@ class MutationRunner:
     ):
         worker_dir = Path(f"{workdir_base}_worker{worker_id:02d}")
         results = []
+        worker_label = f"worker {worker_id:02d}"
+        assigned_mutants = ", ".join(mutant.mutant_id for mutant in worker_mutants)
+
+        log(
+            f"[{worker_label}] created with {len(worker_mutants)} mutant(s): "
+            f"{assigned_mutants}"
+        )
+        log(f"[{worker_label}] using checkout directory {worker_dir}")
 
         try:
             for mutant in worker_mutants:
                 log_path = str(execution_path / f"{mutant.mutant_id}.log")
                 results.append(
                     self._evaluate_mutant_in_workdir(
+                        worker_id=worker_id,
                         subject=subject,
                         target=target,
                         mutant=mutant,
@@ -143,11 +173,14 @@ class MutationRunner:
                 )
         finally:
             if worker_dir.exists():
+                log(f"[{worker_label}] cleaning up {worker_dir}")
                 shutil.rmtree(worker_dir)
+            log(f"[{worker_label}] completed")
 
         return str(worker_dir), results
 
     def _persist_mutant_result(self, *, csv_path, run_path, subject, target, original_code, mutant, result):
+        log(f"[run] persisting mutant {mutant.mutant_id} into {csv_path}")
         t = time.time()
         append_result_csv(csv_path, result)
         log_duration(f"[mutant {mutant.mutant_id}] append CSV", t)
@@ -242,11 +275,13 @@ class MutationRunner:
             if not pending_mutants:
                 log("No pending mutants to execute")
             elif mutant_workers == 1:
+                log("Running sequential execution with 1 worker")
                 for mutant in pending_mutants:
                     workdir_path = Path(f"{workdir_base}_{mutant.mutant_id}")
                     created_tmp_paths.append(str(workdir_path))
                     log_path = str(execution_path / f"{mutant.mutant_id}.log")
                     mutant, result = self._evaluate_mutant_in_workdir(
+                        worker_id=1,
                         subject=subject,
                         target=target,
                         mutant=mutant,
@@ -274,6 +309,14 @@ class MutationRunner:
                 for index, mutant in enumerate(pending_mutants):
                     chunks[index % worker_count].append(mutant)
 
+                for worker_id, worker_mutants in enumerate(chunks, start=1):
+                    if not worker_mutants:
+                        continue
+                    log(
+                        f"[scheduler] worker {worker_id:02d} assigned mutants: "
+                        f"{', '.join(mutant.mutant_id for mutant in worker_mutants)}"
+                    )
+
                 with ThreadPoolExecutor(max_workers=worker_count) as executor:
                     futures = [
                         executor.submit(
@@ -295,6 +338,10 @@ class MutationRunner:
                     for future in as_completed(futures):
                         worker_dir, worker_results = future.result()
                         created_tmp_paths.append(worker_dir)
+                        log(
+                            f"[scheduler] worker results ready from {worker_dir}: "
+                            f"{', '.join(mutant.mutant_id for mutant, _ in worker_results)}"
+                        )
                         for mutant, result in worker_results:
                             self._persist_mutant_result(
                                 csv_path=csv_path,
