@@ -17,6 +17,7 @@ DEFAULT_EXPERIMENT_METADATA = {
     "run_group_id": None,
     "run_index_for_target": None,
     "runs_per_target": None,
+    "mutant_workers": 1,
     "n_accepted_mutants": None,
     "n_rejected_mutants": None,
     "acceptance_rate": None,

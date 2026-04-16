@@ -4,6 +4,7 @@ import re
 import signal
 import shutil
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,23 @@ from harness.storage.layout import execution_results_path, execution_summary_pat
 from harness.storage.results import RESULT_FIELDNAMES
 from harness.storage.run_state import write_run_manifest
 from harness.targets.catalog import load_catalog_entries
+
+
+class TeeStream:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for stream in self.streams:
+            stream.write(data)
+            stream.flush()
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+
+    def isatty(self):
+        return any(getattr(stream, "isatty", lambda: False)() for stream in self.streams)
 
 
 def load_json(path: str):
@@ -211,6 +229,7 @@ def ensure_timeout_artifacts(run_dir: Path, cfg: dict, batch_timeout: int) -> No
             "model_name": cfg.get("model"),
             "model_provider": cfg.get("provider"),
             "n_requested_mutants": cfg.get("num_mutants"),
+            "mutant_workers": cfg.get("mutant_workers", 1),
             "notes": message,
         },
         status="failure",
@@ -273,6 +292,7 @@ def ensure_failed_artifacts(
         "model_name": cfg.get("model"),
         "model_provider": cfg.get("provider"),
         "n_requested_mutants": cfg.get("num_mutants"),
+        "mutant_workers": cfg.get("mutant_workers", 1),
         "notes": failure_message,
     }
     extra_metadata.update(existing_extra)
@@ -284,6 +304,7 @@ def ensure_failed_artifacts(
     extra_metadata["model_name"] = cfg.get("model", extra_metadata.get("model_name"))
     extra_metadata["model_provider"] = cfg.get("provider", extra_metadata.get("model_provider"))
     extra_metadata["n_requested_mutants"] = cfg.get("num_mutants", extra_metadata.get("n_requested_mutants"))
+    extra_metadata["mutant_workers"] = cfg.get("mutant_workers", extra_metadata.get("mutant_workers", 1))
     extra_metadata["notes"] = failure_message
 
     write_run_manifest(
@@ -337,6 +358,19 @@ def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[s
     return ("ok" if return_code == 0 else "failure"), None, None
 
 
+def stream_process_output(proc: subprocess.Popen) -> threading.Thread:
+    def _stream():
+        if proc.stdout is None:
+            return
+
+        for line in proc.stdout:
+            print(line, end="")
+
+    thread = threading.Thread(target=_stream, daemon=True)
+    thread.start()
+    return thread
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python3 run_batch.py <config_file>")
@@ -352,145 +386,170 @@ def main():
     batch_id = next_batch_id(batches_dir)
     batch_timeout = base_cfg.get("batch_timeout", 1200)
     runs_per_target = int(base_cfg.get("runs_per_target", 1))
+    logs_dir = Path("logs")
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_path = logs_dir / f"{batch_id}.log"
 
-    batch_manifest = {
-        "batch_id": batch_id,
-        "created_at": datetime.now().isoformat(),
-        "catalog_file": catalog_path,
-        "base_config_file": base_config_path,
-        "model": base_cfg["model"],
-        "prompt_file": base_cfg["prompt_file"],
-        "num_mutants": base_cfg["num_mutants"],
-        "timeout": base_cfg["timeout"],
-        "batch_timeout": batch_timeout,
-        "runs_per_target": runs_per_target,
-        "temperature": base_cfg.get("temperature", 0.0),
-        "targets": [entry["target_id"] for entry in catalog],
-        "runs": [],
-        "summary": {
-            "ok": 0,
-            "failure": 0,
-            "no_valid_mutants": 0,
-            "total": 0,
-            "failure_reason_counts": {},
-        },
-    }
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    log_file = log_path.open("w", encoding="utf-8")
+    sys.stdout = TeeStream(original_stdout, log_file)
+    sys.stderr = TeeStream(original_stderr, log_file)
 
-    for entry in catalog:
-        target_id = entry["target_id"]
-        subject = entry["subject"]
-        function = entry["function"]
-        run_group_id = f"{batch_id}__{slug(target_id)}"
+    try:
+        print(f"Batch log: {log_path}")
 
-        for run_index_for_target in range(1, runs_per_target + 1):
-            run_name = f"{batch_id}__{slug(subject)}__{slug(function)}__{slug(target_id)}"
-            if runs_per_target > 1:
-                run_name = f"{run_name}__run{run_index_for_target:02d}"
+        batch_manifest = {
+            "batch_id": batch_id,
+            "created_at": datetime.now().isoformat(),
+            "catalog_file": catalog_path,
+            "base_config_file": base_config_path,
+            "log_path": str(log_path),
+            "model": base_cfg["model"],
+            "prompt_file": base_cfg["prompt_file"],
+            "num_mutants": base_cfg["num_mutants"],
+            "timeout": base_cfg["timeout"],
+            "batch_timeout": batch_timeout,
+            "runs_per_target": runs_per_target,
+            "temperature": base_cfg.get("temperature", 0.0),
+            "targets": [entry["target_id"] for entry in catalog],
+            "runs": [],
+            "summary": {
+                "ok": 0,
+                "failure": 0,
+                "no_valid_mutants": 0,
+                "total": 0,
+                "failure_reason_counts": {},
+            },
+        }
 
-            cfg = dict(base_cfg)
+        for entry in catalog:
+            target_id = entry["target_id"]
+            subject = entry["subject"]
+            function = entry["function"]
+            run_group_id = f"{batch_id}__{slug(target_id)}"
 
-            cfg["target_id"] = entry["target_id"]
-            cfg["dataset"] = entry["dataset"]
-            cfg["subject"] = entry["subject"]
-            cfg["version"] = entry["version"]
-            cfg["language"] = entry["language"]
-            cfg["file"] = entry["file"]
-            cfg["function"] = entry["function"]
+            for run_index_for_target in range(1, runs_per_target + 1):
+                run_name = f"{batch_id}__{slug(subject)}__{slug(function)}__{slug(target_id)}"
+                if runs_per_target > 1:
+                    run_name = f"{run_name}__run{run_index_for_target:02d}"
 
-            if "start_line" in entry:
-                cfg["start_line"] = entry["start_line"]
-            if "end_line" in entry:
-                cfg["end_line"] = entry["end_line"]
-            if "signature" in entry:
-                cfg["signature"] = entry["signature"]
+                cfg = dict(base_cfg)
 
-            cfg["batch_id"] = batch_id
-            cfg["run_name"] = run_name
-            cfg["run_group_id"] = run_group_id
-            cfg["run_index_for_target"] = run_index_for_target
-            cfg["runs_per_target"] = runs_per_target
+                cfg["target_id"] = entry["target_id"]
+                cfg["dataset"] = entry["dataset"]
+                cfg["subject"] = entry["subject"]
+                cfg["version"] = entry["version"]
+                cfg["language"] = entry["language"]
+                cfg["file"] = entry["file"]
+                cfg["function"] = entry["function"]
 
-            run_dir = Path(f"harness/runs/{run_name}")
-            run_dir.mkdir(parents=True, exist_ok=True)
-            save_json(run_dir / "run_config.json", cfg)
+                if "start_line" in entry:
+                    cfg["start_line"] = entry["start_line"]
+                if "end_line" in entry:
+                    cfg["end_line"] = entry["end_line"]
+                if "signature" in entry:
+                    cfg["signature"] = entry["signature"]
 
-            tmp_config = Path("configs/tmp_batch_config.json")
-            tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+                cfg["batch_id"] = batch_id
+                cfg["run_name"] = run_name
+                cfg["run_group_id"] = run_group_id
+                cfg["run_index_for_target"] = run_index_for_target
+                cfg["runs_per_target"] = runs_per_target
 
-            print(f"\n=== Running {target_id} [run {run_index_for_target}/{runs_per_target}] -> {run_name} ===")
+                run_dir = Path(f"harness/runs/{run_name}")
+                run_dir.mkdir(parents=True, exist_ok=True)
+                save_json(run_dir / "run_config.json", cfg)
 
-            proc = subprocess.Popen(
-                ["python3", "run_llm.py", str(tmp_config)],
-                start_new_session=True,
-            )
+                tmp_config = Path("configs/tmp_batch_config.json")
+                tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
-            timed_out = False
+                print(f"\n=== Running {target_id} [run {run_index_for_target}/{runs_per_target}] -> {run_name} ===")
 
-            try:
-                return_code = proc.wait(timeout=batch_timeout)
-            except subprocess.TimeoutExpired:
-                timed_out = True
-                print(f"[TIMEOUT] {run_name} exceeded {batch_timeout} seconds")
-                kill_process_tree(proc.pid)
-                time.sleep(0.2)
+                proc = subprocess.Popen(
+                    ["python3", "run_llm.py", str(tmp_config)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    start_new_session=True,
+                )
+                output_thread = stream_process_output(proc)
+
+                timed_out = False
 
                 try:
-                    proc.wait(timeout=1)
-                except Exception:
-                    pass
+                    return_code = proc.wait(timeout=batch_timeout)
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    print(f"[TIMEOUT] {run_name} exceeded {batch_timeout} seconds")
+                    kill_process_tree(proc.pid)
+                    time.sleep(0.2)
 
-                return_code = 124
+                    try:
+                        proc.wait(timeout=1)
+                    except Exception:
+                        pass
 
-            if timed_out:
-                ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
-                removed_tmp = cleanup_killed_run_tmp_paths(cfg)
-                for path in removed_tmp:
-                    print(f"[CLEANUP] Removed temp path after forced stop: {path}")
+                    return_code = 124
 
-            status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
-            if status == "failure":
-                failure_message = (
-                    f"Batch timeout after {batch_timeout} seconds"
-                    if timed_out
-                    else detected_failure_message or f"run_llm.py exited with return code {return_code}"
-                )
-                ensure_failed_artifacts(
-                    run_dir,
-                    cfg,
-                    run_status=status,
-                    failure_reason=failure_reason,
-                    failure_message=failure_message,
-                )
-                removed_tmp = cleanup_killed_run_tmp_paths(cfg)
-                for path in removed_tmp:
-                    print(f"[CLEANUP] Removed leftover temp path after failure: {path}")
+                output_thread.join(timeout=5)
 
-            batch_manifest["runs"].append({
-                "target_id": target_id,
-                "subject": subject,
-                "function": function,
-                "run_group_id": run_group_id,
-                "run_index_for_target": run_index_for_target,
-                "run_name": run_name,
-                "run_dir": f"harness/runs/{run_name}",
-                "return_code": return_code,
-                "status": status,
-                "failure_reason": failure_reason,
-            })
+                if timed_out:
+                    ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
+                    removed_tmp = cleanup_killed_run_tmp_paths(cfg)
+                    for path in removed_tmp:
+                        print(f"[CLEANUP] Removed temp path after forced stop: {path}")
 
-            batch_manifest["summary"]["total"] += 1
-            if status in batch_manifest["summary"]:
-                batch_manifest["summary"][status] += 1
+                status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
+                if status == "failure":
+                    failure_message = (
+                        f"Batch timeout after {batch_timeout} seconds"
+                        if timed_out
+                        else detected_failure_message or f"run_llm.py exited with return code {return_code}"
+                    )
+                    ensure_failed_artifacts(
+                        run_dir,
+                        cfg,
+                        run_status=status,
+                        failure_reason=failure_reason,
+                        failure_message=failure_message,
+                    )
+                    removed_tmp = cleanup_killed_run_tmp_paths(cfg)
+                    for path in removed_tmp:
+                        print(f"[CLEANUP] Removed leftover temp path after failure: {path}")
 
-            if status == "failure" and failure_reason:
-                counts = batch_manifest["summary"]["failure_reason_counts"]
-                counts[failure_reason] = counts.get(failure_reason, 0) + 1
+                batch_manifest["runs"].append({
+                    "target_id": target_id,
+                    "subject": subject,
+                    "function": function,
+                    "run_group_id": run_group_id,
+                    "run_index_for_target": run_index_for_target,
+                    "run_name": run_name,
+                    "run_dir": f"harness/runs/{run_name}",
+                    "return_code": return_code,
+                    "status": status,
+                    "failure_reason": failure_reason,
+                })
 
-            save_json(batches_dir / f"{batch_id}.json", batch_manifest)
+                batch_manifest["summary"]["total"] += 1
+                if status in batch_manifest["summary"]:
+                    batch_manifest["summary"][status] += 1
 
-    print("\nBatch complete.")
-    print(f"Batch manifest: {batches_dir / f'{batch_id}.json'}")
-    print(f"Summary: {batch_manifest['summary']}")
+                if status == "failure" and failure_reason:
+                    counts = batch_manifest["summary"]["failure_reason_counts"]
+                    counts[failure_reason] = counts.get(failure_reason, 0) + 1
+
+                save_json(batches_dir / f"{batch_id}.json", batch_manifest)
+
+        print("\nBatch complete.")
+        print(f"Batch manifest: {batches_dir / f'{batch_id}.json'}")
+        print(f"Batch log: {log_path}")
+        print(f"Summary: {batch_manifest['summary']}")
+    finally:
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
+        log_file.close()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import shutil
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from harness.storage.run_state import (
     prepare_run_dir,
     write_run_manifest,
 )
+from harness.models import MutantResult
 from harness.utils.mutant_identity import compute_mutant_hash
 from harness.utils.source import extract_target_code
 
@@ -37,6 +39,130 @@ class MutationRunner:
         self.adapter = adapter
         self.evaluator = MutantEvaluator(adapter)
 
+    def _baseline_fail_result(self, subject, target, mutant, log_path: str, baseline) -> MutantResult:
+        full_log = (
+            "=== BASELINE BUILD ===\n\n"
+            + baseline.build_log
+            + "\n\n=== BASELINE TEST ===\n\n"
+            + baseline.test_log
+        )
+        Path(log_path).write_text(full_log, encoding="utf-8")
+
+        return MutantResult(
+            dataset=subject.dataset,
+            subject_id=subject.subject_id,
+            function_name=target.function_name,
+            mutant_id=mutant.mutant_id,
+            build_status="BASELINE_FAIL",
+            test_status="BASELINE_FAIL",
+            killed=False,
+            executable=False,
+            log_path=log_path,
+            target_id=getattr(target, "target_id", None),
+        )
+
+    def _evaluate_mutant_in_workdir(
+        self,
+        *,
+        subject,
+        target,
+        mutant,
+        baseline,
+        base_snapshot_path: Path,
+        workdir_path: Path,
+        log_path: str,
+        run_name: str,
+    ):
+        mutant_start = time.time()
+        log(f"[mutant {mutant.mutant_id}] start in {workdir_path}")
+
+        if not baseline.build_ok or not baseline.test_ok:
+            result = self._baseline_fail_result(subject, target, mutant, log_path, baseline)
+            result.run_name = run_name
+            result.mutant_hash = compute_mutant_hash(mutant.code)
+            log_duration(f"[mutant {mutant.mutant_id}] baseline-fail result", mutant_start)
+            return mutant, result
+
+        if workdir_path.exists():
+            t = time.time()
+            shutil.rmtree(workdir_path)
+            log_duration(f"[mutant {mutant.mutant_id}] remove existing worker workdir", t)
+
+        t = time.time()
+        shutil.copytree(base_snapshot_path, workdir_path)
+        log_duration(f"[mutant {mutant.mutant_id}] copy base snapshot", t)
+
+        evaluator = MutantEvaluator(self.adapter)
+        eval_start = time.time()
+        result = evaluator.evaluate(
+            subject=subject,
+            target=target,
+            mutant=mutant,
+            workdir=str(workdir_path),
+            log_path=log_path,
+            baseline=baseline,
+        )
+        result.target_id = getattr(target, "target_id", None)
+        result.run_name = run_name
+        result.mutant_hash = compute_mutant_hash(mutant.code)
+        log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
+        log_duration(f"[mutant {mutant.mutant_id}] total", mutant_start)
+
+        return mutant, result
+
+    def _run_worker_chunk(
+        self,
+        *,
+        worker_id: int,
+        worker_mutants,
+        subject,
+        target,
+        baseline,
+        base_snapshot_path: Path,
+        workdir_base: str,
+        execution_path: Path,
+        run_name: str,
+    ):
+        worker_dir = Path(f"{workdir_base}_worker{worker_id:02d}")
+        results = []
+
+        try:
+            for mutant in worker_mutants:
+                log_path = str(execution_path / f"{mutant.mutant_id}.log")
+                results.append(
+                    self._evaluate_mutant_in_workdir(
+                        subject=subject,
+                        target=target,
+                        mutant=mutant,
+                        baseline=baseline,
+                        base_snapshot_path=base_snapshot_path,
+                        workdir_path=worker_dir,
+                        log_path=log_path,
+                        run_name=run_name,
+                    )
+                )
+        finally:
+            if worker_dir.exists():
+                shutil.rmtree(worker_dir)
+
+        return str(worker_dir), results
+
+    def _persist_mutant_result(self, *, csv_path, run_path, subject, target, original_code, mutant, result):
+        t = time.time()
+        append_result_csv(csv_path, result)
+        log_duration(f"[mutant {mutant.mutant_id}] append CSV", t)
+
+        t = time.time()
+        save_mutant_artifacts(
+            run_dir=run_path,
+            subject=subject,
+            target=target,
+            mutant=mutant,
+            result=result,
+            original_code=original_code,
+        )
+        log_duration(f"[mutant {mutant.mutant_id}] save artifacts", t)
+
     def run(
         self,
         subject,
@@ -51,10 +177,12 @@ class MutationRunner:
         validate_after_run=True,
         rebuild_index=True,
         prepare_run_dir_on_start=True,
+        mutant_workers=1,
     ):
         total_start = time.time()
         created_tmp_paths: list[str] = []
         cleanup_targets: list[str] = []
+        mutant_workers = max(1, int(mutant_workers or 1))
 
         if prepare_run_dir_on_start:
             run_path = prepare_run_dir(run_dir, mode=run_mode)
@@ -104,58 +232,79 @@ class MutationRunner:
         baseline = self.evaluator.baseline_evaluator.evaluate(subject, base_snapshot_dir)
         log_duration("Shared baseline evaluation", baseline_start)
         try:
+            pending_mutants = []
             for mutant in mutants:
                 if mutant.mutant_id in completed_mutant_ids:
                     log(f"[mutant {mutant.mutant_id}] skip already completed")
                     continue
+                pending_mutants.append(mutant)
 
-                mutant_start = time.time()
-                log(f"[mutant {mutant.mutant_id}] start")
-
-                workdir = f"{workdir_base}_{mutant.mutant_id}"
-                log_path = str(execution_path / f"{mutant.mutant_id}.log")
-
-                workdir_path = Path(workdir)
-                if workdir_path.exists():
-                    t = time.time()
-                    shutil.rmtree(workdir_path)
-                    log_duration(f"[mutant {mutant.mutant_id}] remove existing workdir", t)
-
-                t = time.time()
-                shutil.copytree(base_snapshot_path, workdir_path)
-                created_tmp_paths.append(workdir)
-                log_duration(f"[mutant {mutant.mutant_id}] copy base snapshot", t)
-
-                eval_start = time.time()
-                result = self.evaluator.evaluate(
-                    subject=subject,
-                    target=target,
-                    mutant=mutant,
-                    workdir=workdir,
-                    log_path=log_path,
-                    baseline=baseline,
+            if not pending_mutants:
+                log("No pending mutants to execute")
+            elif mutant_workers == 1:
+                for mutant in pending_mutants:
+                    workdir_path = Path(f"{workdir_base}_{mutant.mutant_id}")
+                    created_tmp_paths.append(str(workdir_path))
+                    log_path = str(execution_path / f"{mutant.mutant_id}.log")
+                    mutant, result = self._evaluate_mutant_in_workdir(
+                        subject=subject,
+                        target=target,
+                        mutant=mutant,
+                        baseline=baseline,
+                        base_snapshot_path=base_snapshot_path,
+                        workdir_path=workdir_path,
+                        log_path=log_path,
+                        run_name=run_name,
+                    )
+                    self._persist_mutant_result(
+                        csv_path=csv_path,
+                        run_path=run_path,
+                        subject=subject,
+                        target=target,
+                        original_code=original_code,
+                        mutant=mutant,
+                        result=result,
+                    )
+            else:
+                worker_count = min(mutant_workers, len(pending_mutants))
+                log(
+                    f"Running {len(pending_mutants)} mutants with {worker_count} worker(s)"
                 )
-                result.target_id = getattr(target, "target_id", None)
-                result.run_name = run_name
-                result.mutant_hash = compute_mutant_hash(mutant.code)
-                log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
+                chunks = [[] for _ in range(worker_count)]
+                for index, mutant in enumerate(pending_mutants):
+                    chunks[index % worker_count].append(mutant)
 
-                t = time.time()
-                append_result_csv(csv_path, result)
-                log_duration(f"[mutant {mutant.mutant_id}] append CSV", t)
+                with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                    futures = [
+                        executor.submit(
+                            self._run_worker_chunk,
+                            worker_id=worker_id,
+                            worker_mutants=worker_mutants,
+                            subject=subject,
+                            target=target,
+                            baseline=baseline,
+                            base_snapshot_path=base_snapshot_path,
+                            workdir_base=workdir_base,
+                            execution_path=execution_path,
+                            run_name=run_name,
+                        )
+                        for worker_id, worker_mutants in enumerate(chunks, start=1)
+                        if worker_mutants
+                    ]
 
-                t = time.time()
-                save_mutant_artifacts(
-                    run_dir=run_path,
-                    subject=subject,
-                    target=target,
-                    mutant=mutant,
-                    result=result,
-                    original_code=original_code,
-                )
-                log_duration(f"[mutant {mutant.mutant_id}] save artifacts", t)
-
-                log_duration(f"[mutant {mutant.mutant_id}] total", mutant_start)
+                    for future in as_completed(futures):
+                        worker_dir, worker_results = future.result()
+                        created_tmp_paths.append(worker_dir)
+                        for mutant, result in worker_results:
+                            self._persist_mutant_result(
+                                csv_path=csv_path,
+                                run_path=run_path,
+                                subject=subject,
+                                target=target,
+                                original_code=original_code,
+                                mutant=mutant,
+                                result=result,
+                            )
 
             if csv_path.exists():
                 t = time.time()

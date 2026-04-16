@@ -199,6 +199,7 @@ def ensure_failed_run_artifacts(
     failure_extra_metadata.setdefault("runs_per_target", cfg.get("runs_per_target"))
     failure_extra_metadata.setdefault("model_name", cfg.get("model"))
     failure_extra_metadata.setdefault("model_provider", cfg.get("provider"))
+    failure_extra_metadata.setdefault("mutant_workers", cfg.get("mutant_workers", 1))
 
     write_run_manifest(
         run_dir=run_dir,
@@ -436,6 +437,7 @@ def main():
             run_group_id=cfg.get("run_group_id"),
             run_index_for_target=cfg.get("run_index_for_target"),
             runs_per_target=cfg.get("runs_per_target"),
+            mutant_workers=cfg.get("mutant_workers", 1),
             n_accepted_mutants=n_accepted_mutants,
             n_rejected_mutants=n_rejected_mutants,
             acceptance_rate=acceptance_rate,
@@ -531,6 +533,7 @@ def main():
             validate_after_run=cfg.get("validate_after_run", True),
             rebuild_index=cfg.get("rebuild_index", True),
             prepare_run_dir_on_start=False,
+            mutant_workers=cfg.get("mutant_workers", 1),
         )
         log_duration("[execution] mutation execution", exec_start)
 
