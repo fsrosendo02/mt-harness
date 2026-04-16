@@ -47,7 +47,23 @@ class Summary:
         return data
 
 
-KEY_FIELDS = ("dataset", "subject_id", "function_name", "mutant_id")
+def row_identity(row: dict) -> tuple[str, ...]:
+    target_id = str(row.get("target_id", "") or "").strip()
+    mutant_hash = str(row.get("mutant_hash", "") or "").strip()
+    mutant_id = str(row.get("mutant_id", "") or "").strip()
+
+    if target_id and mutant_hash:
+        return ("target_hash", target_id, mutant_hash)
+    if target_id and mutant_id:
+        return ("target_mutant", target_id, mutant_id)
+
+    return (
+        "legacy",
+        str(row.get("dataset", "") or ""),
+        str(row.get("subject_id", "") or ""),
+        str(row.get("function_name", "") or ""),
+        mutant_id,
+    )
 
 
 def load_rows(csv_path: Path) -> list[dict]:
@@ -59,9 +75,9 @@ def load_rows(csv_path: Path) -> list[dict]:
 
 
 def deduplicate_rows(rows: Iterable[dict]) -> list[dict]:
-    latest: dict[tuple[str, str, str, str], dict] = {}
+    latest: dict[tuple[str, ...], dict] = {}
     for row in rows:
-        key = tuple(row.get(field, "") for field in KEY_FIELDS)
+        key = row_identity(row)
         latest[key] = row
     return list(latest.values())
 
@@ -131,11 +147,12 @@ def summarize_results_csv(
         rows = deduplicate_rows(rows)
 
     overall = build_summary(rows)
-    grouped = group_rows(rows, ("dataset", "subject_id", "function_name"))
+    grouped = group_rows(rows, ("dataset", "subject_id", "target_id", "function_name"))
+    duplicate_rows_within_run = input_count - len(rows)
 
     grouped_output = []
     for key in sorted(grouped.keys()):
-        dataset, subject_id, function_name = key
+        dataset, subject_id, target_id, function_name = key
         summary = build_summary(grouped[key])
 
         if print_to_stdout:
@@ -153,6 +170,7 @@ def summarize_results_csv(
             {
                 "dataset": dataset,
                 "subject_id": subject_id,
+                "target_id": target_id,
                 "function_name": function_name,
                 **summary.to_dict(),
             }
@@ -174,6 +192,9 @@ def summarize_results_csv(
         "deduplicated": not keep_duplicates,
         "input_row_count": input_count,
         "used_row_count": len(rows),
+        "duplicate_rows_within_run": duplicate_rows_within_run,
+        "duplicate_mutants_within_run": duplicate_rows_within_run,
+        "unique_mutants_within_run": len(rows),
         "overall": overall.to_dict(),
         "by_subject_function": grouped_output,
     }

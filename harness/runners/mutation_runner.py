@@ -16,6 +16,7 @@ from harness.storage.run_state import (
     prepare_run_dir,
     write_run_manifest,
 )
+from harness.utils.mutant_identity import compute_mutant_hash
 from harness.utils.source import extract_target_code
 
 
@@ -60,6 +61,7 @@ class MutationRunner:
         else:
             run_path = Path(run_dir)
             run_path.mkdir(parents=True, exist_ok=True)
+        run_name = run_path.name
         execution_path = execution_dir(run_path)
         execution_path.mkdir(parents=True, exist_ok=True)
         csv_path = execution_results_path(run_path)
@@ -133,6 +135,9 @@ class MutationRunner:
                     log_path=log_path,
                     baseline=baseline,
                 )
+                result.target_id = getattr(target, "target_id", None)
+                result.run_name = run_name
+                result.mutant_hash = compute_mutant_hash(mutant.code)
                 log_duration(f"[mutant {mutant.mutant_id}] evaluate", eval_start)
 
                 t = time.time()

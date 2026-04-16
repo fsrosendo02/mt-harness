@@ -39,3 +39,6 @@ class MutantResult:
     killed: bool
     executable: bool
     log_path: str
+    target_id: Optional[str] = None
+    run_name: Optional[str] = None
+    mutant_hash: Optional[str] = None

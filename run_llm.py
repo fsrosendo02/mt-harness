@@ -21,6 +21,7 @@ from harness.runners.mutation_runner import MutationRunner
 from harness.storage.cleanup import cleanup_paths
 from harness.storage.artifacts import save_rejected_mutant_artifacts
 from harness.storage.layout import execution_results_path, execution_summary_path, generation_dir, manifest_path
+from harness.storage.results import RESULT_FIELDNAMES
 from harness.storage.run_state import prepare_run_dir, write_run_manifest
 from harness.targets.resolver import resolve_target
 
@@ -94,20 +95,8 @@ def write_empty_results_csv(run_dir: str):
     csv_path = execution_results_path(run_dir)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
 
-    fieldnames = [
-        "dataset",
-        "subject_id",
-        "function_name",
-        "mutant_id",
-        "build_status",
-        "test_status",
-        "killed",
-        "executable",
-        "log_path",
-    ]
-
     with csv_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=RESULT_FIELDNAMES)
         writer.writeheader()
 
     return csv_path
@@ -146,6 +135,9 @@ def write_empty_summary_json(
         "deduplicated": None,
         "input_row_count": None,
         "used_row_count": None,
+        "duplicate_rows_within_run": None,
+        "duplicate_mutants_within_run": None,
+        "unique_mutants_within_run": None,
         "overall": execution_fields,
         "by_subject_function": [],
     }
@@ -199,6 +191,14 @@ def ensure_failed_run_artifacts(
         version=cfg.get("version", "unknown"),
     )
     resolved_target = target or build_target_stub(cfg)
+    failure_extra_metadata = dict(extra_metadata or {})
+    failure_extra_metadata.setdefault("batch_id", cfg.get("batch_id"))
+    failure_extra_metadata.setdefault("target_id", getattr(resolved_target, "target_id", None))
+    failure_extra_metadata.setdefault("run_group_id", cfg.get("run_group_id"))
+    failure_extra_metadata.setdefault("run_index_for_target", cfg.get("run_index_for_target"))
+    failure_extra_metadata.setdefault("runs_per_target", cfg.get("runs_per_target"))
+    failure_extra_metadata.setdefault("model_name", cfg.get("model"))
+    failure_extra_metadata.setdefault("model_provider", cfg.get("provider"))
 
     write_run_manifest(
         run_dir=run_dir,
@@ -207,7 +207,7 @@ def ensure_failed_run_artifacts(
         mutants=[],
         run_mode=cfg.get("run_mode", "overwrite"),
         workdir_base=workdir_base,
-        extra_metadata=extra_metadata,
+        extra_metadata=failure_extra_metadata,
         status=run_status,
         failure_reason=failure_reason,
         failure_message=failure_message,
@@ -433,6 +433,9 @@ def main():
             dataset_split=cfg.get("dataset_split"),
             batch_id=cfg.get("batch_id"),
             target_id=getattr(target, "target_id", None),
+            run_group_id=cfg.get("run_group_id"),
+            run_index_for_target=cfg.get("run_index_for_target"),
+            runs_per_target=cfg.get("runs_per_target"),
             n_accepted_mutants=n_accepted_mutants,
             n_rejected_mutants=n_rejected_mutants,
             acceptance_rate=acceptance_rate,

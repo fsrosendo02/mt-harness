@@ -48,6 +48,8 @@ def save_mutant_artifacts(
         "test_status": result.test_status,
         "killed": result.killed,
         "executable": result.executable,
+        "run_name": result.run_name,
+        "mutant_hash": result.mutant_hash,
         "log_path": result.log_path,
     }
 
