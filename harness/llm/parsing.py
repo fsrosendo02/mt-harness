@@ -22,6 +22,10 @@ class ParseReport:
     rejections: list[RejectedMutant]
 
 
+class MissingMutantsListError(ValueError):
+    pass
+
+
 class LLMResponseParser:
     def _build_rejection_payload(
         self,
@@ -65,7 +69,7 @@ class LLMResponseParser:
         language: str = "java",
     ) -> tuple[list[Mutant], ParseReport]:
         data = self._load_json(raw_text)
-        items = data.get("mutants", [])
+        items = self._extract_mutant_items(data)
 
         if not isinstance(items, list):
             raise ValueError("Expected 'mutants' to be a list")
@@ -218,16 +222,20 @@ class LLMResponseParser:
 
         actual_line = original_lines[idx]
 
+        replacement_clean = replacement_line.strip()
+        replacement_clean = self._preserve_leading_structural_prefix(
+            actual_line=actual_line,
+            replacement_line=replacement_clean,
+        )
+
         # Reject dangerous structure-changing replacements
-        if self._changes_block_structure(actual_line, replacement_line):
+        if self._changes_block_structure(actual_line, replacement_clean):
             return None, "non_executable_structural_change: block_structure_change"
 
         mutated_lines = list(original_lines)
 
         indent = actual_line[: len(actual_line) - len(actual_line.lstrip())]
         actual_suffix = self._extract_trailing_structural_suffix(actual_line)
-
-        replacement_clean = replacement_line.strip()
 
         # If the model omitted a trailing "{" or trailing comment that exists in the
         # actual source line, preserve it safely.
@@ -242,6 +250,60 @@ class LLMResponseParser:
         mutated_lines[idx] = indent + replacement_clean
 
         return "\n".join(mutated_lines), match_reason
+
+    def _preserve_leading_structural_prefix(
+        self,
+        *,
+        actual_line: str,
+        replacement_line: str,
+    ) -> str:
+        actual = actual_line.strip()
+        replacement = replacement_line.strip()
+
+        if not actual or not replacement or replacement.startswith("}"):
+            return replacement
+
+        control_keywords = (
+            "else if",
+            "if",
+            "else",
+            "catch",
+            "finally",
+            "for",
+            "while",
+            "switch",
+            "try",
+        )
+
+        for keyword in control_keywords:
+            if not replacement.startswith(keyword):
+                continue
+
+            idx = actual.find(keyword)
+            if idx <= 0:
+                continue
+
+            prefix = actual[:idx]
+            if self._is_safe_leading_structural_prefix(prefix):
+                return prefix + replacement
+
+        return replacement
+
+    def _is_safe_leading_structural_prefix(self, prefix: str) -> bool:
+        text = " ".join(prefix.strip().split())
+        if not text:
+            return False
+
+        safe_prefixes = {
+            "}",
+            "} else",
+            "} else {",
+            "} finally",
+        }
+        if text in safe_prefixes:
+            return True
+
+        return bool(re.fullmatch(r"\}+\s*", prefix))
 
     def _clean_model_line(self, text: str) -> str:
         text = text.strip()
@@ -331,7 +393,7 @@ class LLMResponseParser:
             data = json.loads(text)
             if not isinstance(data, dict):
                 raise ValueError("Expected top-level JSON object")
-            return data
+            return self._select_response_object(data)
         except (json.JSONDecodeError, ValueError):
             pass
 
@@ -340,26 +402,73 @@ class LLMResponseParser:
             data = json.loads(unfenced)
             if not isinstance(data, dict):
                 raise ValueError("Expected top-level JSON object")
-            return data
+            return self._select_response_object(data)
         except (json.JSONDecodeError, ValueError):
             pass
 
-        candidate = self._extract_first_json_object(unfenced)
-        if candidate is None:
-            candidate = self._extract_first_json_object(text)
+        candidates = self._extract_json_objects(unfenced)
+        if not candidates:
+            candidates = self._extract_json_objects(text)
 
-        if candidate is None:
+        if not candidates:
             raise ValueError("Failed to locate a JSON object in LLM output")
 
-        try:
-            data = json.loads(candidate)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse extracted JSON object: {e}") from e
+        parsed_candidates: list[dict[str, Any]] = []
+        last_error: json.JSONDecodeError | None = None
+        for candidate in candidates:
+            try:
+                data = json.loads(candidate)
+            except json.JSONDecodeError as e:
+                last_error = e
+                continue
 
-        if not isinstance(data, dict):
+            if isinstance(data, dict):
+                parsed_candidates.append(data)
+
+        if not parsed_candidates:
+            if last_error is not None:
+                raise ValueError(f"Failed to parse extracted JSON object: {last_error}") from last_error
             raise ValueError("Expected top-level JSON object")
 
-        return data
+        return self._select_response_object(*parsed_candidates)
+
+    def _extract_mutant_items(self, data: dict[str, Any]) -> list[Any]:
+        if "mutants" in data:
+            items = data["mutants"]
+            if not isinstance(items, list):
+                raise ValueError("Expected 'mutants' to be a list")
+            return items
+
+        nested = self._find_mutants_list(data)
+        if nested is not None:
+            return nested
+
+        raise MissingMutantsListError("Expected LLM response to contain a 'mutants' list")
+
+    def _select_response_object(self, *objects: dict[str, Any]) -> dict[str, Any]:
+        for obj in objects:
+            if self._find_mutants_list(obj) is not None:
+                return obj
+        return objects[0]
+
+    def _find_mutants_list(self, value: Any) -> list[Any] | None:
+        if isinstance(value, dict):
+            mutants = value.get("mutants")
+            if isinstance(mutants, list):
+                return mutants
+
+            for child in value.values():
+                found = self._find_mutants_list(child)
+                if found is not None:
+                    return found
+
+        if isinstance(value, list):
+            for child in value:
+                found = self._find_mutants_list(child)
+                if found is not None:
+                    return found
+
+        return None
 
     def _strip_code_fences(self, text: str) -> str:
         text = text.strip()
@@ -369,36 +478,46 @@ class LLMResponseParser:
         return text.strip()
 
     def _extract_first_json_object(self, text: str) -> str | None:
+        objects = self._extract_json_objects(text, max_objects=1)
+        return objects[0] if objects else None
+
+    def _extract_json_objects(self, text: str, max_objects: int | None = None) -> list[str]:
+        objects: list[str] = []
         start = text.find("{")
-        if start == -1:
-            return None
 
-        depth = 0
-        in_string = False
-        escape = False
+        while start != -1:
+            depth = 0
+            in_string = False
+            escape = False
 
-        for i in range(start, len(text)):
-            ch = text[i]
+            for i in range(start, len(text)):
+                ch = text[i]
 
-            if in_string:
-                if escape:
-                    escape = False
-                elif ch == "\\":
-                    escape = True
+                if in_string:
+                    if escape:
+                        escape = False
+                    elif ch == "\\":
+                        escape = True
+                    elif ch == '"':
+                        in_string = False
+                    continue
+
                 elif ch == '"':
-                    in_string = False
-                continue
+                    in_string = True
+                elif ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        objects.append(text[start:i + 1])
+                        if max_objects is not None and len(objects) >= max_objects:
+                            return objects
+                        start = text.find("{", i + 1)
+                        break
+            else:
+                break
 
-            if ch == '"':
-                in_string = True
-            elif ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-                if depth == 0:
-                    return text[start:i + 1]
-
-        return None
+        return objects
     
     def _extract_trailing_structural_suffix(self, original_line: str) -> str:
         """

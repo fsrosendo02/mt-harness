@@ -68,6 +68,133 @@ def next_batch_id(batches_dir: Path) -> str:
     return f"batch{max_n + 1:02d}"
 
 
+def pipeline_mode_from_cfg(cfg: dict) -> str:
+    return str(cfg.get("pipeline_mode", "full")).strip().lower()
+
+
+def format_elapsed(seconds: float) -> str:
+    total_seconds = max(0, int(round(seconds)))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+def batch_manifest_copy_path(batch_id: str) -> Path:
+    return Path("harness/runs") / f"{batch_id}.json"
+
+
+def save_batch_manifest(batch_manifest_path: Path, batch_manifest: dict, batch_id: str) -> None:
+    save_json(batch_manifest_path, batch_manifest)
+    save_json(batch_manifest_copy_path(batch_id), batch_manifest)
+
+
+def resolve_source_batch_manifest(base_cfg: dict, batches_dir: Path) -> Path:
+    manifest_path_str = base_cfg.get("source_batch_manifest")
+    source_batch_id = base_cfg.get("source_batch_id")
+
+    if manifest_path_str:
+        return Path(str(manifest_path_str))
+
+    if source_batch_id:
+        return batches_dir / f"{source_batch_id}.json"
+
+    raise ValueError(
+        "execute_only batch mode requires source_batch_id or source_batch_manifest"
+    )
+
+
+def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]:
+    runs = source_manifest.get("runs", [])
+    if not isinstance(runs, list) or not runs:
+        raise ValueError("Source batch manifest does not contain any runs")
+
+    built_runs = []
+    for run in runs:
+        if not isinstance(run, dict):
+            raise ValueError(f"Invalid run entry in source batch manifest: {run!r}")
+
+        run_name = run.get("run_name")
+        if not run_name:
+            raise ValueError("Source batch manifest contains a run without run_name")
+
+        built_runs.append(
+            {
+                "target_id": run.get("target_id"),
+                "subject": run.get("subject"),
+                "function": run.get("function"),
+                "run_group_id": run.get("run_group_id"),
+                "run_index_for_target": run.get("run_index_for_target"),
+                "runs_per_target": run.get("runs_per_target"),
+                "run_name": run_name,
+                "cfg": {
+                    "run_name": run_name,
+                    "pipeline_mode": "execute_only",
+                    "run_mode": base_cfg.get("run_mode", "overwrite"),
+                    "mutant_workers": base_cfg.get("mutant_workers", 1),
+                    "cleanup_tmp": base_cfg.get("cleanup_tmp", True),
+                    "validate_after_run": base_cfg.get("validate_after_run", True),
+                    "rebuild_index": base_cfg.get("rebuild_index", True),
+                },
+            }
+        )
+
+    return built_runs
+
+
+def build_generation_runs(catalog: list[dict], base_cfg: dict, batch_id: str) -> list[dict]:
+    runs_per_target = int(base_cfg.get("runs_per_target", 1))
+    built_runs = []
+
+    for entry in catalog:
+        target_id = entry["target_id"]
+        subject = entry["subject"]
+        function = entry["function"]
+        run_group_id = f"{batch_id}__{slug(target_id)}"
+
+        for run_index_for_target in range(1, runs_per_target + 1):
+            run_name = f"{batch_id}__{slug(subject)}__{slug(function)}__{slug(target_id)}"
+            if runs_per_target > 1:
+                run_name = f"{run_name}__run{run_index_for_target:02d}"
+
+            cfg = dict(base_cfg)
+
+            cfg["target_id"] = entry["target_id"]
+            cfg["dataset"] = entry["dataset"]
+            cfg["subject"] = entry["subject"]
+            cfg["version"] = entry["version"]
+            cfg["language"] = entry["language"]
+            cfg["file"] = entry["file"]
+            cfg["function"] = entry["function"]
+
+            if "start_line" in entry:
+                cfg["start_line"] = entry["start_line"]
+            if "end_line" in entry:
+                cfg["end_line"] = entry["end_line"]
+            if "signature" in entry:
+                cfg["signature"] = entry["signature"]
+
+            cfg["batch_id"] = batch_id
+            cfg["run_name"] = run_name
+            cfg["run_group_id"] = run_group_id
+            cfg["run_index_for_target"] = run_index_for_target
+            cfg["runs_per_target"] = runs_per_target
+
+            built_runs.append(
+                {
+                    "target_id": target_id,
+                    "subject": subject,
+                    "function": function,
+                    "run_group_id": run_group_id,
+                    "run_index_for_target": run_index_for_target,
+                    "runs_per_target": runs_per_target,
+                    "run_name": run_name,
+                    "cfg": cfg,
+                }
+            )
+
+    return built_runs
+
+
 def get_descendants(root_pid: int) -> list[int]:
     """Return all descendant PIDs of root_pid."""
     try:
@@ -343,10 +470,18 @@ def load_run_status(run_dir: Path, return_code: int, timed_out: bool) -> tuple[s
     manifest_file = manifest_path(run_dir)
     if manifest_file.exists():
         try:
-            validate_run_dir(run_dir)
             manifest = load_json(manifest_file)
+            manifest_status = manifest.get("status", "unknown")
+            if manifest_status in {"generated", "running"}:
+                return (
+                    manifest_status,
+                    manifest.get("failure_reason"),
+                    manifest.get("failure_message"),
+                )
+
+            validate_run_dir(run_dir)
             return (
-                manifest.get("status", "ok" if return_code == 0 else "failure"),
+                manifest_status if manifest_status != "unknown" else ("ok" if return_code == 0 else "failure"),
                 manifest.get("failure_reason"),
                 manifest.get("failure_message"),
             )
@@ -378,17 +513,38 @@ def main():
 
     base_config_path = sys.argv[1]
     base_cfg = load_json(base_config_path)
-
-    catalog_path = base_cfg["catalog_file"]
-    catalog = load_catalog_entries(catalog_path)
+    pipeline_mode = pipeline_mode_from_cfg(base_cfg)
 
     batches_dir = Path("harness/experiments/batches")
-    batch_id = next_batch_id(batches_dir)
     batch_timeout = base_cfg.get("batch_timeout", 1200)
-    runs_per_target = int(base_cfg.get("runs_per_target", 1))
     logs_dir = Path("logs")
     logs_dir.mkdir(parents=True, exist_ok=True)
-    log_path = logs_dir / f"{batch_id}.log"
+
+    source_batch_manifest_path = None
+    source_batch_manifest = None
+    source_batch_id = None
+    catalog_path = None
+    catalog = []
+    targets = []
+
+    if pipeline_mode == "execute_only":
+        source_batch_manifest_path = resolve_source_batch_manifest(base_cfg, batches_dir)
+        source_batch_manifest = load_json_path(source_batch_manifest_path)
+        source_batch_id = source_batch_manifest.get("batch_id")
+        if not source_batch_id:
+            raise ValueError("Source batch manifest is missing batch_id")
+        batch_id = str(source_batch_id)
+        log_path = logs_dir / f"{batch_id}.execution.log"
+        run_specs = build_execute_only_runs(source_batch_manifest, base_cfg)
+    else:
+        batch_id = next_batch_id(batches_dir)
+        log_path = logs_dir / f"{batch_id}.log"
+        catalog_path = base_cfg["catalog_file"]
+        catalog = load_catalog_entries(catalog_path)
+        targets = [entry["target_id"] for entry in catalog]
+        run_specs = build_generation_runs(catalog, base_cfg, batch_id)
+
+    batch_manifest_path = batches_dir / f"{batch_id}.json"
 
     original_stdout = sys.stdout
     original_stderr = sys.stderr
@@ -399,126 +555,168 @@ def main():
     try:
         print(f"Batch log: {log_path}")
 
-        batch_manifest = {
-            "batch_id": batch_id,
-            "created_at": datetime.now().isoformat(),
-            "catalog_file": catalog_path,
-            "base_config_file": base_config_path,
-            "log_path": str(log_path),
-            "model": base_cfg["model"],
-            "prompt_file": base_cfg["prompt_file"],
-            "num_mutants": base_cfg["num_mutants"],
-            "timeout": base_cfg["timeout"],
-            "batch_timeout": batch_timeout,
-            "runs_per_target": runs_per_target,
-            "temperature": base_cfg.get("temperature", 0.0),
-            "targets": [entry["target_id"] for entry in catalog],
-            "runs": [],
-            "summary": {
-                "ok": 0,
-                "failure": 0,
-                "no_valid_mutants": 0,
-                "total": 0,
-                "failure_reason_counts": {},
-            },
-        }
+        if pipeline_mode == "execute_only":
+            batch_manifest = dict(source_batch_manifest)
+            batch_manifest["batch_id"] = batch_id
+            batch_manifest["catalog_file"] = batch_manifest.get("catalog_file")
+            batch_manifest["targets"] = batch_manifest.get("targets") or [
+                run.get("target_id")
+                for run in batch_manifest.get("runs", [])
+                if isinstance(run, dict) and run.get("target_id")
+            ]
+            batch_manifest["execution"] = {
+                "created_at": datetime.now().isoformat(),
+                "pipeline_mode": "execute_only",
+                "base_config_file": base_config_path,
+                "log_path": str(log_path),
+                "batch_timeout": batch_timeout,
+                "summary": {
+                    "ok": 0,
+                    "failure": 0,
+                    "no_valid_mutants": 0,
+                    "generated": 0,
+                    "total": 0,
+                    "failure_reason_counts": {},
+                },
+            }
+        else:
+            batch_manifest = {
+                "batch_id": batch_id,
+                "created_at": datetime.now().isoformat(),
+                "pipeline_mode": pipeline_mode,
+                "catalog_file": catalog_path,
+                "base_config_file": base_config_path,
+                "log_path": str(log_path),
+                "source_batch_id": source_batch_id,
+                "source_batch_manifest": (
+                    str(source_batch_manifest_path) if source_batch_manifest_path else None
+                ),
+                "model": base_cfg.get("model"),
+                "prompt_file": base_cfg.get("prompt_file"),
+                "num_mutants": base_cfg.get("num_mutants"),
+                "timeout": base_cfg.get("timeout"),
+                "batch_timeout": batch_timeout,
+                "runs_per_target": base_cfg.get("runs_per_target"),
+                "temperature": base_cfg.get("temperature", 0.0),
+                "targets": targets,
+                "runs": [],
+                "summary": {
+                    "ok": 0,
+                    "failure": 0,
+                    "no_valid_mutants": 0,
+                    "generated": 0,
+                    "total": 0,
+                    "failure_reason_counts": {},
+                },
+            }
 
-        for entry in catalog:
-            target_id = entry["target_id"]
-            subject = entry["subject"]
-            function = entry["function"]
-            run_group_id = f"{batch_id}__{slug(target_id)}"
+        save_batch_manifest(batch_manifest_path, batch_manifest, batch_id)
 
-            for run_index_for_target in range(1, runs_per_target + 1):
-                run_name = f"{batch_id}__{slug(subject)}__{slug(function)}__{slug(target_id)}"
-                if runs_per_target > 1:
-                    run_name = f"{run_name}__run{run_index_for_target:02d}"
+        for run_spec in run_specs:
+            target_id = run_spec.get("target_id")
+            subject = run_spec.get("subject")
+            function = run_spec.get("function")
+            run_group_id = run_spec.get("run_group_id")
+            run_index_for_target = run_spec.get("run_index_for_target")
+            runs_per_target = run_spec.get("runs_per_target")
+            run_name = run_spec["run_name"]
+            cfg = dict(run_spec["cfg"])
 
-                cfg = dict(base_cfg)
+            run_dir = Path(f"harness/runs/{run_name}")
+            run_dir.mkdir(parents=True, exist_ok=True)
+            save_json(run_dir / "run_config.json", cfg)
 
-                cfg["target_id"] = entry["target_id"]
-                cfg["dataset"] = entry["dataset"]
-                cfg["subject"] = entry["subject"]
-                cfg["version"] = entry["version"]
-                cfg["language"] = entry["language"]
-                cfg["file"] = entry["file"]
-                cfg["function"] = entry["function"]
+            tmp_config = Path("configs/tmp_batch_config.json")
+            tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
-                if "start_line" in entry:
-                    cfg["start_line"] = entry["start_line"]
-                if "end_line" in entry:
-                    cfg["end_line"] = entry["end_line"]
-                if "signature" in entry:
-                    cfg["signature"] = entry["signature"]
+            print(f"\n=== Running {target_id} [run {run_index_for_target}/{runs_per_target}] -> {run_name} ===")
+            run_started = time.time()
 
-                cfg["batch_id"] = batch_id
-                cfg["run_name"] = run_name
-                cfg["run_group_id"] = run_group_id
-                cfg["run_index_for_target"] = run_index_for_target
-                cfg["runs_per_target"] = runs_per_target
+            proc = subprocess.Popen(
+                ["python3", "run_llm.py", str(tmp_config)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                start_new_session=True,
+            )
+            output_thread = stream_process_output(proc)
 
-                run_dir = Path(f"harness/runs/{run_name}")
-                run_dir.mkdir(parents=True, exist_ok=True)
-                save_json(run_dir / "run_config.json", cfg)
+            timed_out = False
 
-                tmp_config = Path("configs/tmp_batch_config.json")
-                tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
-
-                print(f"\n=== Running {target_id} [run {run_index_for_target}/{runs_per_target}] -> {run_name} ===")
-
-                proc = subprocess.Popen(
-                    ["python3", "run_llm.py", str(tmp_config)],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    start_new_session=True,
-                )
-                output_thread = stream_process_output(proc)
-
-                timed_out = False
+            try:
+                return_code = proc.wait(timeout=batch_timeout)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                print(f"[TIMEOUT] {run_name} exceeded {batch_timeout} seconds")
+                kill_process_tree(proc.pid)
+                time.sleep(0.2)
 
                 try:
-                    return_code = proc.wait(timeout=batch_timeout)
-                except subprocess.TimeoutExpired:
-                    timed_out = True
-                    print(f"[TIMEOUT] {run_name} exceeded {batch_timeout} seconds")
-                    kill_process_tree(proc.pid)
-                    time.sleep(0.2)
+                    proc.wait(timeout=1)
+                except Exception:
+                    pass
 
-                    try:
-                        proc.wait(timeout=1)
-                    except Exception:
-                        pass
+                return_code = 124
 
-                    return_code = 124
+            output_thread.join(timeout=5)
 
-                output_thread.join(timeout=5)
+            if timed_out:
+                ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
+                removed_tmp = cleanup_killed_run_tmp_paths(cfg)
+                for path in removed_tmp:
+                    print(f"[CLEANUP] Removed temp path after forced stop: {path}")
 
-                if timed_out:
-                    ensure_timeout_artifacts(run_dir, cfg, batch_timeout)
-                    removed_tmp = cleanup_killed_run_tmp_paths(cfg)
-                    for path in removed_tmp:
-                        print(f"[CLEANUP] Removed temp path after forced stop: {path}")
+            status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
+            if status == "failure":
+                failure_message = (
+                    f"Batch timeout after {batch_timeout} seconds"
+                    if timed_out
+                    else detected_failure_message or f"run_llm.py exited with return code {return_code}"
+                )
+                ensure_failed_artifacts(
+                    run_dir,
+                    cfg,
+                    run_status=status,
+                    failure_reason=failure_reason,
+                    failure_message=failure_message,
+                )
+                removed_tmp = cleanup_killed_run_tmp_paths(cfg)
+                for path in removed_tmp:
+                    print(f"[CLEANUP] Removed leftover temp path after failure: {path}")
 
-                status, failure_reason, detected_failure_message = load_run_status(run_dir, return_code, timed_out)
-                if status == "failure":
-                    failure_message = (
-                        f"Batch timeout after {batch_timeout} seconds"
-                        if timed_out
-                        else detected_failure_message or f"run_llm.py exited with return code {return_code}"
-                    )
-                    ensure_failed_artifacts(
-                        run_dir,
-                        cfg,
-                        run_status=status,
-                        failure_reason=failure_reason,
-                        failure_message=failure_message,
-                    )
-                    removed_tmp = cleanup_killed_run_tmp_paths(cfg)
-                    for path in removed_tmp:
-                        print(f"[CLEANUP] Removed leftover temp path after failure: {path}")
+            if pipeline_mode == "execute_only":
+                matched_run = None
+                for existing_run in batch_manifest.get("runs", []):
+                    if isinstance(existing_run, dict) and existing_run.get("run_name") == run_name:
+                        matched_run = existing_run
+                        break
 
+                if matched_run is None:
+                    matched_run = {
+                        "target_id": target_id,
+                        "subject": subject,
+                        "function": function,
+                        "run_group_id": run_group_id,
+                        "run_index_for_target": run_index_for_target,
+                        "run_name": run_name,
+                        "run_dir": f"harness/runs/{run_name}",
+                    }
+                    batch_manifest.setdefault("runs", []).append(matched_run)
+
+                matched_run["execution_return_code"] = return_code
+                matched_run["execution_status"] = status
+                matched_run["execution_failure_reason"] = failure_reason
+
+                execution_summary = batch_manifest["execution"]["summary"]
+                execution_summary["total"] += 1
+                if status in execution_summary:
+                    execution_summary[status] += 1
+
+                if status == "failure" and failure_reason:
+                    counts = execution_summary["failure_reason_counts"]
+                    counts[failure_reason] = counts.get(failure_reason, 0) + 1
+            else:
                 batch_manifest["runs"].append({
                     "target_id": target_id,
                     "subject": subject,
@@ -540,12 +738,21 @@ def main():
                     counts = batch_manifest["summary"]["failure_reason_counts"]
                     counts[failure_reason] = counts.get(failure_reason, 0) + 1
 
-                save_json(batches_dir / f"{batch_id}.json", batch_manifest)
+            run_elapsed = time.time() - run_started
+            print(
+                f"[RUN DONE] {run_name} status={status} return_code={return_code} "
+                f"elapsed={format_elapsed(run_elapsed)}"
+            )
+
+            save_batch_manifest(batch_manifest_path, batch_manifest, batch_id)
 
         print("\nBatch complete.")
-        print(f"Batch manifest: {batches_dir / f'{batch_id}.json'}")
+        print(f"Batch manifest: {batch_manifest_path}")
         print(f"Batch log: {log_path}")
-        print(f"Summary: {batch_manifest['summary']}")
+        if pipeline_mode == "execute_only":
+            print(f"Summary: {batch_manifest['execution']['summary']}")
+        else:
+            print(f"Summary: {batch_manifest['summary']}")
     finally:
         sys.stdout = original_stdout
         sys.stderr = original_stderr
