@@ -42,3 +42,24 @@ class MutantResult:
     target_id: Optional[str] = None
     run_name: Optional[str] = None
     mutant_hash: Optional[str] = None
+    worker_id: Optional[int] = None
+
+
+@dataclass
+class TestObservation:
+    test_name: str
+    eligible: bool
+    executed: bool
+    outcome: str
+    duration_ms: Optional[int] = None
+    failure_type: Optional[str] = None
+    message: Optional[str] = None
+    worker_id: Optional[int] = None
+    execution_index: Optional[int] = None
+
+
+@dataclass
+class TestRunResult:
+    success: bool
+    log: str
+    observations: list[TestObservation]

@@ -66,6 +66,8 @@ def write_run_manifest(
             pass
 
     payload = {
+        "run_name": run_path.name,
+        "run_dir": str(run_path),
         "created_at_utc": created_at_utc,
         "started_at_utc": started_at_utc,
         "completed_at_utc": completed_at_utc,

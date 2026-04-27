@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from harness.adapters.base import BenchmarkAdapter
-from harness.models import Subject, Target
+from harness.models import Subject, Target, TestObservation, TestRunResult
 
 
 class MockAdapter(BenchmarkAdapter):
@@ -34,6 +34,30 @@ class MockAdapter(BenchmarkAdapter):
             return False, "Mock test failed: mutant killed (digit handling)"
 
         return True, "Mock tests passed: mutant survived"
+
+    def test_target(self, workdir: str, eligible_tests: list[str]) -> TestRunResult:
+        test_ok, log = self.test(workdir)
+        observations: list[TestObservation] = []
+
+        failing_tests: set[str] = set()
+        if not test_ok and eligible_tests:
+            failing_tests.add(eligible_tests[0])
+
+        for index, test_name in enumerate(eligible_tests, start=1):
+            observations.append(
+                TestObservation(
+                    test_name=test_name,
+                    eligible=True,
+                    executed=True,
+                    outcome="FAIL" if test_name in failing_tests else "PASS",
+                    duration_ms=None,
+                    failure_type="ASSERTION" if test_name in failing_tests else None,
+                    message=log if test_name in failing_tests else None,
+                    execution_index=index,
+                )
+            )
+
+        return TestRunResult(success=test_ok, log=log, observations=observations)
 
     def apply_mutant(self, workdir: str, target: Target, mutant_code: str) -> None:
         source_file = Path(workdir) / "mock_source.java"

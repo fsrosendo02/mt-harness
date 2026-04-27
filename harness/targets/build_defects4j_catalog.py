@@ -16,6 +16,7 @@ from harness.targets.java_method_extractor import (
     normalize_start_idx,
     parse_ctags_methods,
 )
+from harness.targets.ids import format_target_id
 
 
 # -----------------------------
@@ -322,9 +323,12 @@ def build_catalog(project, bug_ids, version, max_per_project, max_per_function, 
                     m["subject"] = f"{project}_{bug_id}"
                     m["version"] = version
                     m["language"] = "java"
-                    m["target_id"] = (
-                        f"{project.lower()}_{bug_id}{version}_"
-                        f"{m['function']}__line{m['start_line']}"
+                    m["target_id"] = format_target_id(
+                        subject=m["subject"],
+                        version=m["version"],
+                        function=m["function"],
+                        start_line=m["start_line"],
+                        end_line=m["end_line"],
                     )
                     all_targets.append(m)
 
@@ -376,7 +380,13 @@ def main():
         )
         all_catalog.extend(project_catalog)
 
-    Path(args.output).write_text(json.dumps(all_catalog, indent=2), encoding="utf-8")
+    output_path = Path(args.output)
+    payload = {
+        "catalog_name": output_path.stem,
+        "dataset": "defects4j",
+        "targets": all_catalog,
+    }
+    output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"Saved {len(all_catalog)} targets to {args.output}")
 
 

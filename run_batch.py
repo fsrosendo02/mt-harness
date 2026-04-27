@@ -12,8 +12,16 @@ import subprocess
 
 from harness.models import Subject, Target
 from harness.reporting.validation import validate_run_dir
-from harness.storage.layout import execution_results_path, execution_summary_path, manifest_path
+from harness.storage.layout import (
+    batches_root,
+    execution_results_path,
+    execution_summary_path,
+    execution_test_results_path,
+    manifest_path,
+    runs_root,
+)
 from harness.storage.results import RESULT_FIELDNAMES
+from harness.storage.test_results import TEST_RESULT_FIELDNAMES
 from harness.storage.run_state import write_run_manifest
 from harness.targets.catalog import load_catalog_entries
 
@@ -79,13 +87,8 @@ def format_elapsed(seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
 
-def batch_manifest_copy_path(batch_id: str) -> Path:
-    return Path("harness/runs") / f"{batch_id}.json"
-
-
-def save_batch_manifest(batch_manifest_path: Path, batch_manifest: dict, batch_id: str) -> None:
+def save_batch_manifest(batch_manifest_path: Path, batch_manifest: dict) -> None:
     save_json(batch_manifest_path, batch_manifest)
-    save_json(batch_manifest_copy_path(batch_id), batch_manifest)
 
 
 def resolve_source_batch_manifest(base_cfg: dict, batches_dir: Path) -> Path:
@@ -259,6 +262,10 @@ def write_empty_results_csv(run_dir: Path) -> None:
     csv_path = execution_results_path(run_dir)
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     csv_path.write_text(",".join(RESULT_FIELDNAMES) + "\n", encoding="utf-8")
+    execution_test_results_path(run_dir).write_text(
+        ",".join(TEST_RESULT_FIELDNAMES) + "\n",
+        encoding="utf-8",
+    )
 
 
 def cleanup_killed_run_tmp_paths(cfg: dict) -> list[str]:
@@ -506,6 +513,21 @@ def stream_process_output(proc: subprocess.Popen) -> threading.Thread:
     return thread
 
 
+def print_run_artifact_status(run_dir: Path) -> None:
+    manifest_file = manifest_path(run_dir)
+    results_file = execution_results_path(run_dir)
+    test_results_file = execution_test_results_path(run_dir)
+    summary_file = execution_summary_path(run_dir)
+    error_file = run_dir / "run_error.txt"
+
+    print(f"[ARTIFACTS] manifest={manifest_file} exists={manifest_file.exists()}")
+    print(f"[ARTIFACTS] results={results_file} exists={results_file.exists()}")
+    print(f"[ARTIFACTS] test_results={test_results_file} exists={test_results_file.exists()}")
+    print(f"[ARTIFACTS] summary={summary_file} exists={summary_file.exists()}")
+    if error_file.exists():
+        print(f"[ARTIFACTS] error={error_file} exists=True")
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python3 run_batch.py <config_file>")
@@ -515,7 +537,7 @@ def main():
     base_cfg = load_json(base_config_path)
     pipeline_mode = pipeline_mode_from_cfg(base_cfg)
 
-    batches_dir = Path("harness/experiments/batches")
+    batches_dir = batches_root()
     batch_timeout = base_cfg.get("batch_timeout", 1200)
     logs_dir = Path("logs")
     logs_dir.mkdir(parents=True, exist_ok=True)
@@ -610,9 +632,21 @@ def main():
                 },
             }
 
-        save_batch_manifest(batch_manifest_path, batch_manifest, batch_id)
+        save_batch_manifest(batch_manifest_path, batch_manifest)
 
-        for run_spec in run_specs:
+        print(
+            f"[BATCH START] id={batch_id} pipeline_mode={pipeline_mode} "
+            f"runs={len(run_specs)} timeout={batch_timeout}s"
+        )
+        print(f"[BATCH START] manifest={batch_manifest_path}")
+        print(f"[BATCH START] log={log_path}")
+        if pipeline_mode == "execute_only":
+            print(f"[BATCH START] source_batch_manifest={source_batch_manifest_path}")
+        else:
+            print(f"[BATCH START] catalog={catalog_path}")
+
+        total_runs = len(run_specs)
+        for run_number, run_spec in enumerate(run_specs, start=1):
             target_id = run_spec.get("target_id")
             subject = run_spec.get("subject")
             function = run_spec.get("function")
@@ -622,14 +656,21 @@ def main():
             run_name = run_spec["run_name"]
             cfg = dict(run_spec["cfg"])
 
-            run_dir = Path(f"harness/runs/{run_name}")
+            run_dir = runs_root() / run_name
             run_dir.mkdir(parents=True, exist_ok=True)
             save_json(run_dir / "run_config.json", cfg)
 
-            tmp_config = Path("configs/tmp_batch_config.json")
+            tmp_config = Path("tmp") / "batch_configs" / batch_id / f"{run_name}.json"
+            tmp_config.parent.mkdir(parents=True, exist_ok=True)
             tmp_config.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
-            print(f"\n=== Running {target_id} [run {run_index_for_target}/{runs_per_target}] -> {run_name} ===")
+            print(
+                f"\n=== Batch run {run_number}/{total_runs}: {target_id} "
+                f"[run {run_index_for_target}/{runs_per_target}] -> {run_name} ==="
+            )
+            print(f"[RUN START] subject={subject} function={function}")
+            print(f"[RUN START] run_dir={run_dir}")
+            print(f"[RUN START] config={tmp_config}")
             run_started = time.time()
 
             proc = subprocess.Popen(
@@ -700,7 +741,7 @@ def main():
                         "run_group_id": run_group_id,
                         "run_index_for_target": run_index_for_target,
                         "run_name": run_name,
-                        "run_dir": f"harness/runs/{run_name}",
+                        "run_dir": str(runs_root() / run_name),
                     }
                     batch_manifest.setdefault("runs", []).append(matched_run)
 
@@ -724,7 +765,7 @@ def main():
                     "run_group_id": run_group_id,
                     "run_index_for_target": run_index_for_target,
                     "run_name": run_name,
-                    "run_dir": f"harness/runs/{run_name}",
+                    "run_dir": str(runs_root() / run_name),
                     "return_code": return_code,
                     "status": status,
                     "failure_reason": failure_reason,
@@ -743,8 +784,9 @@ def main():
                 f"[RUN DONE] {run_name} status={status} return_code={return_code} "
                 f"elapsed={format_elapsed(run_elapsed)}"
             )
+            print_run_artifact_status(run_dir)
 
-            save_batch_manifest(batch_manifest_path, batch_manifest, batch_id)
+            save_batch_manifest(batch_manifest_path, batch_manifest)
 
         print("\nBatch complete.")
         print(f"Batch manifest: {batch_manifest_path}")

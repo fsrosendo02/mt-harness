@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from harness.adapters.defects4j import Defects4JAdapter
-from harness.experiments.metadata import build_experiment_metadata
+from harness.executions.metadata import build_experiment_metadata
 from harness.generators.llm import LLMMutantGenerator
 from harness.llm.io import load_generation_mutants, save_generation_artifacts
 from harness.llm.parsing import MissingMutantsListError, parse_report_to_dict
@@ -19,9 +19,20 @@ from harness.models import Subject, Target
 from harness.runners.mutation_runner import MutationRunner
 from harness.storage.artifacts import save_rejected_mutant_artifacts
 from harness.storage.cleanup import cleanup_paths
-from harness.storage.layout import execution_dir, execution_results_path, execution_summary_path, generation_dir, manifest_path
+from harness.storage.layout import (
+    catalog_target_tests_csv_path,
+    runs_root,
+    execution_dir,
+    execution_results_path,
+    execution_summary_path,
+    execution_test_results_path,
+    generation_dir,
+    manifest_path,
+)
 from harness.storage.results import RESULT_FIELDNAMES
+from harness.storage.test_results import TEST_RESULT_FIELDNAMES
 from harness.storage.run_state import prepare_run_dir, write_run_manifest
+from harness.reporting.kill_matrix import build_kill_matrices
 from harness.targets.resolver import resolve_target
 
 
@@ -106,7 +117,7 @@ def merge_with_existing_run_config(cfg: dict) -> dict:
     if not run_name:
         return cfg
 
-    run_path = Path("harness/runs") / str(run_name)
+    run_path = runs_root() / str(run_name)
     run_config_path = run_path / "run_config.json"
     if not run_config_path.exists():
         return cfg
@@ -145,6 +156,11 @@ def write_empty_results_csv(run_dir: str):
 
     with csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=RESULT_FIELDNAMES)
+        writer.writeheader()
+
+    test_results_path = execution_test_results_path(run_dir)
+    with test_results_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=TEST_RESULT_FIELDNAMES)
         writer.writeheader()
 
     return csv_path
@@ -200,6 +216,8 @@ def classify_exception(exc: Exception) -> tuple[str, str, str]:
 
     if "timed out" in lowered or lowered.endswith("_timeout") or " timeout" in lowered:
         return "failure", "timeout", message
+    if lowered.startswith("strict target-test validation failed:"):
+        return "failure", "missing_target_tests", message
 
     return "failure", exc.__class__.__name__, message
 
@@ -297,6 +315,13 @@ def ensure_execute_only_config(cfg: dict, manifest_subject: Subject, manifest_ta
     cfg.setdefault("end_line", manifest_target.end_line)
     cfg.setdefault("target_id", manifest_target.target_id)
     return cfg
+
+
+def resolve_run_target_tests_csv(cfg: dict) -> str | None:
+    catalog_file = cfg.get("catalog_file")
+    if not catalog_file:
+        return None
+    return str(catalog_target_tests_csv_path(catalog_file))
 
 
 def build_provider(cfg: dict):
@@ -451,10 +476,16 @@ def ensure_failed_run_artifacts(
 def maybe_rebuild_index(cfg: dict) -> None:
     if cfg.get("rebuild_index", True):
         t = time.time()
-        from harness.experiments.build_experiment_index import build_experiment_index
+        from harness.reporting.experiment_index import build_experiment_index
 
         build_experiment_index()
         log_duration("Rebuild experiment index", t)
+
+
+def maybe_build_kill_matrix(cfg: dict) -> None:
+    t = time.time()
+    build_kill_matrices(group_by="run")
+    log_duration("Build kill matrices", t)
 
 
 def main():
@@ -483,8 +514,8 @@ def main():
         log_duration("Config load", t)
         log(f"Pipeline mode: {pipeline_mode}")
 
-        run_dir = f"harness/runs/{cfg['run_name']}"
-        run_path = Path(run_dir)
+        run_path = runs_root() / cfg["run_name"]
+        run_dir = str(run_path)
         workdir_base = f"tmp/{cfg['run_name']}"
         base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
 
@@ -794,6 +825,7 @@ def main():
             rebuild_index=cfg.get("rebuild_index", True),
             prepare_run_dir_on_start=False,
             mutant_workers=cfg.get("mutant_workers", 1),
+            target_tests_csv_path=resolve_run_target_tests_csv(cfg),
         )
         log_duration("[execution] mutation execution", exec_start)
 
@@ -811,6 +843,8 @@ def main():
             completed_at_utc=datetime.now(timezone.utc).isoformat(),
         )
         log_duration("Finalize run manifest", t)
+
+        maybe_build_kill_matrix(cfg)
 
         log("Done.")
         log(f"Results stored in: {run_dir}")
@@ -832,6 +866,7 @@ def main():
                 extra_metadata=extra_metadata,
                 started_at_utc=started_at_utc,
             )
+            maybe_build_kill_matrix(cfg)
             maybe_rebuild_index(cfg)
 
         raise

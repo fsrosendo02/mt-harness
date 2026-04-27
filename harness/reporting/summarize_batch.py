@@ -2,13 +2,12 @@ import argparse
 import csv
 import json
 from collections import Counter, defaultdict
-from pathlib import Path
 
-from harness.storage.layout import manifest_path, resolve_summary_path
+from harness.storage.layout import batches_root, manifest_path, reports_root, resolve_summary_path, runs_root
 
-RUNS_DIR = Path("harness/runs")
-BATCHES_DIR = Path("harness/experiments/batches")
-REPORTING_DIR = Path("harness/reporting/out")
+RUNS_DIR = runs_root()
+BATCHES_DIR = batches_root()
+REPORTING_DIR = reports_root() / "batch_summaries"
 
 
 def load_json(path: Path):
