@@ -43,6 +43,7 @@ TARGET_TESTS_FIELDNAMES = [
     "end_line",
     "test_name",
     "coverage_source",
+    "match_mode",
 ]
 KILL_OUTCOMES = {"FAIL", "ERROR"}
 

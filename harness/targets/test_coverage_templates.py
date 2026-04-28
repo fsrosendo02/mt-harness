@@ -32,6 +32,7 @@ TARGET_TESTS_FIELDNAMES = [
     "end_line",
     "test_name",
     "coverage_source",
+    "match_mode",
 ]
 
 
@@ -53,6 +54,7 @@ def row_for_entry(catalog: str, entry: dict[str, Any]) -> dict[str, Any]:
         "end_line": entry.get("end_line", ""),
         "test_name": "",
         "coverage_source": "",
+        "match_mode": "",
     }
 
 
