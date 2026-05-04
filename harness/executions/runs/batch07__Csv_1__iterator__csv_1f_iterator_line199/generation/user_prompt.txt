@@ -1,0 +1,70 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public Iterator<CSVRecord> iterator() {
+ 2:         return new Iterator<CSVRecord>() {
+ 3:             private CSVRecord current;
+ 4:             
+ 5:             public boolean hasNext() {
+ 6:                 if (current == null) {
+ 7:                     current = getNextRecord();
+ 8:                 }
+ 9:                 
+10:                 return current != null;
+11:             }
+12: 
+13:             public CSVRecord next() {
+14:                 CSVRecord next = current;
+15:                 current = null;
+16: 
+17:                 if (next == null) {
+18:                     // hasNext() wasn't called before
+19:                     next = getNextRecord();
+20:                     if (next == null) {
+21:                         throw new NoSuchElementException("No more CSV records available");
+22:                     }
+23:                 }
+24:                 
+25:                 return next;
+26:             }
+27:             
+28:             private CSVRecord getNextRecord() {
+29:                 try {
+30:                     return getRecord();
+31:                 } catch (IOException e) {
+32:                     throw new RuntimeException(e);
+33:                 }
+34:             }
+35: 
+36:             public void remove() {
+37:                 throw new UnsupportedOperationException();
+38:             }
+39:         };
+40:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

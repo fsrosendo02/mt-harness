@@ -18,6 +18,7 @@ DEFAULT_EXPERIMENT_METADATA = {
     "run_index_for_target": None,
     "runs_per_target": None,
     "mutant_workers": 1,
+    "missing_target_tests_policy": None,
     "n_accepted_mutants": None,
     "n_rejected_mutants": None,
     "acceptance_rate": None,
@@ -27,6 +28,14 @@ DEFAULT_EXPERIMENT_METADATA = {
     "rej_non_executable_structural_change": 0,
     "rej_precode_not_found": 0,
     "rej_ambiguous_precode_match": 0,
+    "parsed_mutants_integrity": None,
+    "requested_mutant_count": None,
+    "loaded_mutant_count": None,
+    "recovered_mutant_count": 0,
+    "missing_mutant_count": None,
+    "target_test_coverage_status": None,
+    "eligible_test_count": None,
+    "target_tests_csv_path": None,
     "notes": "",
 }
 

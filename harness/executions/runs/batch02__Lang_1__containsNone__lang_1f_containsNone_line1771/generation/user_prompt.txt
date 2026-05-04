@@ -1,0 +1,59 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static boolean containsNone(final CharSequence cs, final char... searchChars) {
+ 2:         if (cs == null || searchChars == null) {
+ 3:             return true;
+ 4:         }
+ 5:         final int csLen = cs.length();
+ 6:         final int csLast = csLen - 1;
+ 7:         final int searchLen = searchChars.length;
+ 8:         final int searchLast = searchLen - 1;
+ 9:         for (int i = 0; i < csLen; i++) {
+10:             final char ch = cs.charAt(i);
+11:             for (int j = 0; j < searchLen; j++) {
+12:                 if (searchChars[j] == ch) {
+13:                     if (Character.isHighSurrogate(ch)) {
+14:                         if (j == searchLast) {
+15:                             // missing low surrogate, fine, like String.indexOf(String)
+16:                             return false;
+17:                         }
+18:                         if (i < csLast && searchChars[j + 1] == cs.charAt(i + 1)) {
+19:                             return false;
+20:                         }
+21:                     } else {
+22:                         // ch is in the Basic Multilingual Plane
+23:                         return false;
+24:                     }
+25:                 }
+26:             }
+27:         }
+28:         return true;
+29:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

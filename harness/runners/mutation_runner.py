@@ -24,7 +24,13 @@ from harness.storage.run_state import (
     write_run_manifest,
 )
 from harness.models import MutantResult, TestObservation
-from harness.targets.target_tests import load_target_test_map, target_tests_for
+from harness.targets.target_tests import (
+    MissingTargetTestsFileError,
+    NoMappedTargetTestsError,
+    load_target_test_map,
+    resolve_target_tests_path,
+    target_tests_for,
+)
 from harness.utils.mutant_identity import compute_mutant_hash
 from harness.utils.source import extract_target_code
 
@@ -51,9 +57,9 @@ class MutationRunner:
             return
 
         target_ref = getattr(target, "target_id", None) or target.function_name or target.file_path
-        raise ValueError(
+        raise NoMappedTargetTestsError(
             "Strict target-test validation failed: "
-            f"no eligible tests found for target '{target_ref}' "
+            f"no mapped target tests found for target '{target_ref}' "
             f"(dataset={subject.dataset}, subject={subject.subject_id}). "
             "Populate the per-catalog target_tests.csv coverage mapping for this target "
             "before running mutation execution."
@@ -291,6 +297,7 @@ class MutationRunner:
         prepare_run_dir_on_start=True,
         mutant_workers=1,
         target_tests_csv_path=None,
+        missing_target_tests_policy="fail",
     ):
         total_start = time.time()
         created_tmp_paths: list[str] = []
@@ -307,13 +314,26 @@ class MutationRunner:
         execution_path.mkdir(parents=True, exist_ok=True)
         csv_path = execution_results_path(run_path)
         test_results_csv_path = execution_test_results_path(run_path)
-        target_test_map = load_target_test_map(csv_path=target_tests_csv_path)
+        resolved_target_tests_path = resolve_target_tests_path(csv_path=target_tests_csv_path)
+        if not resolved_target_tests_path.exists():
+            raise MissingTargetTestsFileError(
+                f"Target tests CSV not found: {resolved_target_tests_path}"
+            )
+
+        target_test_map = load_target_test_map(csv_path=resolved_target_tests_path)
         eligible_tests = target_tests_for(subject, target, target_test_map)
-        self._require_eligible_tests(
-            subject=subject,
-            target=target,
-            eligible_tests=eligible_tests,
-        )
+        if eligible_tests:
+            coverage_status = "mapped"
+        else:
+            if missing_target_tests_policy == "report_and_skip":
+                coverage_status = "no_coverage"
+            else:
+                self._require_eligible_tests(
+                    subject=subject,
+                    target=target,
+                    eligible_tests=eligible_tests,
+                )
+                coverage_status = "mapped"
 
         t = time.time()
         write_run_manifest(
@@ -326,6 +346,26 @@ class MutationRunner:
             extra_metadata=extra_metadata,
         )
         log_duration("Write run manifest", t)
+
+        if coverage_status == "no_coverage":
+            log(
+                f"[coverage] no mapped tests for target "
+                f"{getattr(target, 'target_id', None) or target.function_name}; "
+                "recording no_coverage and skipping execution"
+            )
+            return {
+                "run_status": "no_coverage",
+                "failure_reason": "no_mapped_target_tests",
+                "failure_message": (
+                    f"No mapped target tests found in {resolved_target_tests_path} "
+                    f"for target {getattr(target, 'target_id', None) or target.function_name}"
+                ),
+                "extra_metadata_updates": {
+                    "target_tests_csv_path": str(resolved_target_tests_path),
+                    "target_test_coverage_status": "no_coverage",
+                    "eligible_test_count": 0,
+                },
+            }
 
         completed_mutant_ids = set()
         if run_mode == "resume":
@@ -470,6 +510,16 @@ class MutationRunner:
                 log_duration("Rebuild experiment index", t)
 
             log_duration("MutationRunner total", total_start)
+            return {
+                "run_status": "ok",
+                "failure_reason": None,
+                "failure_message": None,
+                "extra_metadata_updates": {
+                    "target_tests_csv_path": str(resolved_target_tests_path),
+                    "target_test_coverage_status": "mapped",
+                    "eligible_test_count": len(eligible_tests),
+                },
+            }
         finally:
             if cleanup_tmp:
                 cleanup_targets = list(created_tmp_paths)

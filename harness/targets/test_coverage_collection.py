@@ -413,6 +413,33 @@ def coverage_for_test(
     return result.returncode == 0, result.stdout + "\n" + result.stderr
 
 
+def is_zero_coverage_division_bug(workdir: Path, log_text: str) -> bool:
+    if "Illegal division by zero" not in log_text:
+        return False
+
+    summary_path = workdir / "summary.csv"
+    coverage_xml_path = workdir / "coverage.xml"
+    if not summary_path.exists() or not coverage_xml_path.exists():
+        return False
+
+    try:
+        with summary_path.open(encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            row = next(reader, None)
+    except OSError:
+        return False
+
+    if row is None:
+        return False
+
+    return (
+        row.get("LinesTotal") == "0"
+        and row.get("LinesCovered") == "0"
+        and row.get("ConditionsTotal") == "0"
+        and row.get("ConditionsCovered") == "0"
+    )
+
+
 def coverage_row(
     *,
     catalog: str,
@@ -580,6 +607,9 @@ def collect_for_catalog(
                 instrument_classes=instrument_path,
                 timeout=timeout,
             )
+            zero_coverage_bug = (not ok) and is_zero_coverage_division_bug(subject_workdir, log_text)
+            if zero_coverage_bug:
+                ok = True
             test_log_dir = subject_workdir / ".target_coverage" / "logs" / "subject"
             write_timestamped_text_log(test_log_dir / f"{safe_name(test_name)}.log", log_text)
 
@@ -593,6 +623,13 @@ def collect_for_catalog(
                 f"[coverage] subject-test {test_index}/{len(tests)} finished ok={ok} {subject_id} :: {test_name}",
                 log_path=log_path,
             )
+
+            if zero_coverage_bug:
+                log(
+                    "[coverage] note detected Defects4J zero-coverage division bug; "
+                    "treating this run as valid zero coverage instead of failed execution",
+                    log_path=log_path,
+                )
 
             if not ok:
                 failure_excerpt = next(

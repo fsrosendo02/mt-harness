@@ -1,0 +1,59 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private SubHyperplane<S> recurseIntersection(final BSPTree<S> node, final SubHyperplane<S> sub) {
+ 2: 
+ 3:         if (node.getCut() == null) {
+ 4:             return (Boolean) node.getAttribute() ? sub.copySelf() : null;
+ 5:         }
+ 6: 
+ 7:         final Hyperplane<S> hyperplane = node.getCut().getHyperplane();
+ 8:         switch (sub.side(hyperplane)) {
+ 9:         case PLUS :
+10:             return recurseIntersection(node.getPlus(), sub);
+11:         case MINUS :
+12:             return recurseIntersection(node.getMinus(), sub);
+13:         case BOTH :
+14:             final SubHyperplane.SplitSubHyperplane<S> split = sub.split(hyperplane);
+15:             final SubHyperplane<S> plus  = recurseIntersection(node.getPlus(),  split.getPlus());
+16:             final SubHyperplane<S> minus = recurseIntersection(node.getMinus(), split.getMinus());
+17:             if (plus == null) {
+18:                 return minus;
+19:             } else if (minus == null) {
+20:                 return plus;
+21:             } else {
+22:                 return plus.reunite(minus);
+23:             }
+24:         default :
+25:             return recurseIntersection(node.getPlus(),
+26:                                        recurseIntersection(node.getMinus(), sub));
+27:         }
+28: 
+29:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

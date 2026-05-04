@@ -9,7 +9,7 @@ from pathlib import Path
 from harness.adapters.defects4j import Defects4JAdapter
 from harness.executions.metadata import build_experiment_metadata
 from harness.generators.llm import LLMMutantGenerator
-from harness.llm.io import load_generation_mutants, save_generation_artifacts
+from harness.llm.io import load_generation_mutants_with_recovery, save_generation_artifacts
 from harness.llm.parsing import MissingMutantsListError, parse_report_to_dict
 from harness.llm.prompt_builder import PromptBuilder
 from harness.llm.providers.gemini_provider import GeminiProvider
@@ -34,6 +34,7 @@ from harness.storage.test_results import TEST_RESULT_FIELDNAMES
 from harness.storage.run_state import prepare_run_dir, write_run_manifest
 from harness.reporting.kill_matrix import build_kill_matrices
 from harness.targets.resolver import resolve_target
+from harness.targets.target_tests import MissingTargetTestsFileError, NoMappedTargetTestsError
 
 
 PIPELINE_MODE_FULL = "full"
@@ -134,6 +135,7 @@ def load_config(config_path: str) -> dict:
 
     pipeline_mode = pipeline_mode_from_cfg(cfg)
     cfg["pipeline_mode"] = pipeline_mode
+    cfg["missing_target_tests_policy"] = missing_target_tests_policy_from_cfg(cfg)
 
     if pipeline_mode in {PIPELINE_MODE_FULL, PIPELINE_MODE_GENERATE_ONLY}:
         cfg = validate_generation_config(cfg)
@@ -216,8 +218,10 @@ def classify_exception(exc: Exception) -> tuple[str, str, str]:
 
     if "timed out" in lowered or lowered.endswith("_timeout") or " timeout" in lowered:
         return "failure", "timeout", message
-    if lowered.startswith("strict target-test validation failed:"):
-        return "failure", "missing_target_tests", message
+    if isinstance(exc, MissingTargetTestsFileError):
+        return "failure", "missing_target_tests_file", message
+    if isinstance(exc, NoMappedTargetTestsError):
+        return "failure", "no_mapped_target_tests", message
 
     return "failure", exc.__class__.__name__, message
 
@@ -278,7 +282,13 @@ def load_existing_manifest(run_dir: str | Path) -> dict:
     manifest_file = manifest_path(run_dir)
     if not manifest_file.exists():
         raise FileNotFoundError(f"Run manifest not found: {manifest_file}")
-    return json.loads(manifest_file.read_text(encoding="utf-8"))
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    run_path = Path(run_dir)
+    if not manifest.get("run_name"):
+        manifest["run_name"] = run_path.name
+        manifest["run_dir"] = str(run_path)
+        manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return manifest
 
 
 def load_subject_target_from_manifest(run_dir: str | Path) -> tuple[Subject, Target, dict]:
@@ -314,14 +324,31 @@ def ensure_execute_only_config(cfg: dict, manifest_subject: Subject, manifest_ta
     cfg.setdefault("start_line", manifest_target.start_line)
     cfg.setdefault("end_line", manifest_target.end_line)
     cfg.setdefault("target_id", manifest_target.target_id)
+    if cfg.get("target_id") and not cfg.get("catalog_file"):
+        raise ValueError(
+            "execute_only config uses target_id but is missing catalog_file; "
+            "batch executions must pass the source catalog to resolve target tests"
+        )
     return cfg
 
 
 def resolve_run_target_tests_csv(cfg: dict) -> str | None:
     catalog_file = cfg.get("catalog_file")
+    if cfg.get("target_id") and not catalog_file:
+        raise ValueError(
+            "Config uses target_id but is missing catalog_file; cannot resolve "
+            "catalog-specific target_tests.csv"
+        )
     if not catalog_file:
         return None
     return str(catalog_target_tests_csv_path(catalog_file))
+
+
+def missing_target_tests_policy_from_cfg(cfg: dict) -> str:
+    policy = str(cfg.get("missing_target_tests_policy", "fail")).strip().lower()
+    if policy not in {"fail", "report_and_skip"}:
+        raise ValueError(f"Unsupported missing_target_tests_policy: {policy}")
+    return policy
 
 
 def build_provider(cfg: dict):
@@ -399,6 +426,7 @@ def build_extra_metadata(
             "notes",
             f"Prompt file: {cfg['prompt_file']}; Config file: {config_path}",
         ),
+        missing_target_tests_policy=cfg.get("missing_target_tests_policy"),
     )
 
 
@@ -782,6 +810,7 @@ def main():
                 extra_metadata["runs_per_target"] = cfg.get("runs_per_target")
             if cfg.get("mutant_workers") is not None:
                 extra_metadata["mutant_workers"] = cfg.get("mutant_workers")
+            extra_metadata["missing_target_tests_policy"] = cfg.get("missing_target_tests_policy")
             save_run_config(run_path, cfg)
 
             t = time.time()
@@ -791,8 +820,9 @@ def main():
 
             generation_path = generation_dir(run_path)
             t = time.time()
-            mutants = load_generation_mutants(generation_path)
+            mutants, mutant_load_info = load_generation_mutants_with_recovery(generation_path)
             log_duration("Load generated mutants", t)
+            extra_metadata.update(mutant_load_info)
 
             if not mutants:
                 raise ValueError(
@@ -803,6 +833,12 @@ def main():
                 f"Loaded {len(mutants)} generated mutants from "
                 f"{generation_path / 'parsed_mutants.json'}"
             )
+            if mutant_load_info.get("parsed_mutants_integrity") != "ok":
+                log(
+                    "[execute_only] parsed_mutants.json recovery engaged: "
+                    f"integrity={mutant_load_info.get('parsed_mutants_integrity')} "
+                    f"recovered={mutant_load_info.get('recovered_mutant_count', 0)}"
+                )
 
         t = time.time()
         log(f"Checking out subject into {base_snapshot_dir}")
@@ -811,7 +847,7 @@ def main():
 
         exec_start = time.time()
         log("[execution] mutation execution start")
-        runner.run(
+        execution_result = runner.run(
             subject=subject,
             target=target,
             mutants=mutants,
@@ -826,8 +862,26 @@ def main():
             prepare_run_dir_on_start=False,
             mutant_workers=cfg.get("mutant_workers", 1),
             target_tests_csv_path=resolve_run_target_tests_csv(cfg),
+            missing_target_tests_policy=cfg.get("missing_target_tests_policy", "fail"),
         )
         log_duration("[execution] mutation execution", exec_start)
+        execution_result = execution_result or {}
+        extra_metadata.update(execution_result.get("extra_metadata_updates") or {})
+
+        final_run_status = execution_result.get("run_status", "ok")
+        final_failure_reason = execution_result.get("failure_reason")
+        final_failure_message = execution_result.get("failure_message")
+
+        if final_run_status == "no_coverage":
+            t = time.time()
+            write_empty_results_csv(run_dir)
+            write_empty_summary_json(
+                run_dir,
+                run_status=final_run_status,
+                failure_reason=final_failure_reason,
+                failure_message=final_failure_message,
+            )
+            log_duration("Write no-coverage run artifacts", t)
 
         t = time.time()
         write_run_manifest(
@@ -838,13 +892,17 @@ def main():
             run_mode=cfg.get("run_mode", "overwrite"),
             workdir_base=workdir_base,
             extra_metadata=extra_metadata,
-            status="ok",
+            status=final_run_status,
+            failure_reason=final_failure_reason,
+            failure_message=final_failure_message,
             started_at_utc=started_at_utc,
             completed_at_utc=datetime.now(timezone.utc).isoformat(),
         )
         log_duration("Finalize run manifest", t)
 
         maybe_build_kill_matrix(cfg)
+        if final_run_status == "no_coverage":
+            maybe_rebuild_index(cfg)
 
         log("Done.")
         log(f"Results stored in: {run_dir}")

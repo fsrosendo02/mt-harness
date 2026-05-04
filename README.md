@@ -115,6 +115,7 @@ Campos importantes mais usados:
 - `pipeline_mode`: `full`, `generate_only` ou `execute_only`
 - `run_mode`: `fresh`, `overwrite` ou `resume`, conforme o contexto
 - `mutant_workers`: paralelismo na execução dos mutantes
+- `missing_target_tests_policy`: `fail` ou `report_and_skip` para distinguir erro de configuração de gap de cobertura
 - `cleanup_tmp`: limpa diretórios temporários no fim
 - `validate_after_run`: valida artefactos após a execução
 - `rebuild_index`: reconstrói o índice global após a run
@@ -201,6 +202,20 @@ Exemplo com JSON de saída:
 ```bash
 python3 summarize_results.py harness/executions/runs/<run_name>/execution/results.csv --json-out /tmp/summary.json
 ```
+
+### Reconstruir `batch manifest` a partir de runs antigas
+
+```bash
+python3 scripts/rebuild_batch_manifests.py
+```
+
+O que faz:
+
+- lê os `run_manifest.json` dentro de `harness/executions/runs/`
+- agrupa as runs por `extra_metadata.batch_id`
+- recria `harness/executions/batches/batchXX.json`
+
+Útil quando tens runs antigas no disco mas perdeste os manifestos de batch necessários para `execute_only`.
 
 ### Construir um catálogo de targets do Defects4J
 
@@ -458,7 +473,7 @@ O que valida:
 - `run_llm.py` e `run_batch.py` esperam sempre um ficheiro de configuração JSON como primeiro argumento.
 - `run_llm.py --help` e `run_batch.py --help` não funcionam como CLI tradicional porque os scripts leem diretamente `sys.argv[1]` como path de config.
 - o modo `execute_only` exige `run_name` numa run individual ou `source_batch_id`/`source_batch_manifest` num batch.
-- a infraestrutura de execução depende do mapeamento de testes por target; sem isso, a run pode falhar com validação estrita.
+- a infraestrutura de execução distingue entre `target_tests.csv` em falta e targets sem testes mapeados; com `missing_target_tests_policy: "report_and_skip"`, a run fecha com estado `no_coverage`.
 - o repositório hoje está centrado em `Defects4J`, mesmo que a estrutura interna já esteja preparada para abstrações por dataset.
 
 ## Ficheiros de Referência

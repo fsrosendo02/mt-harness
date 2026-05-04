@@ -53,20 +53,23 @@ def write_run_manifest(
     failure_message=None,
     started_at_utc=None,
     completed_at_utc=None,
+    run_name=None,
 ):
     run_path = Path(run_dir)
     manifest_path = run_path / "run_manifest.json"
     created_at_utc = datetime.now(timezone.utc).isoformat()
+    resolved_run_name = run_name or run_path.name
 
     if manifest_path.exists():
         try:
             existing = json.loads(manifest_path.read_text(encoding="utf-8"))
             created_at_utc = existing.get("created_at_utc", created_at_utc)
+            resolved_run_name = existing.get("run_name") or resolved_run_name
         except Exception:
             pass
 
     payload = {
-        "run_name": run_path.name,
+        "run_name": resolved_run_name,
         "run_dir": str(run_path),
         "created_at_utc": created_at_utc,
         "started_at_utc": started_at_utc,

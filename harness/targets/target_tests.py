@@ -14,6 +14,14 @@ from harness.storage.layout import (
 DEFAULT_TARGET_TESTS_CSV = global_target_tests_csv_path()
 
 
+class MissingTargetTestsFileError(FileNotFoundError):
+    pass
+
+
+class NoMappedTargetTestsError(ValueError):
+    pass
+
+
 def _key(dataset: str, subject_id: str, target_id: str) -> tuple[str, str, str]:
     return (
         str(dataset or "").strip(),
@@ -27,12 +35,7 @@ def load_target_test_map(
     *,
     catalog_file: str | Path | None = None,
 ) -> dict[tuple[str, str, str], list[str]]:
-    if csv_path is not None:
-        path = Path(csv_path)
-    elif catalog_file is not None:
-        path = catalog_target_tests_csv_path(catalog_file)
-    else:
-        path = Path(DEFAULT_TARGET_TESTS_CSV)
+    path = resolve_target_tests_path(csv_path=csv_path, catalog_file=catalog_file)
 
     if not path.exists():
         return {}
@@ -63,3 +66,15 @@ def target_tests_for(
             [],
         )
     )
+
+
+def resolve_target_tests_path(
+    csv_path: str | Path | None = None,
+    *,
+    catalog_file: str | Path | None = None,
+) -> Path:
+    if csv_path is not None:
+        return Path(csv_path)
+    if catalog_file is not None:
+        return catalog_target_tests_csv_path(catalog_file)
+    return Path(DEFAULT_TARGET_TESTS_CSV)

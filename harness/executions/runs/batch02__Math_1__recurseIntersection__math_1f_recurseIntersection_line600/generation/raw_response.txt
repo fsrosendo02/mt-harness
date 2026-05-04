@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "This mutant changes the condition to always return null, violating the behavior of returning a copy of subHyperplane if the node has no cut.",
+      "line": 4,
+      "precode": "return (Boolean) node.getAttribute() ? sub.copySelf() : null;",
+      "aftercode": "return null;"
+    },
+    {
+      "id": 2,
+      "reasoning": "This mutant alters the behavior by incorrectly returning the result of recurseIntersection on both children regardless of the side, potentially violating the correct partitioning of the subHyperplane based on the hyperplane.",
+      "line": 25,
+      "precode": "return recurseIntersection(node.getPlus(),\n                                recurseIntersection(node.getMinus(), sub));",
+      "aftercode": "return new SubHyperplane<S>();"
+    },
+    {
+      "id": 3,
+      "reasoning": "This mutant removes the check for null cut, which could lead to a NullPointerException if node.getAttribute() is not a Boolean.",
+      "line": 3,
+      "precode": "if (node.getCut() == null) {",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "This mutant modifies the side check to always return BOTH, potentially violating the correct handling of PLUS and MINUS sides.",
+      "line": 8,
+      "precode": "switch (sub.side(hyperplane)) {",
+      "aftercode": "switch (SubHyperplane.Side.BOTH) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "This mutant changes the split to return a new SubHyperplane without considering the original sub, potentially altering the result of the reunion.",
+      "line": 14,
+      "precode": "final SubHyperplane.SplitSubHyperplane<S> split = sub.split(hyperplane);",
+      "aftercode": "final SubHyperplane.SplitSubHyperplane<S> split = new SplitSubHyperplane<S>(new SubHyperplane<S>(), new SubHyperplane<S>());"
+    },
+    {
+      "id": 6,
+      "reasoning": "This mutant incorrectly returns the result of recurseIntersection on the plus subtree without considering the minus subtree, violating the behavior when both parts of the split are non-null.",
+      "line": 15,
+      "precode": "final SubHyperplane<S> plus = recurseIntersection(node.getPlus(), split.getPlus());",
+      "aftercode": "final SubHyperplane<S> plus = null;"
+    },
+    {
+      "id": 7,
+      "reasoning": "This mutant modifies the if-else structure to always return plus, potentially masking errors in minus or the reunion process.",
+      "line": 17,
+      "precode": "if (plus == null) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "This mutant changes the order of the reunion operation, potentially altering the result.",
+      "line": 22,
+      "precode": "return plus.reunite(minus);",
+      "aftercode": "return minus.reunite(plus);"
+    }
+  ]
+}

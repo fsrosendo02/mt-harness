@@ -111,6 +111,7 @@ def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]
     if not isinstance(runs, list) or not runs:
         raise ValueError("Source batch manifest does not contain any runs")
 
+    catalog_file = base_cfg.get("catalog_file") or source_manifest.get("catalog_file")
     built_runs = []
     for run in runs:
         if not isinstance(run, dict):
@@ -119,6 +120,26 @@ def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]
         run_name = run.get("run_name")
         if not run_name:
             raise ValueError("Source batch manifest contains a run without run_name")
+        if run.get("target_id") and not catalog_file:
+            raise ValueError(
+                "execute_only batch mode requires catalog_file when runs reference target_id; "
+                "set it in the source batch manifest or the base config"
+            )
+
+        cfg = {
+            "run_name": run_name,
+            "pipeline_mode": "execute_only",
+            "run_mode": base_cfg.get("run_mode", "overwrite"),
+            "mutant_workers": base_cfg.get("mutant_workers", 1),
+            "missing_target_tests_policy": base_cfg.get(
+                "missing_target_tests_policy", "fail"
+            ),
+            "cleanup_tmp": base_cfg.get("cleanup_tmp", True),
+            "validate_after_run": base_cfg.get("validate_after_run", True),
+            "rebuild_index": base_cfg.get("rebuild_index", True),
+        }
+        if catalog_file:
+            cfg["catalog_file"] = catalog_file
 
         built_runs.append(
             {
@@ -129,15 +150,7 @@ def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]
                 "run_index_for_target": run.get("run_index_for_target"),
                 "runs_per_target": run.get("runs_per_target"),
                 "run_name": run_name,
-                "cfg": {
-                    "run_name": run_name,
-                    "pipeline_mode": "execute_only",
-                    "run_mode": base_cfg.get("run_mode", "overwrite"),
-                    "mutant_workers": base_cfg.get("mutant_workers", 1),
-                    "cleanup_tmp": base_cfg.get("cleanup_tmp", True),
-                    "validate_after_run": base_cfg.get("validate_after_run", True),
-                    "rebuild_index": base_cfg.get("rebuild_index", True),
-                },
+                "cfg": cfg,
             }
         )
 
@@ -161,6 +174,7 @@ def build_generation_runs(catalog: list[dict], base_cfg: dict, batch_id: str) ->
 
             cfg = dict(base_cfg)
 
+            cfg["catalog_file"] = base_cfg["catalog_file"]
             cfg["target_id"] = entry["target_id"]
             cfg["dataset"] = entry["dataset"]
             cfg["subject"] = entry["subject"]
@@ -580,7 +594,9 @@ def main():
         if pipeline_mode == "execute_only":
             batch_manifest = dict(source_batch_manifest)
             batch_manifest["batch_id"] = batch_id
-            batch_manifest["catalog_file"] = batch_manifest.get("catalog_file")
+            batch_manifest["catalog_file"] = (
+                base_cfg.get("catalog_file") or batch_manifest.get("catalog_file")
+            )
             batch_manifest["targets"] = batch_manifest.get("targets") or [
                 run.get("target_id")
                 for run in batch_manifest.get("runs", [])
@@ -595,6 +611,7 @@ def main():
                 "summary": {
                     "ok": 0,
                     "failure": 0,
+                    "no_coverage": 0,
                     "no_valid_mutants": 0,
                     "generated": 0,
                     "total": 0,
@@ -625,6 +642,7 @@ def main():
                 "summary": {
                     "ok": 0,
                     "failure": 0,
+                    "no_coverage": 0,
                     "no_valid_mutants": 0,
                     "generated": 0,
                     "total": 0,

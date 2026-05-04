@@ -1,0 +1,35 @@
+         void refineSolution(final RealVector x) {
+            final int n = this.xL.getDimension();
+            if (lqnorm < cgnorm) {
+                if (!goodb) {
+                    x.setSubVector(0, this.xL);
+                } else {
+                    final double step = bstep / beta1;
+                    for (int i = 0; i < n; i++) {
+                        final double bi = mb.getEntry(i);
+                        final double xi = this.xL.getEntry(i);
+                        x.setEntry(i, xi + step * bi);
+                    }
+                }
+            } else {
+                final double anorm = FastMath.sqrt(tnorm);
+                final double diag = gbar == 0. ? anorm * MACH_PREC : gbar;
+                final double zbar = gammaZeta / diag;
+                final double step = (bstep + snprod * zbar) / beta1;
+                // ynorm = FastMath.sqrt(ynorm2 + zbar * zbar);
+                if (!goodb) {
+                    for (int i = 0; i < n; i++) {
+                        final double xi = this.xL.getEntry(i);
+                        final double wi = wbar.getEntry(i);
+                        x.setEntry(i, xi + zbar * wi);
+                    }
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        final double xi = this.xL.getEntry(i);
+                        final double wi = wbar.getEntry(i);
+                        final double bi = mb.getEntry(i);
+                        x.setEntry(i, xi + zbar * wi + step * bi);
+                    }
+                }
+            }
+        }
