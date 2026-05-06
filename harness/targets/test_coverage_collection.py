@@ -28,6 +28,9 @@ from harness.targets.test_coverage_templates import (
 
 WORK_ROOT = Path("tmp/target_coverage")
 LOGS_ROOT = Path("logs/coverage")
+ZERO_COVERAGE_BUG_SENTINEL = "__ZERO_COVERAGE_CONFIRMED__"
+ZERO_COVERAGE_BUG_SOURCE = "zero-coverage-bug"
+ZERO_COVERAGE_BUG_MODE = "tool_zero_coverage"
 
 
 def timestamp() -> str:
@@ -608,10 +611,39 @@ def collect_for_catalog(
                 timeout=timeout,
             )
             zero_coverage_bug = (not ok) and is_zero_coverage_division_bug(subject_workdir, log_text)
-            if zero_coverage_bug:
-                ok = True
             test_log_dir = subject_workdir / ".target_coverage" / "logs" / "subject"
             write_timestamped_text_log(test_log_dir / f"{safe_name(test_name)}.log", log_text)
+            if zero_coverage_bug:
+                ok = True
+                log(
+                    f"[coverage] note detected Defects4J zero-coverage division bug; "
+                    f"emitting sentinel rows for all targets of subject {subject_id}",
+                    log_path=log_path,
+                )
+                for class_name, class_entries in class_items:
+                    for entry in class_entries:
+                        rows.append(
+                            coverage_row(
+                                catalog=catalog,
+                                entry=entry,
+                                test_name=ZERO_COVERAGE_BUG_SENTINEL,
+                                coverage_source=ZERO_COVERAGE_BUG_SOURCE,
+                                match_mode=ZERO_COVERAGE_BUG_MODE,
+                            )
+                        )
+                persist_rows(
+                    output_path,
+                    rows,
+                    log_path=log_path,
+                    reason=f"{subject_id}:zero-coverage-bug:test:{test_index}",
+                )
+                remaining_tests = len(tests) - test_index
+                log(
+                    f"[coverage] zero-coverage bug confirmed on first failing coverage run; "
+                    f"skipping remaining {remaining_tests} test(s) for subject {subject_id}",
+                    log_path=log_path,
+                )
+                break
 
             for class_name in class_stats:
                 if ok:
@@ -623,13 +655,6 @@ def collect_for_catalog(
                 f"[coverage] subject-test {test_index}/{len(tests)} finished ok={ok} {subject_id} :: {test_name}",
                 log_path=log_path,
             )
-
-            if zero_coverage_bug:
-                log(
-                    "[coverage] note detected Defects4J zero-coverage division bug; "
-                    "treating this run as valid zero coverage instead of failed execution",
-                    log_path=log_path,
-                )
 
             if not ok:
                 failure_excerpt = next(

@@ -16,7 +16,8 @@ BATCHES_DIR = EXECUTIONS_DIR / "batches"
 
 REPORTS_DIR = HARNESS_DIR / "reports"
 EXPERIMENT_INDEX_CSV = REPORTS_DIR / "experiment_index.csv"
-KILL_MATRICES_DIR = REPORTS_DIR / "kill_matrices"
+MATRICES_DIR = REPORTS_DIR / "matrices"
+KILL_MATRICES_DIR = MATRICES_DIR / "base"
 
 LEGACY_RUNS_DIR = HARNESS_DIR / "runs"
 LEGACY_BATCHES_DIR = HARNESS_DIR / "experiments" / "batches"
@@ -77,6 +78,10 @@ def experiment_index_path() -> Path:
 
 def kill_matrices_dir() -> Path:
     return KILL_MATRICES_DIR
+
+
+def matrices_dir() -> Path:
+    return MATRICES_DIR
 
 
 def run_path(run_dir: str | Path) -> Path:

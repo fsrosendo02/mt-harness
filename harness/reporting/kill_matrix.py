@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import logging
 import re
 import sys
 from collections import defaultdict
@@ -20,6 +21,7 @@ from harness.storage.layout import (
     LEGACY_TARGET_TESTS_CSV,
     execution_results_path,
     execution_test_results_path,
+    experiment_index_path,
     global_target_tests_csv_path,
     kill_matrices_dir,
     manifest_path,
@@ -31,6 +33,7 @@ OUTPUT_DIR = kill_matrices_dir() if kill_matrices_dir().exists() else LEGACY_KIL
 TARGET_TESTS_CSV = (
     global_target_tests_csv_path() if global_target_tests_csv_path().exists() else LEGACY_TARGET_TESTS_CSV
 )
+EXPERIMENT_INDEX_CSV = experiment_index_path()
 TARGET_TESTS_FIELDNAMES = [
     "catalog",
     "dataset",
@@ -46,6 +49,177 @@ TARGET_TESTS_FIELDNAMES = [
     "match_mode",
 ]
 KILL_OUTCOMES = {"FAIL", "ERROR"}
+LOG = logging.getLogger(__name__)
+
+
+def _require_pandas():
+    try:
+        import pandas as pd
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "pandas is required for kill matrix reporting but is not installed in this environment."
+        ) from exc
+    return pd
+
+
+def _safe_output_name(value: Any) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "")).strip("_") or "unknown"
+
+
+def _validate_required_columns(df: "pd.DataFrame", required: set[str], context: str) -> None:
+    missing = sorted(required - set(df.columns))
+    if missing:
+        raise ValueError(f"{context} is missing required columns: {', '.join(missing)}")
+
+
+def _kill_flag_series(df: "pd.DataFrame") -> "pd.Series":
+    return df["outcome"].fillna("").astype(str).str.upper().eq("FAIL").astype(int)
+
+
+def _append_binary_kill_summary(matrix: "pd.DataFrame") -> "pd.DataFrame":
+    if matrix.empty:
+        matrix = matrix.copy()
+        matrix["n_tests_killing"] = []
+        matrix["killed"] = []
+        return matrix
+
+    test_columns = list(matrix.columns)
+    enriched = matrix.sort_index(axis=0).sort_index(axis=1).astype(int)
+    enriched["n_tests_killing"] = enriched[test_columns].sum(axis=1).astype(int)
+    enriched["killed"] = enriched["n_tests_killing"].gt(0).astype(int)
+    return enriched
+
+
+def load_all_runs(runs_dir: str | Path, index_path: str | Path) -> "pd.DataFrame":
+    pd = _require_pandas()
+    runs_dir = Path(runs_dir)
+    index_path = Path(index_path)
+
+    if not runs_dir.exists():
+        raise FileNotFoundError(f"Runs directory not found: {runs_dir}")
+    if not index_path.exists():
+        raise FileNotFoundError(f"Experiment index not found: {index_path}")
+
+    index_df = pd.read_csv(index_path)
+    long_paths = sorted(runs_dir.rglob("*kill_matrix_long.csv"))
+
+    frames: list["pd.DataFrame"] = []
+    for csv_path in long_paths:
+        try:
+            with csv_path.open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            frame = pd.DataFrame.from_records(rows)
+        except FileNotFoundError:
+            LOG.warning("Skipping missing kill matrix file: %s", csv_path)
+            continue
+        except pd.errors.EmptyDataError:
+            LOG.warning("Skipping empty kill matrix file: %s", csv_path)
+            continue
+
+        if frame.empty:
+            LOG.warning("Skipping empty kill matrix file: %s", csv_path)
+            continue
+        if "run_name" not in frame.columns:
+            frame["run_name"] = csv_path.name.removesuffix("_kill_matrix_long.csv")
+        frame["kill_matrix_path"] = str(csv_path)
+        frames.append(frame)
+
+    if not frames:
+        LOG.warning("No kill_matrix_long.csv files found under %s", runs_dir)
+        return pd.DataFrame()
+
+    combined = pd.concat(frames, ignore_index=True)
+    found_run_names = set(combined["run_name"].dropna().astype(str)) if "run_name" in combined.columns else set()
+    indexed_run_names = set(index_df["run_name"].dropna().astype(str)) if "run_name" in index_df.columns else set()
+    missing_from_disk = sorted(indexed_run_names - found_run_names)
+    for run_name in missing_from_disk:
+        LOG.warning("Skipping indexed run with no kill_matrix_long.csv found under %s: %s", runs_dir, run_name)
+
+    enriched = combined.merge(index_df, on="run_name", how="left", suffixes=("", "_index"))
+    return enriched
+
+
+def build_matrix_per_run(df: "pd.DataFrame") -> dict[str, "pd.DataFrame"]:
+    pd = _require_pandas()
+    if df.empty:
+        return {}
+
+    _validate_required_columns(df, {"run_name", "mutant_id", "test_name", "outcome"}, "Per-run matrix input")
+    matrices: dict[str, "pd.DataFrame"] = {}
+
+    for run_name, group in df.groupby("run_name", sort=True, dropna=False):
+        working = group.copy()
+        working["kill_flag"] = _kill_flag_series(working)
+        matrix = pd.pivot_table(
+            working,
+            index="mutant_id",
+            columns="test_name",
+            values="kill_flag",
+            aggfunc="max",
+            fill_value=0,
+        )
+        matrices[str(run_name)] = _append_binary_kill_summary(matrix)
+
+    return matrices
+
+
+def build_matrix_per_target(df: "pd.DataFrame") -> dict[str, "pd.DataFrame"]:
+    pd = _require_pandas()
+    if df.empty:
+        return {}
+
+    _validate_required_columns(
+        df,
+        {"target_id", "mutant_hash", "test_name", "outcome"},
+        "Per-target matrix input",
+    )
+    matrices: dict[str, "pd.DataFrame"] = {}
+
+    working = df.copy()
+    working["mutant_hash"] = working["mutant_hash"].fillna("").astype(str).str.strip()
+    working = working[working["mutant_hash"] != ""]
+
+    for target_id, group in working.groupby("target_id", sort=True, dropna=False):
+        target_df = group.copy()
+        target_df["kill_flag"] = _kill_flag_series(target_df)
+        matrix = pd.pivot_table(
+            target_df,
+            index="mutant_hash",
+            columns="test_name",
+            values="kill_flag",
+            aggfunc="max",
+            fill_value=0,
+        )
+        matrices[str(target_id)] = _append_binary_kill_summary(matrix)
+
+    return matrices
+
+
+def build_matrix_per_model(df: "pd.DataFrame") -> "pd.DataFrame":
+    pd = _require_pandas()
+    if df.empty:
+        return pd.DataFrame()
+
+    _validate_required_columns(df, {"model_name", "test_name", "outcome"}, "Per-model matrix input")
+    working = df.copy()
+    working["model_name"] = working["model_name"].fillna("unknown").astype(str)
+    working["kill_flag"] = _kill_flag_series(working).astype(float)
+
+    matrix = pd.pivot_table(
+        working,
+        index="model_name",
+        columns="test_name",
+        values="kill_flag",
+        aggfunc="mean",
+        fill_value=0.0,
+    ).sort_index(axis=0).sort_index(axis=1)
+
+    test_columns = list(matrix.columns)
+    if test_columns:
+        matrix["mean_kill_rate"] = matrix[test_columns].mean(axis=1)
+    else:
+        matrix["mean_kill_rate"] = 0.0
+    return matrix
 
 
 def parse_bool(value: Any) -> bool:

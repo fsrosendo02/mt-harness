@@ -34,6 +34,7 @@ O fluxo normal do projeto é:
 │   │   └── batches/              # manifestos de batches
 │   ├── llm/                      # parsing, prompts e providers
 │   ├── reporting/                # índices, summaries e kill matrices
+│   ├── reports/                  # artefactos agregados do harness, incluindo matrizes
 │   └── targets/                  # descoberta, validação e cobertura de targets
 ├── prompts/                      # prompts usados na geração
 ├── scripts/                      # helpers manuais
@@ -347,21 +348,63 @@ O que faz:
 
 ### Gerar kill matrices
 
-```bash
-python3 -m harness.reporting.kill_matrix --group-by project
-```
+O fluxo atual tem 2 passos.
 
-O que faz:
+1. gerar os ficheiros base `*_kill_matrix_long.csv` e `*_kill_matrix.csv`
+2. construir as matrizes finais por `run`, `target` e `model`
 
-- lê os resultados estruturados das runs
-- gera matrizes de mutante x teste
-- escreve CSVs por `project`, `subject` ou `run`
+No layout principal do harness:
 
-Exemplo por run:
+- o índice global fica em `harness/reports/experiment_index.csv`
+- os kill matrices base ficam em `harness/reports/matrices/base/`
+- as matrizes finais ficam em `harness/reports/matrices/`
+
+Alguns artefactos já existentes neste repo ainda usam o path legado `harness/experiments/target_coverage/kill_matrices/`. O CLI novo aceita esse layout por compatibilidade.
+
+Passo 1, gerar os kill matrices base a partir dos resultados estruturados:
 
 ```bash
 python3 -m harness.reporting.kill_matrix --group-by run
 ```
+
+O que faz:
+
+- lê `harness/executions/runs/<run_name>/execution/results.csv`
+- lê `harness/executions/runs/<run_name>/execution/test_results.csv`
+- gera os ficheiros base em `harness/reports/matrices/base/`
+
+Passo 2, construir as matrizes finais:
+
+```bash
+python3 -m harness.reporting.build_kill_matrices
+```
+
+O que faz:
+
+- lê todos os `*_kill_matrix_long.csv` em `harness/reports/matrices/base/`
+- junta com `harness/reports/experiment_index.csv`
+- escreve artefactos finais em `harness/reports/matrices/`
+
+Se estiveres a trabalhar com artefactos legados já produzidos em `harness/experiments/target_coverage/kill_matrices/`, usa:
+
+```bash
+python3 -m harness.reporting.build_kill_matrices \
+  --runs-dir harness/experiments/target_coverage/kill_matrices
+```
+
+Artefactos produzidos:
+
+- `harness/reports/matrices/per_run/<run_name>.csv`
+- `harness/reports/matrices/per_target/<target_id>.csv`
+- `harness/reports/matrices/per_model/model_kill_rates.csv`
+
+Exemplo com output Excel:
+
+```bash
+python3 -m harness.reporting.build_kill_matrices --format excel
+```
+
+Se `openpyxl` não estiver instalado, o comando falha com uma mensagem clara.
 
 ### Resumir um batch
 
@@ -411,7 +454,14 @@ Resultados e artefactos principais:
 - `harness/executions/runs/<run_name>/execution/summary.json`
 - `harness/executions/batches/batchNN.json`
 - `harness/reports/experiment_index.csv`
-- `harness/reports/kill_matrices/`
+- `harness/reports/matrices/base/`
+- `harness/reports/matrices/per_run/`
+- `harness/reports/matrices/per_target/`
+- `harness/reports/matrices/per_model/`
+
+Paths legados que ainda podem aparecer em artefactos antigos:
+
+- `harness/experiments/target_coverage/kill_matrices/`
 
 ## Fluxos Recomendados
 
@@ -422,7 +472,7 @@ Resultados e artefactos principais:
 3. recolher cobertura para preencher os testes por target
 4. combinar os mapeamentos num índice global, se necessário
 5. correr `run_batch.py`
-6. gerar índice e kill matrices
+6. gerar índice, kill matrices base e matrizes finais
 
 Comandos:
 
@@ -433,7 +483,8 @@ python3 -m harness.targets.test_coverage_collection harness/datasets/catalogs/de
 python3 -m harness.targets.test_coverage_templates --combine
 python3 run_batch.py configs/sample_config_full_pipeline.json
 python3 -m harness.reporting.experiment_index
-python3 -m harness.reporting.kill_matrix --group-by project
+python3 -m harness.reporting.kill_matrix --group-by run
+python3 -m harness.reporting.build_kill_matrices --runs-dir harness/reports/matrices/base
 ```
 
 ### Fluxo B: testar um target específico
