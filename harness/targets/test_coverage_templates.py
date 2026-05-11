@@ -78,13 +78,24 @@ def write_catalog_template(catalog_path: Path, output_dir: Path, *, force: bool 
 
 def combine_catalog_target_tests(catalogs_dir: Path, output_path: Path) -> Path:
     rows: list[dict[str, str]] = []
+    seen_keys: set[tuple[str, str, str, str]] = set()
     for path in sorted(catalogs_dir.glob("*/target_tests.csv")):
         with path.open("r", encoding="utf-8", newline="") as f:
             for row in csv.DictReader(f):
                 test_name = (row.get("test_name") or "").strip()
                 if not test_name:
                     continue
-                rows.append({field: row.get(field, "") for field in TARGET_TESTS_FIELDNAMES})
+                normalized = {field: row.get(field, "") for field in TARGET_TESTS_FIELDNAMES}
+                key = (
+                    normalized.get("dataset", ""),
+                    normalized.get("subject_id", ""),
+                    normalized.get("target_id", ""),
+                    normalized.get("test_name", ""),
+                )
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                rows.append(normalized)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8", newline="") as f:
