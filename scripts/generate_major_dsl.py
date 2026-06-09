@@ -4,9 +4,25 @@ import json
 from pathlib import Path
 
 
-KNOWN_SOURCE_PREFIXES = (
+KNOWN_SOURCE_MARKERS = (
     "src/main/java/",
     "src/java/",
+    "src/main/gwt-emul/",
+    "gwt-emul/",
+    "source/",
+    "swt/",
+    "src/",
+)
+
+PACKAGE_ROOT_PREFIXES = (
+    "org/",
+    "com/",
+    "net/",
+    "edu/",
+    "gov/",
+    "java/",
+    "javax/",
+    "junit/",
 )
 
 
@@ -59,10 +75,34 @@ def filter_targets(targets: list[dict], subject: str | None) -> list[dict]:
 def class_name_from_file(file_path: str) -> str:
     normalized = file_path.strip()
 
-    for prefix in KNOWN_SOURCE_PREFIXES:
-        if normalized.startswith(prefix):
-            normalized = normalized[len(prefix):]
-            break
+    best_suffix: str | None = None
+    best_score: tuple[int, int] | None = None
+
+    for marker in KNOWN_SOURCE_MARKERS:
+        search_from = 0
+        while True:
+            start = normalized.find(marker, search_from)
+            if start == -1:
+                break
+
+            end = start + len(marker)
+            suffix = normalized[end:]
+
+            if any(suffix.startswith(prefix) for prefix in PACKAGE_ROOT_PREFIXES):
+                score = (2, end)
+            elif "/" not in suffix:
+                score = (1, end)
+            else:
+                score = (0, end)
+
+            if best_score is None or score > best_score:
+                best_score = score
+                best_suffix = suffix
+
+            search_from = start + 1
+
+    if best_suffix is not None:
+        normalized = best_suffix
 
     if normalized.endswith(".java"):
         normalized = normalized[:-5]
