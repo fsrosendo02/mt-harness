@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+BASE=$(cd $(dirname $0)/.. && pwd)
+JAVA_ARGS=()
+CLASSPATH="$BASE/lib/major.jar"
+MML="${MML:-}"
+LOGGING="${LOGGING:-}"
+EXPORT="${EXPORT:-}"
+REFACTOR="${REFACTOR:-}"
+
+while (( "$#" )); do
+    case "$1" in
+        -classpath|-cp)
+            CLASSPATH="$CLASSPATH:$2"
+            shift 2
+            ;;
+        --logging)
+            if [ -z "$LOGGING" ]; then
+                LOGGING="logging:$2"
+            else
+                LOGGING="$LOGGING,$2"
+            fi
+            shift 2
+            ;;
+        --mml)
+            MML="mml:$2"
+            shift 2
+            ;;
+        --export)
+            EXPORT="$2"
+            shift 2
+            ;;
+        --refactor)
+            REFACTOR="$2"
+            shift 2
+            ;;
+        \@*)
+            ARGS_FILE="${1:1}"
+            shift
+            ;;
+        *)
+            JAVA_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+PLUGIN_ARG="-Xplugin:MajorPlugin"
+if [ -n "$LOGGING" ]; then
+    PLUGIN_ARG="$PLUGIN_ARG $LOGGING"
+fi
+
+if [ -n "$MML" ]; then
+    PLUGIN_ARG="$PLUGIN_ARG $MML"
+fi
+
+if [ -n "$EXPORT" ]; then
+    PLUGIN_ARG="$PLUGIN_ARG $EXPORT"
+fi
+
+if [ -n "$REFACTOR" ]; then
+    PLUGIN_ARG="$PLUGIN_ARG $REFACTOR"
+fi
+
+if [ -z "$ARGS_FILE" ]; then
+    javac \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
+    -J--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
+    -cp "$CLASSPATH" "$PLUGIN_ARG" ${JAVA_ARGS[*]}
+elif ! grep -q "^\-classpath" $ARGS_FILE; then
+     # Args file present but without a -classpath entry; retain -cp in the cmd.
+     javac \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
+     -cp "$CLASSPATH" "$PLUGIN_ARG" ${JAVA_ARGS[*]} \@${ARGS_FILE}
+else
+     # Args file present with a -classpath entry; -cp is ignored in this case.
+     perl -pi -e "\$cp=qq($CLASSPATH); s/^-classpath\\n/-classpath\\n\$cp:/s" $ARGS_FILE
+
+     javac \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
+     -J--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
+     "$PLUGIN_ARG" ${JAVA_ARGS[*]} \@${ARGS_FILE}
+fi
