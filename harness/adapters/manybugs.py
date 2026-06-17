@@ -36,6 +36,22 @@ def _docker_client() -> docker.DockerClient:
     return docker.from_env()
 
 
+def _container_create(client: docker.DockerClient, image: str, **kwargs) -> docker.models.containers.Container:
+    """Create a container, stripping `platform` if the SDK doesn't support it."""
+    try:
+        return client.containers.create(image, platform=PLATFORM, **kwargs)
+    except TypeError:
+        return client.containers.create(image, **kwargs)
+
+
+def _image_pull(client: docker.DockerClient, image: str) -> None:
+    """Pull an image, stripping `platform` if the SDK doesn't support it."""
+    try:
+        client.images.pull(image, platform=PLATFORM)
+    except TypeError:
+        client.images.pull(image)
+
+
 class ManyBugsAdapter(BenchmarkAdapter):
 
     BUILD_TIMEOUT = 300
@@ -67,10 +83,10 @@ class ManyBugsAdapter(BenchmarkAdapter):
 
         log(f"[checkout] pulling image {image_name}")
         client = _docker_client()
-        client.images.pull(image_name, platform=PLATFORM)
+        _image_pull(client, image_name)
 
         log(f"[checkout] extracting source from {image_name}")
-        container = client.containers.create(image_name, platform=PLATFORM)
+        container = _container_create(client, image_name)
         try:
             _docker_cp_out(container.id, CONTAINER_SOURCE_DIR, str(workdir_path))
             _apply_diffs_if_needed(container.id, workdir_path)
@@ -109,11 +125,10 @@ class ManyBugsAdapter(BenchmarkAdapter):
 
         client = _docker_client()
         log(f"[build] creating container from {image}")
-        container = client.containers.create(
-            image,
+        container = _container_create(
+            client, image,
             command="tail -f /dev/null",
             detach=True,
-            platform=PLATFORM,
         )
         container.start()
         container_id = container.id
