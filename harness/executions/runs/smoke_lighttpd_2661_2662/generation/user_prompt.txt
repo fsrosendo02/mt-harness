@@ -1,0 +1,81 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: static void accesslog_append_escaped(buffer *dest, buffer *str) {
+ 2: 	/* replaces non-printable chars with \xHH where HH is the hex representation of the byte */
+ 3: 	/* exceptions: " => \", \ => \\, whitespace chars => \n \t etc. */
+ 4: 	buffer_prepare_append(dest, str->used - 1);
+ 5: 
+ 6: 	for (unsigned int i = 0; i < str->used - 1; i++) {
+ 7: 		if (str->ptr[i] >= ' ' && str->ptr[i] <= '~') {
+ 8: 			/* printable chars */
+ 9: 			buffer_append_string_len(dest, &str->ptr[i], 1);
+10: 		} else switch (str->ptr[i]) {
+11: 		case '"':
+12: 			BUFFER_APPEND_STRING_CONST(dest, "\\\"");
+13: 			break;
+14: 		case '\\':
+15: 			BUFFER_APPEND_STRING_CONST(dest, "\\\\");
+16: 			break;
+17: 		case '\b':
+18: 			BUFFER_APPEND_STRING_CONST(dest, "\\b");
+19: 			break;
+20: 		case '\n':
+21: 			BUFFER_APPEND_STRING_CONST(dest, "\\n");
+22: 			break;
+23: 		case '\r':
+24: 			BUFFER_APPEND_STRING_CONST(dest, "\\r");
+25: 			break;
+26: 		case '\t':
+27: 			BUFFER_APPEND_STRING_CONST(dest, "\\t");
+28: 			break;
+29: 		case '\v':
+30: 			BUFFER_APPEND_STRING_CONST(dest, "\\v");
+31: 			break;
+32: 		default: {
+33: 				/* non printable char => \xHH */
+34: 				char hh[5] = {'\\','x',0,0,0};
+35: 				char h = str->ptr[i] / 16;
+36: 				hh[2] = (h > 9) ? (h - 10 + 'A') : (h + '0');
+37: 				h = str->ptr[i] % 16;
+38: 				hh[3] = (h > 9) ? (h - 10 + 'A') : (h + '0');
+39: 				buffer_append_string_len(dest, &hh[0], 4);
+40: 			}
+41: 			break;
+42: 		}
+43: 	}
+44: }
+
+Then, generate exactly 3 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

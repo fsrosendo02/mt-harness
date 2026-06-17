@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from harness.adapters.defects4j import Defects4JAdapter
+from harness.adapters.manybugs import ManyBugsAdapter
 from harness.executions.metadata import build_experiment_metadata
 from harness.generators.llm import LLMMutantGenerator
 from harness.llm.io import load_generation_mutants_with_recovery, save_generation_artifacts
@@ -148,6 +149,8 @@ def load_config(config_path: str) -> dict:
 def build_adapter(dataset: str):
     if dataset == "defects4j":
         return Defects4JAdapter()
+    if dataset == "manybugs":
+        return ManyBugsAdapter()
 
     raise ValueError(f"Unsupported dataset: {dataset}")
 
