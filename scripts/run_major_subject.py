@@ -5,12 +5,14 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from prepare_major_checkout import patch_checkout
 
@@ -46,6 +48,13 @@ def parse_args() -> argparse.Namespace:
         "--work-root",
         default="/tmp/major",
         help="Root directory for temporary Defects4J checkouts.",
+    )
+    parser.add_argument(
+        "--maven-local-repo",
+        help=(
+            "Optional Maven local repository path to pass to Ant as "
+            "-Dmaven.repo.local=.... By default Ant uses its standard local repo."
+        ),
     )
     parser.add_argument(
         "--checkout-name",
@@ -96,12 +105,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_cmd(cmd: list[str], *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+def run_cmd(
+    cmd: list[str],
+    *,
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd,
         cwd=str(cwd) if cwd else None,
         capture_output=True,
         text=True,
+        env=env,
     )
 
 
@@ -130,6 +145,25 @@ def count_mutants_log(mutants_log: Path) -> int | None:
         return sum(1 for _ in handle)
 
 
+def ant_target_exists(build_file: Path, target_name: str) -> bool:
+    text = build_file.read_text(encoding="utf-8", errors="replace")
+    return f'<target name="{target_name}"' in text
+
+
+def select_java_home_for_build() -> Path | None:
+    java11 = Path("/usr/lib/jvm/java-11-openjdk-amd64")
+    if java11.exists():
+        return java11
+    return None
+
+
+def selected_java_binaries() -> tuple[str, str]:
+    java_home = select_java_home_for_build()
+    if java_home is not None:
+        return str(java_home / "bin" / "javac"), str(java_home / "bin" / "jar")
+    return "javac", "jar"
+
+
 def now_iso() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -151,6 +185,127 @@ def format_log_block(title: str, command: list[str], output: str) -> str:
         for line in output.rstrip().splitlines():
             lines.append(f"[{now_iso()}] {line}")
     return "\n".join(lines) + "\n"
+
+
+def normalize_maven_ant_properties(build_file: Path) -> bool:
+    properties_file = build_file.parent / "maven-build.properties"
+    if not properties_file.exists():
+        return False
+
+    module_name = build_file.parent.name
+    changed = False
+    updated_lines: list[str] = []
+    for line in properties_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        if "=" not in line or line.lstrip().startswith("#"):
+            updated_lines.append(line)
+            continue
+
+        key, value = line.split("=", 1)
+        if not key.startswith("maven.build.") or "${" in value:
+            updated_lines.append(line)
+            continue
+
+        if not value.startswith(module_name + "/"):
+            updated_lines.append(line)
+            continue
+
+        original_path = build_file.parent / value
+        stripped_value = value[len(module_name) + 1 :]
+        stripped_path = build_file.parent / stripped_value
+        if not original_path.exists() and stripped_path.exists():
+            updated_lines.append(f"{key}={stripped_value}")
+            changed = True
+        else:
+            updated_lines.append(line)
+
+    if changed:
+        properties_file.write_text("\n".join(updated_lines) + "\n", encoding="utf-8")
+    return changed
+
+
+def ensure_file_copy(src: Path, dest: Path) -> bool:
+    if dest.exists():
+        return False
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest)
+    return True
+
+
+def ensure_minimal_joda_convert_jar(dest: Path) -> bool:
+    if dest.exists():
+        return False
+
+    javac_bin, jar_bin = selected_java_binaries()
+    with TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        pkg = tmp / "org" / "joda" / "convert"
+        pkg.mkdir(parents=True, exist_ok=True)
+        for class_name in ("FromString", "ToString"):
+            (pkg / f"{class_name}.java").write_text(
+                "package org.joda.convert;\n"
+                "import java.lang.annotation.ElementType;\n"
+                "import java.lang.annotation.Retention;\n"
+                "import java.lang.annotation.RetentionPolicy;\n"
+                "import java.lang.annotation.Target;\n"
+                "@Retention(RetentionPolicy.RUNTIME)\n"
+                "@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})\n"
+                f"public @interface {class_name} {{}}\n",
+                encoding="utf-8",
+            )
+        compile = subprocess.run(
+            [javac_bin, str(pkg / "FromString.java"), str(pkg / "ToString.java")],
+            capture_output=True,
+            text=True,
+        )
+        if compile.returncode != 0:
+            raise RuntimeError(
+                "Failed to build minimal joda-convert jar:\n"
+                f"{compile.stdout}{compile.stderr}"
+            )
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        jar = subprocess.run(
+            [jar_bin, "cf", str(dest), "-C", str(tmp), "org"],
+            capture_output=True,
+            text=True,
+        )
+        if jar.returncode != 0:
+            raise RuntimeError(
+                "Failed to package minimal joda-convert jar:\n"
+                f"{jar.stdout}{jar.stderr}"
+            )
+    return True
+
+
+def ensure_offline_build_support(
+    *,
+    checkout_dir: Path,
+    compile_build_file: Path,
+    major_home: Path,
+) -> dict[str, object]:
+    changes: dict[str, object] = {
+        "normalized_maven_ant_properties": normalize_maven_ant_properties(compile_build_file),
+        "support_jars": [],
+    }
+
+    junit_src = major_home / "lib" / "ant" / "junit-4.12.jar"
+    if junit_src.exists():
+        for rel in (
+            Path("lib/junit-3.8.2.jar"),
+            Path("gson/lib/junit-3.8.2.jar"),
+        ):
+            dest = checkout_dir / rel
+            if ensure_file_copy(junit_src, dest):
+                changes["support_jars"].append(str(dest))
+
+    for rel in (
+        Path("lib/joda-convert-1.1.jar"),
+        Path("gson/lib/joda-convert-1.1.jar"),
+    ):
+        dest = checkout_dir / rel
+        if ensure_minimal_joda_convert_jar(dest):
+            changes["support_jars"].append(str(dest))
+
+    return changes
 
 
 MUTANT_LOG_RE = re.compile(
@@ -270,12 +425,19 @@ def main() -> int:
     args = parse_args()
     project, bug_id = subject_parts(args.subject)
     checkout_name = args.checkout_name or args.subject
-    checkout_dir = Path(args.work_root).resolve() / checkout_name
+    work_root = Path(args.work_root).resolve()
+    checkout_dir = work_root / checkout_name
+    maven_local_repo = (
+        Path(args.maven_local_repo).resolve()
+        if args.maven_local_repo
+        else (work_root / ".m2")
+    )
 
     if checkout_dir.exists() and not args.keep_checkout:
         shutil.rmtree(checkout_dir)
 
     checkout_dir.parent.mkdir(parents=True, exist_ok=True)
+    maven_local_repo.mkdir(parents=True, exist_ok=True)
 
     checkout_cmd = [
         "defects4j",
@@ -302,11 +464,35 @@ def main() -> int:
         major_home=Path(args.major_home),
         write_backup=args.write_backup,
     )
+    support_changes = ensure_offline_build_support(
+        checkout_dir=checkout_dir,
+        compile_build_file=Path(patch_result["compile_build_file"]).resolve(),
+        major_home=Path(args.major_home).resolve(),
+    )
 
     ant_bin = Path(args.major_home).resolve() / "bin" / "ant"
-    compile_cmd = [str(ant_bin), "clean", "compile"]
+    compile_build_file = Path(patch_result["compile_build_file"]).resolve()
+    compile_cmd = [str(ant_bin)]
+    compile_cmd.append(f"-Dmaven.repo.local={maven_local_repo}")
+    compile_cmd.extend(
+        [
+            "-Dproxy.host=",
+            "-Dproxy.port=0",
+            "-Dproxy.username=",
+            "-Dproxy.password=",
+        ]
+    )
+    compile_cmd.extend(["-f", str(compile_build_file)])
+    if ant_target_exists(compile_build_file, "clean"):
+        compile_cmd.append("clean")
+    compile_cmd.append("compile")
+    compile_env = os.environ.copy()
+    selected_java_home = select_java_home_for_build()
+    if selected_java_home is not None:
+        compile_env["JAVA_HOME"] = str(selected_java_home)
+        compile_env["PATH"] = f"{selected_java_home / 'bin'}:{compile_env.get('PATH', '')}"
     compile_started_at = time.time()
-    compile_result = run_cmd(compile_cmd, cwd=checkout_dir)
+    compile_result = run_cmd(compile_cmd, cwd=compile_build_file.parent, env=compile_env)
     compile_elapsed_sec = time.time() - compile_started_at
     ant_output = compile_result.stdout + compile_result.stderr
     generated_mutants = parse_generated_mutants(ant_output)
@@ -375,6 +561,7 @@ def main() -> int:
         "mml_bin": str(Path(args.mml_bin).resolve()),
         "major_home": str(Path(args.major_home).resolve()),
         "build_xml": patch_result["build_xml"],
+        "compile_build_file": patch_result["compile_build_file"],
         "mutants_log": str(mutants_log),
         "checkout_returncode": checkout_result.returncode,
         "compile_returncode": compile_result.returncode,
@@ -387,12 +574,16 @@ def main() -> int:
     }
     if args.log_file:
         summary["log_file"] = str(Path(args.log_file).resolve())
+    summary["maven_local_repo"] = str(maven_local_repo)
+    if selected_java_home is not None:
+        summary["java_home"] = str(selected_java_home)
     if archived_mutants_log is not None:
         summary["archived_mutants_log"] = str(archived_mutants_log)
     if archived_build_xml is not None:
         summary["archived_build_xml"] = str(archived_build_xml)
     if results_csv_path is not None:
         summary["results_csv"] = str(results_csv_path)
+    summary["support_changes"] = support_changes
 
     if args.summary_json:
         summary_path = Path(args.summary_json).resolve()
