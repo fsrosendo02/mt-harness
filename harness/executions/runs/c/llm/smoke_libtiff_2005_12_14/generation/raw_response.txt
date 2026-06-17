@@ -1,0 +1,46 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition by reading a strip that is out of bounds.",
+      "line": 11,
+      "precode": "tsize_t cc = (row + rowsperstrip > imagelength) ?\n    TIFFVStripSize(in, imagelength - row) : stripsize;",
+      "aftercode": "tsize_t cc = (row + rowsperstrip > imagelength) ?\n    TIFFVStripSize(in, rowsperstrip) : stripsize;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the computational property by ignoring errors during strip writing.",
+      "line": 16,
+      "precode": "if (TIFFWriteEncodedStrip(out, s, buf, cc) < 0) {\n    _TIFFfree(buf);\n    return (FALSE);\n}",
+      "aftercode": "if (TIFFWriteEncodedStrip(out, s, buf, cc) < 0) {\n    continue;\n}"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the computational property by not checking the return value of TIFFReadEncodedStrip.",
+      "line": 13,
+      "precode": "if (TIFFReadEncodedStrip(in, s, buf, cc) < 0 && !ignore)\n    break;",
+      "aftercode": "if (TIFFReadEncodedStrip(in, s, buf, cc) < 0)\n    break;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the boundary condition by accessing a buffer that might be NULL.",
+      "line": 8,
+      "precode": "tstrip_t s, ns = TIFFNumberOfStrips(in);\nuint32 row = 0;",
+      "aftercode": "tstrip_t s, ns = TIFFNumberOfStrips(in);\nuint32 row = 0;\ntdata_t buf = _TIFFmalloc(stripsize);\nif (buf == NULL)\n    return (FALSE);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the computational property by not handling the case where TIFFNumberOfStrips returns 0.",
+      "line": 10,
+      "precode": "for (s = 0; s < ns; s++) {",
+      "aftercode": "for (s = 0; s < 1; s++) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the computational property by not updating the row counter correctly.",
+      "line": 19,
+      "precode": "row += rowsperstrip;",
+      "aftercode": "row += 1;"
+    }
+  ]
+}
