@@ -21,7 +21,8 @@ from harness.storage.artifacts import save_rejected_mutant_artifacts
 from harness.storage.cleanup import cleanup_paths
 from harness.storage.layout import (
     catalog_target_tests_csv_path,
-    runs_root,
+    llm_run_dir,
+    resolve_run_dir,
     execution_dir,
     execution_results_path,
     execution_summary_path,
@@ -118,7 +119,10 @@ def merge_with_existing_run_config(cfg: dict) -> dict:
     if not run_name:
         return cfg
 
-    run_path = runs_root() / str(run_name)
+    run_path = resolve_run_dir(
+        str(run_name),
+        cfg.get("batch_id"),
+    )
     run_config_path = run_path / "run_config.json"
     if not run_config_path.exists():
         return cfg
@@ -542,7 +546,7 @@ def main():
         log_duration("Config load", t)
         log(f"Pipeline mode: {pipeline_mode}")
 
-        run_path = runs_root() / cfg["run_name"]
+        run_path = llm_run_dir(cfg["run_name"], cfg.get("batch_id"))
         run_dir = str(run_path)
         workdir_base = f"tmp/{cfg['run_name']}"
         base_snapshot_dir = f"tmp/base_{cfg['run_name']}"

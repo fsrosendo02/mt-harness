@@ -11,11 +11,14 @@ DATASET_COVERAGE_DIR = DATASETS_DIR / "coverage"
 DATASET_COVERAGE_CATALOGS_DIR = DATASET_COVERAGE_DIR / "catalogs"
 
 EXECUTIONS_DIR = HARNESS_DIR / "executions"
+JAVA_EXECUTIONS_DIR = EXECUTIONS_DIR / "java"
 RUNS_DIR = EXECUTIONS_DIR / "runs"
 BATCHES_DIR = EXECUTIONS_DIR / "batches"
+LLM_EXECUTIONS_DIR = JAVA_EXECUTIONS_DIR / "llm"
+MAJOR_EXECUTIONS_DIR = JAVA_EXECUTIONS_DIR / "major"
+LLM_DEFAULT_BATCH = "adhoc"
 
 REPORTS_DIR = HARNESS_DIR / "reports"
-EXPERIMENT_INDEX_CSV = REPORTS_DIR / "experiment_index.csv"
 MATRICES_DIR = REPORTS_DIR / "matrices"
 KILL_MATRICES_DIR = MATRICES_DIR / "base"
 
@@ -38,6 +41,128 @@ def runs_root() -> Path:
 
 def batches_root() -> Path:
     return BATCHES_DIR
+
+
+def llm_root() -> Path:
+    return LLM_EXECUTIONS_DIR
+
+
+def major_root() -> Path:
+    return MAJOR_EXECUTIONS_DIR
+
+
+def llm_batch_dir(batch_id: str) -> Path:
+    return llm_root() / _safe_catalog_name(batch_id)
+
+
+def llm_batch_runs_dir(batch_id: str) -> Path:
+    return llm_batch_dir(batch_id) / "runs"
+
+
+def llm_batch_manifest_path(batch_id: str) -> Path:
+    return llm_batch_dir(batch_id) / "batch_manifest.json"
+
+
+def llm_batch_summary_dir(batch_id: str) -> Path:
+    return llm_batch_dir(batch_id) / "reports"
+
+
+def default_llm_batch_id(batch_id: str | None = None) -> str:
+    return _safe_catalog_name(batch_id or LLM_DEFAULT_BATCH)
+
+
+def llm_run_dir(run_name: str, batch_id: str | None = None) -> Path:
+    resolved_batch_id = default_llm_batch_id(batch_id or infer_batch_id_from_run_name(run_name))
+    return llm_batch_runs_dir(resolved_batch_id) / run_name
+
+
+def infer_batch_id_from_run_name(run_name: str) -> str | None:
+    parts = str(run_name).split("__", 1)
+    if len(parts) == 2 and parts[0]:
+        return _safe_catalog_name(parts[0])
+    return None
+
+
+def resolve_run_dir(run_name: str, batch_id: str | None = None) -> Path:
+    candidates: list[Path] = []
+    if batch_id:
+        candidates.append(llm_run_dir(run_name, batch_id))
+
+    inferred_batch = infer_batch_id_from_run_name(run_name)
+    if inferred_batch and inferred_batch != batch_id:
+        candidates.append(llm_run_dir(run_name, inferred_batch))
+
+    candidates.append(llm_run_dir(run_name, batch_id))
+    candidates.append(RUNS_DIR / run_name)
+    candidates.append(LEGACY_RUNS_DIR / run_name)
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if candidate.exists():
+            return candidate
+
+    return candidates[0]
+
+
+def discover_run_dirs() -> list[Path]:
+    discovered: list[Path] = []
+
+    if llm_root().exists():
+        discovered.extend(
+            sorted(
+                path
+                for path in llm_root().glob("*/runs/*")
+                if path.is_dir()
+            )
+        )
+
+    for legacy_root in (RUNS_DIR, LEGACY_RUNS_DIR):
+        if not legacy_root.exists():
+            continue
+        discovered.extend(
+            sorted(
+                path
+                for path in legacy_root.iterdir()
+                if path.is_dir() and (path / "run_manifest.json").exists()
+            )
+        )
+
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for path in discovered:
+        if path in seen:
+            continue
+        seen.add(path)
+        unique.append(path)
+    return unique
+
+
+def discover_batch_manifest_paths() -> list[Path]:
+    discovered: list[Path] = []
+
+    if llm_root().exists():
+        discovered.extend(
+            sorted(
+                path
+                for path in llm_root().glob("*/batch_manifest.json")
+                if path.is_file()
+            )
+        )
+
+    if BATCHES_DIR.exists():
+        discovered.extend(sorted(path for path in BATCHES_DIR.glob("batch*.json") if path.is_file()))
+
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for path in discovered:
+        if path in seen:
+            continue
+        seen.add(path)
+        unique.append(path)
+    return unique
 
 
 def reports_root() -> Path:
@@ -73,7 +198,7 @@ def catalog_target_tests_csv_path(catalog_file: str | Path) -> Path:
 
 
 def experiment_index_path() -> Path:
-    return EXPERIMENT_INDEX_CSV
+    return llm_root() / "experiment_index.csv"
 
 
 def kill_matrices_dir() -> Path:

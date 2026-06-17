@@ -17,8 +17,9 @@ from harness.storage.layout import (
     execution_results_path,
     execution_summary_path,
     execution_test_results_path,
+    llm_batch_manifest_path,
+    llm_run_dir,
     manifest_path,
-    runs_root,
 )
 from harness.storage.results import RESULT_FIELDNAMES
 from harness.storage.test_results import TEST_RESULT_FIELDNAMES
@@ -99,7 +100,11 @@ def resolve_source_batch_manifest(base_cfg: dict, batches_dir: Path) -> Path:
         return Path(str(manifest_path_str))
 
     if source_batch_id:
-        return batches_dir / f"{source_batch_id}.json"
+        return llm_batch_manifest_path(str(source_batch_id))
+
+    legacy_source_batch_id = base_cfg.get("source_batch_id")
+    if legacy_source_batch_id:
+        return batches_dir / f"{legacy_source_batch_id}.json"
 
     raise ValueError(
         "execute_only batch mode requires source_batch_id or source_batch_manifest"
@@ -110,6 +115,10 @@ def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]
     runs = source_manifest.get("runs", [])
     if not isinstance(runs, list) or not runs:
         raise ValueError("Source batch manifest does not contain any runs")
+
+    batch_id = str(source_manifest.get("batch_id") or base_cfg.get("source_batch_id") or "")
+    if not batch_id:
+        raise ValueError("Source batch manifest is missing batch_id")
 
     catalog_file = base_cfg.get("catalog_file") or source_manifest.get("catalog_file")
     built_runs = []
@@ -127,6 +136,7 @@ def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]
             )
 
         cfg = {
+            "batch_id": batch_id,
             "run_name": run_name,
             "pipeline_mode": "execute_only",
             "run_mode": base_cfg.get("run_mode", "overwrite"),
@@ -580,7 +590,7 @@ def main():
         targets = [entry["target_id"] for entry in catalog]
         run_specs = build_generation_runs(catalog, base_cfg, batch_id)
 
-    batch_manifest_path = batches_dir / f"{batch_id}.json"
+    batch_manifest_path = llm_batch_manifest_path(batch_id)
 
     original_stdout = sys.stdout
     original_stderr = sys.stderr
@@ -674,7 +684,7 @@ def main():
             run_name = run_spec["run_name"]
             cfg = dict(run_spec["cfg"])
 
-            run_dir = runs_root() / run_name
+            run_dir = llm_run_dir(run_name, batch_id)
             run_dir.mkdir(parents=True, exist_ok=True)
             save_json(run_dir / "run_config.json", cfg)
 
@@ -759,13 +769,14 @@ def main():
                         "run_group_id": run_group_id,
                         "run_index_for_target": run_index_for_target,
                         "run_name": run_name,
-                        "run_dir": str(runs_root() / run_name),
+                        "run_dir": str(llm_run_dir(run_name, batch_id)),
                     }
                     batch_manifest.setdefault("runs", []).append(matched_run)
 
                 matched_run["execution_return_code"] = return_code
                 matched_run["execution_status"] = status
                 matched_run["execution_failure_reason"] = failure_reason
+                matched_run["run_dir"] = str(llm_run_dir(run_name, batch_id))
 
                 execution_summary = batch_manifest["execution"]["summary"]
                 execution_summary["total"] += 1
@@ -783,7 +794,7 @@ def main():
                     "run_group_id": run_group_id,
                     "run_index_for_target": run_index_for_target,
                     "run_name": run_name,
-                    "run_dir": str(runs_root() / run_name),
+                    "run_dir": str(llm_run_dir(run_name, batch_id)),
                     "return_code": return_code,
                     "status": status,
                     "failure_reason": failure_reason,

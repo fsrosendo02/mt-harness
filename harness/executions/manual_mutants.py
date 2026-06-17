@@ -12,7 +12,7 @@ from harness.executions.metadata import build_experiment_metadata
 from harness.llm.parsing import LLMResponseParser
 from harness.models import Mutant, Subject, Target
 from harness.runners.mutation_runner import MutationRunner
-from harness.storage.layout import catalog_target_tests_csv_path, runs_root
+from harness.storage.layout import catalog_target_tests_csv_path, llm_run_dir
 from harness.targets.catalog import get_target_by_id
 from harness.targets.resolver import resolve_target
 
@@ -132,7 +132,7 @@ def main():
         raise ValueError("run_manual_mutants.py currently supports only dataset=defects4j")
 
     run_name = cfg["run_name"]
-    run_dir = str(runs_root() / run_name)
+    run_dir = str(llm_run_dir(run_name, cfg.get("batch_id") or "manual"))
     base_snapshot_dir = f"tmp/base_{run_name}"
     workdir_base = f"tmp/{run_name}"
 

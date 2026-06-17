@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from normalize_major_mml import normalize_mml_text
+from harness.storage.layout import major_root
 
 
 TARGET_HEADER_RE = re.compile(r"^//\s+([^\s|]+)\s+\|")
@@ -20,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Run Major compile generation for each catalog target and store "
-            "artifacts under harness/executions/major/."
+            "artifacts under harness/executions/java/major/."
         )
     )
     parser.add_argument(
@@ -45,7 +46,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--logs-root",
-        default="harness/executions/major",
+        default=str(major_root()),
         help="Directory where Major execution artifacts and summaries will be written.",
     )
     parser.add_argument(
@@ -76,6 +77,11 @@ def parse_args() -> argparse.Namespace:
         "--write-backup",
         action="store_true",
         help="Write build.xml.bak when patching each checkout.",
+    )
+    parser.add_argument(
+        "--export-mutants",
+        action="store_true",
+        help="Enable Major source export for each generated mutant.",
     )
     return parser.parse_args()
 
@@ -425,6 +431,8 @@ def main() -> int:
             cmd.append("--keep-checkout")
         if args.write_backup:
             cmd.append("--write-backup")
+        if args.export_mutants:
+            cmd.append("--export-mutants")
 
         append_log(campaign_log, " ".join(cmd))
         run_result = run_cmd(cmd, cwd=Path.cwd())

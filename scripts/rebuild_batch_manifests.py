@@ -9,9 +9,14 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
+from harness.storage.layout import (
+    discover_run_dirs,
+    llm_batch_manifest_path,
+    llm_run_dir,
+)
 
-DEFAULT_RUNS_DIR = Path("harness/executions/runs")
-DEFAULT_BATCHES_DIR = Path("harness/executions/batches")
+DEFAULT_RUNS_DIR = Path("harness/executions/java/llm")
+DEFAULT_BATCHES_DIR = Path("harness/executions/java/llm")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -105,7 +110,18 @@ def sort_key(run_row: dict[str, Any]) -> tuple[str, str]:
 def collect_run_rows(runs_dir: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
-    for manifest_path in sorted(runs_dir.glob("*/run_manifest.json")):
+    discovered = (
+        discover_run_dirs()
+        if runs_dir == DEFAULT_RUNS_DIR
+        else sorted(path for path in runs_dir.rglob("run_manifest.json") if path.is_file())
+    )
+
+    manifest_paths = [
+        path / "run_manifest.json" if path.is_dir() else path
+        for path in discovered
+    ]
+
+    for manifest_path in sorted(manifest_paths):
         manifest = load_json(manifest_path)
         run_dir = manifest_path.parent
         run_name = run_dir.name
@@ -262,7 +278,7 @@ def rebuild_batch_manifests(
 
     written_paths: list[Path] = []
     for batch_id in sorted(grouped):
-        out_path = batches_dir / f"{batch_id}.json"
+        out_path = llm_batch_manifest_path(batch_id)
         if out_path.exists() and not overwrite:
             continue
         manifest = build_batch_manifest(batch_id, grouped[batch_id])

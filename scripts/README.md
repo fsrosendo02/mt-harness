@@ -9,7 +9,7 @@
   dropping unsupported operators or known-bad scopes.
 - `run_major_catalog.py`: runs the Major compile-generation flow directly from a catalog at
   target granularity, storing normalized MML, per-target `mmlc` output, per-target logs,
-  `mutants.log`, `results.csv`, and summaries under `harness/executions/major/`.
+  `mutants.log`, `results.csv`, and summaries under `harness/executions/java/major/`.
 
 Example:
 
