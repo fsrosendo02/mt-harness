@@ -156,17 +156,12 @@ class ManyBugsAdapter(BenchmarkAdapter):
 
             # Step 3: compile
             log("[build] running make")
-            exec_result = container.exec_run(
-                ["make", "-j2"],
-                workdir=src_dir,
-                demux=False,
+            make_result = subprocess.run(
+                ["docker", "exec", "-w", src_dir, container_id, "make", "-j2"],
+                capture_output=True, text=True, timeout=self.BUILD_TIMEOUT,
             )
-            build_log = (
-                exec_result.output.decode("utf-8", errors="replace")
-                if exec_result.output
-                else ""
-            )
-            success = exec_result.exit_code == 0
+            build_log = make_result.stdout + make_result.stderr
+            success = make_result.returncode == 0
         except Exception as exc:
             _stop_and_remove(client, container_id)
             log(f"[build] exception: {exc}")
@@ -497,8 +492,11 @@ def _discover_test_ids(container, test_script: str, kinds: tuple[str, ...] = ("p
         p1) run_test 2 && exit 0 ;;
         n1) run_test 22 && exit 0 ;;
     """
-    result = container.exec_run(["cat", test_script], demux=False)
-    content = result.output.decode("utf-8", errors="replace") if result.output else ""
+    result = subprocess.run(
+        ["docker", "exec", container.id, "cat", test_script],
+        capture_output=True, text=True,
+    )
+    content = result.stdout
     pattern = r"^\s+([" + "".join(kinds) + r"]\d+)\)"
     return re.findall(pattern, content, re.MULTILINE)
 

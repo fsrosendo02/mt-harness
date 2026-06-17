@@ -2,45 +2,45 @@
   "mutants": [
     {
       "id": 1,
-      "reasoning": "Violates the behavior of checking the return value of TIFFReadEncodedStrip.",
-      "line": 13,
-      "precode": "if (TIFFReadEncodedStrip(in, s, buf, cc) < 0 && !ignore)\n",
-      "aftercode": "if (TIFFReadEncodedStrip(in, s, buf, cc) >= 0 && !ignore)\n"
+      "reasoning": "Violates the property that all encoded strips must be successfully read and written.",
+      "line": 12,
+      "precode": "tsize_t cc = (row + rowsperstrip > imagelength) ? TIFFVStripSize(in, imagelength - row) : stripsize;",
+      "aftercode": "tsize_t cc = (row + rowsperstrip > imagelength) ? TIFFVStripSize(in, rowsperstrip) : stripsize;"
     },
     {
       "id": 2,
-      "reasoning": "Violates the behavior of checking the return value of TIFFWriteEncodedStrip.",
-      "line": 15,
-      "precode": "if (TIFFWriteEncodedStrip(out, s, buf, cc) < 0) {\n",
-      "aftercode": "if (TIFFWriteEncodedStrip(out, s, buf, cc) >= 0) {\n"
+      "reasoning": "Violates the property that the buffer allocation should not fail.",
+      "line": 5,
+      "precode": "tdata_t buf = _TIFFmalloc(stripsize);",
+      "aftercode": "tdata_t buf = _TIFFmalloc(0);"
     },
     {
       "id": 3,
-      "reasoning": "Violates the behavior of handling the end of the loop.",
+      "reasoning": "Violates the property that the loop should continue until all strips are processed.",
       "line": 10,
-      "precode": "for (s = 0; s < ns; s++) {\n",
-      "aftercode": "for (s = 0; s <= ns; s++) {\n"
+      "precode": "for (s = 0; s < ns; s++) {",
+      "aftercode": "for (s = 0; s < ns - 1; s++) {"
     },
     {
       "id": 4,
-      "reasoning": "Violates the behavior of updating the row counter correctly.",
-      "line": 19,
-      "precode": "row += rowsperstrip;\n",
-      "aftercode": "row += rowsperstrip - 1;\n"
+      "reasoning": "Violates the property that the function should return FALSE if any encoded strip write fails.",
+      "line": 16,
+      "precode": "if (TIFFWriteEncodedStrip(out, s, buf, cc) < 0) {",
+      "aftercode": "if (TIFFWriteEncodedStrip(out, s, buf, cc) == 0) {"
     },
     {
       "id": 5,
-      "reasoning": "Violates the behavior of handling the allocation of memory.",
-      "line": 3,
-      "precode": "tsize_t stripsize  = TIFFStripSize(in);\n",
-      "aftercode": "tsize_t stripsize  = TIFFStripSize(in) * 2;\n"
+      "reasoning": "Violates the property that the function should free the buffer before returning TRUE.",
+      "line": 21,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "// _TIFFfree(buf);"
     },
     {
       "id": 6,
-      "reasoning": "Violates the behavior of handling the number of strips.",
-      "line": 9,
-      "precode": "tstrip_t s, ns = TIFFNumberOfStrips(in);\n",
-      "aftercode": "tstrip_t s, ns = TIFFNumberOfStrips(in) + 1;\n"
+      "reasoning": "Violates the property that the function should ignore errors if ignore is set.",
+      "line": 14,
+      "precode": "if (TIFFReadEncodedStrip(in, s, buf, cc) < 0 && !ignore)",
+      "aftercode": "if (TIFFReadEncodedStrip(in, s, buf, cc) < 0 && ignore)"
     }
   ]
 }
