@@ -132,7 +132,11 @@ def main():
         raise ValueError("run_manual_mutants.py currently supports only dataset=defects4j")
 
     run_name = cfg["run_name"]
-    run_dir = str(llm_run_dir(run_name, cfg.get("batch_id") or "manual"))
+    configured_run_dir = cfg.get("run_dir")
+    if configured_run_dir:
+        run_dir = str(Path(configured_run_dir))
+    else:
+        run_dir = str(llm_run_dir(run_name, cfg.get("batch_id") or "manual"))
     base_snapshot_dir = f"tmp/base_{run_name}"
     workdir_base = f"tmp/{run_name}"
 

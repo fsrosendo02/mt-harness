@@ -45,7 +45,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--run-name",
         required=True,
-        help="Execution run name to create under harness/executions/runs/.",
+        help="Execution run name to create for the downstream execution pipeline.",
+    )
+    parser.add_argument(
+        "--run-dir",
+        help=(
+            "Optional explicit run directory for downstream execution artifacts. "
+            "If omitted, the manual_mutants default layout is used."
+        ),
     )
     parser.add_argument(
         "--version",
@@ -218,6 +225,8 @@ def build_config(args: argparse.Namespace) -> tuple[dict, Path]:
         "notes": f"Major exported mutants bridged from {major_target_dir}",
         "mutants": mutants,
     }
+    if args.run_dir:
+        config["run_dir"] = str(Path(args.run_dir).resolve())
     output_config = (
         Path(args.output_config).resolve()
         if args.output_config

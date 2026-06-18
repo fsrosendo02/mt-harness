@@ -16,6 +16,7 @@ RUNS_DIR = EXECUTIONS_DIR / "runs"
 BATCHES_DIR = EXECUTIONS_DIR / "batches"
 LLM_EXECUTIONS_DIR = JAVA_EXECUTIONS_DIR / "llm"
 MAJOR_EXECUTIONS_DIR = JAVA_EXECUTIONS_DIR / "major"
+MAJOR_EXECUTION_CAMPAIGNS_DIR = MAJOR_EXECUTIONS_DIR / "execution"
 LLM_DEFAULT_BATCH = "adhoc"
 
 REPORTS_DIR = HARNESS_DIR / "reports"
@@ -49,6 +50,14 @@ def llm_root() -> Path:
 
 def major_root() -> Path:
     return MAJOR_EXECUTIONS_DIR
+
+
+def major_execution_root() -> Path:
+    return MAJOR_EXECUTION_CAMPAIGNS_DIR
+
+
+def major_execution_campaign_dir(campaign_name: str) -> Path:
+    return major_execution_root() / _safe_catalog_name(campaign_name)
 
 
 def llm_batch_dir(batch_id: str) -> Path:
