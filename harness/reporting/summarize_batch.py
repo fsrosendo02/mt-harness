@@ -2,10 +2,19 @@ import argparse
 import csv
 import json
 from collections import Counter, defaultdict
+from pathlib import Path
 
-from harness.storage.layout import batches_root, manifest_path, reports_root, resolve_summary_path, runs_root
+from harness.storage.layout import (
+    batches_root,
+    discover_batch_manifest_paths,
+    llm_batch_manifest_path,
+    llm_batch_summary_dir,
+    manifest_path,
+    reports_root,
+    resolve_run_dir,
+    resolve_summary_path,
+)
 
-RUNS_DIR = runs_root()
 BATCHES_DIR = batches_root()
 REPORTING_DIR = reports_root() / "batch_summaries"
 
@@ -86,7 +95,10 @@ def main():
     args = parser.parse_args()
 
     batch_id = args.batch_id
-    batch_manifest_path = BATCHES_DIR / f"{batch_id}.json"
+    batch_manifest_path = llm_batch_manifest_path(batch_id)
+    if not batch_manifest_path.exists():
+        legacy_path = BATCHES_DIR / f"{batch_id}.json"
+        batch_manifest_path = legacy_path if legacy_path.exists() else batch_manifest_path
 
     if not batch_manifest_path.exists():
         raise FileNotFoundError(f"Batch manifest not found: {batch_manifest_path}")
@@ -94,7 +106,7 @@ def main():
     batch_manifest = load_json(batch_manifest_path)
     batch_runs = batch_manifest.get("runs", [])
 
-    out_dir = REPORTING_DIR / batch_id
+    out_dir = llm_batch_summary_dir(batch_id)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     overall = {
@@ -132,7 +144,7 @@ def main():
 
     for run_info in batch_runs:
         run_name = run_info["run_name"]
-        run_dir = RUNS_DIR / run_name
+        run_dir = resolve_run_dir(run_name, batch_id)
 
         summary_path = resolve_summary_path(run_dir)
         config_path = run_dir / "run_config.json"

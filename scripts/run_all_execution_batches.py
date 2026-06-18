@@ -10,8 +10,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from harness.storage.layout import discover_batch_manifest_paths
 
-DEFAULT_BATCHES_DIR = Path("harness/executions/batches")
+
+DEFAULT_BATCHES_DIR = Path("harness/executions/java/llm")
 DEFAULT_TMP_DIR = Path("tmp/run_all_execution_batches")
 
 
@@ -25,17 +27,19 @@ def save_json(path: Path, data: dict[str, Any]) -> None:
 
 
 def batch_sort_key(path: Path) -> tuple[int, str]:
-    match = re.fullmatch(r"batch(\d+)\.json", path.name)
+    batch_label = path.parent.name if path.name == "batch_manifest.json" else path.stem
+    match = re.fullmatch(r"batch(\d+)", batch_label)
     if match:
-        return int(match.group(1)), path.name
-    return sys.maxsize, path.name
+        return int(match.group(1)), batch_label
+    return sys.maxsize, batch_label
 
 
 def discover_batch_manifests(batches_dir: Path) -> list[Path]:
-    return sorted(
-        [path for path in batches_dir.glob("batch*.json") if path.is_file()],
-        key=batch_sort_key,
-    )
+    discovered = []
+    for path in discover_batch_manifest_paths():
+        if batches_dir in path.parents or path.parent == batches_dir:
+            discovered.append(path)
+    return sorted(discovered, key=batch_sort_key)
 
 
 def build_execution_config(base_cfg: dict[str, Any], batch_id: str) -> dict[str, Any]:
@@ -101,7 +105,10 @@ def main() -> int:
     manifests = discover_batch_manifests(args.batches_dir)
     if args.batch_ids:
         wanted = set(args.batch_ids)
-        manifests = [path for path in manifests if path.stem in wanted]
+        manifests = [
+            path for path in manifests
+            if path.stem in wanted or path.parent.name in wanted
+        ]
 
     if not manifests:
         raise ValueError(f"No batch manifests found in {args.batches_dir}")
@@ -112,7 +119,7 @@ def main() -> int:
 
     failures: list[tuple[str, int]] = []
     for manifest_path in manifests:
-        batch_id = manifest_path.stem
+        batch_id = manifest_path.parent.name if manifest_path.name == "batch_manifest.json" else manifest_path.stem
         cfg = build_execution_config(base_cfg, batch_id)
         tmp_config_path = args.tmp_dir / f"{batch_id}.json"
         save_json(tmp_config_path, cfg)

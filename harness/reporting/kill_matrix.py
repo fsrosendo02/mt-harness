@@ -16,6 +16,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from harness.storage.layout import (
+    discover_run_dirs,
     LEGACY_KILL_MATRICES_DIR,
     LEGACY_RUNS_DIR,
     LEGACY_TARGET_TESTS_CSV,
@@ -24,11 +25,12 @@ from harness.storage.layout import (
     experiment_index_path,
     global_target_tests_csv_path,
     kill_matrices_dir,
+    llm_root,
     manifest_path,
     runs_root,
 )
 
-RUNS_DIR = runs_root() if runs_root().exists() else LEGACY_RUNS_DIR
+RUNS_DIR = llm_root() if llm_root().exists() else (runs_root() if runs_root().exists() else LEGACY_RUNS_DIR)
 OUTPUT_DIR = kill_matrices_dir() if kill_matrices_dir().exists() else LEGACY_KILL_MATRICES_DIR
 TARGET_TESTS_CSV = (
     global_target_tests_csv_path() if global_target_tests_csv_path().exists() else LEGACY_TARGET_TESTS_CSV
@@ -335,6 +337,15 @@ def _killed_from_observations(observations: list[dict[str, Any]]) -> bool:
     )
 
 
+def _discover_run_dirs_for_reporting(runs_dir: Path) -> list[Path]:
+    if runs_dir == RUNS_DIR:
+        return discover_run_dirs()
+    return sorted(
+        path for path in runs_dir.rglob("*")
+        if path.is_dir() and manifest_path(path).exists()
+    )
+
+
 def collect_records_from_test_results(
     runs_dir: Path,
     group_by: str,
@@ -342,10 +353,7 @@ def collect_records_from_test_results(
     by_group: dict[str, list[dict[str, Any]]] = defaultdict(list)
     structured_runs: set[str] = set()
 
-    for run_dir in sorted(runs_dir.iterdir()):
-        if not run_dir.is_dir():
-            continue
-
+    for run_dir in _discover_run_dirs_for_reporting(runs_dir):
         manifest = run_manifest(run_dir)
         manifest_subject = manifest.get("subject", {})
         manifest_target = manifest.get("target", {})
@@ -419,9 +427,7 @@ def collect_records_legacy(
     by_group: dict[str, list[dict[str, Any]]] = defaultdict(list)
     skip_run_names = skip_run_names or set()
 
-    for run_dir in sorted(runs_dir.iterdir()):
-        if not run_dir.is_dir():
-            continue
+    for run_dir in _discover_run_dirs_for_reporting(runs_dir):
         if run_dir.name in skip_run_names:
             continue
 

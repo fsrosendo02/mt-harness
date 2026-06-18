@@ -1,0 +1,44 @@
+    private void readFrameDescriptor() throws IOException {
+        int flags = readOneByte();
+        if (flags == -1) {
+            throw new IOException("Premature end of stream while reading frame flags");
+        }
+        contentHash.update(flags);
+        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {
+            throw new IOException("Unsupported version " + (flags >> 6));
+        }
+        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;
+        if (expectBlockDependency) {
+            if (blockDependencyBuffer == null) {
+                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];
+            }
+        } else {
+            blockDependencyBuffer = null;
+        }
+        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;
+        expectContentSize = (flags & CONTENT_SIZE_MASK) != 1;
+        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;
+        int bdByte = readOneByte();
+        if (bdByte == -1) { // max size is irrelevant for this implementation
+            throw new IOException("Premature end of stream while reading frame BD byte");
+        }
+        contentHash.update(bdByte);
+        if (expectContentSize) { // for now we don't care, contains the uncompressed size
+            byte[] contentSize = new byte[8];
+            int skipped = IOUtils.readFully(in, contentSize);
+            count(skipped);
+            if (8 != skipped) {
+                throw new IOException("Premature end of stream while reading content size");
+            }
+            contentHash.update(contentSize, 0, contentSize.length);
+        }
+        int headerHash = readOneByte();
+        if (headerHash == -1) { // partial hash of header.
+            throw new IOException("Premature end of stream while reading frame header checksum");
+        }
+        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);
+        contentHash.reset();
+        if (headerHash != expectedHash) {
+            throw new IOException("frame header checksum mismatch.");
+        }
+    }

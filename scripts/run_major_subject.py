@@ -86,6 +86,18 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--export-mutants",
+        action="store_true",
+        help="Enable Major source export for each generated mutant.",
+    )
+    parser.add_argument(
+        "--mutants-dir",
+        help=(
+            "Optional absolute path for exported mutant source files. "
+            "Defaults to <checkout>/mutants when --export-mutants is enabled."
+        ),
+    )
+    parser.add_argument(
         "--run-name",
         help="Optional run name to record in generated CSV rows.",
     )
@@ -143,6 +155,12 @@ def count_mutants_log(mutants_log: Path) -> int | None:
         return None
     with mutants_log.open("r", encoding="utf-8", errors="replace") as handle:
         return sum(1 for _ in handle)
+
+
+def count_exported_mutant_java_files(mutants_dir: Path | None) -> int | None:
+    if mutants_dir is None or not mutants_dir.exists():
+        return None
+    return sum(1 for _ in mutants_dir.rglob("*.java"))
 
 
 def ant_target_exists(build_file: Path, target_name: str) -> bool:
@@ -462,6 +480,8 @@ def main() -> int:
         checkout=checkout_dir,
         mml_bin=Path(args.mml_bin),
         major_home=Path(args.major_home),
+        export_mutants=args.export_mutants,
+        mutants_dir=Path(args.mutants_dir) if args.mutants_dir else None,
         write_backup=args.write_backup,
     )
     support_changes = ensure_offline_build_support(
@@ -497,7 +517,10 @@ def main() -> int:
     ant_output = compile_result.stdout + compile_result.stderr
     generated_mutants = parse_generated_mutants(ant_output)
     mutants_log = Path(patch_result["mutants_log"])
+    mutants_dir_value = patch_result.get("mutants_dir") or ""
+    mutants_dir = Path(mutants_dir_value) if mutants_dir_value else None
     mutants_log_count = count_mutants_log(mutants_log)
+    exported_mutant_java_files = count_exported_mutant_java_files(mutants_dir)
     total_elapsed_sec = time.time() - started_at
 
     checkout_output = checkout_result.stdout + checkout_result.stderr
@@ -517,12 +540,18 @@ def main() -> int:
 
     archived_mutants_log = None
     archived_build_xml = None
+    archived_mutants_dir = None
     if args.artifacts_dir:
         artifacts_dir = Path(args.artifacts_dir).resolve()
         artifacts_dir.mkdir(parents=True, exist_ok=True)
         if mutants_log.exists():
             archived_mutants_log = artifacts_dir / "mutants.log"
             shutil.copy2(mutants_log, archived_mutants_log)
+        if mutants_dir is not None and mutants_dir.exists():
+            archived_mutants_dir = artifacts_dir / "mutants"
+            if archived_mutants_dir.exists():
+                shutil.rmtree(archived_mutants_dir)
+            shutil.copytree(mutants_dir, archived_mutants_dir)
         build_xml_path = Path(patch_result["build_xml"])
         if build_xml_path.exists():
             archived_build_xml = artifacts_dir / "build.xml"
@@ -563,6 +592,7 @@ def main() -> int:
         "build_xml": patch_result["build_xml"],
         "compile_build_file": patch_result["compile_build_file"],
         "mutants_log": str(mutants_log),
+        "mutants_dir": str(mutants_dir) if mutants_dir is not None else "",
         "checkout_returncode": checkout_result.returncode,
         "compile_returncode": compile_result.returncode,
         "checkout_elapsed_sec": round(checkout_elapsed_sec, 3),
@@ -570,6 +600,7 @@ def main() -> int:
         "total_elapsed_sec": round(total_elapsed_sec, 3),
         "generated_mutants": generated_mutants,
         "mutants_log_count": mutants_log_count,
+        "exported_mutant_java_files": exported_mutant_java_files,
         "results_row_count": len(results_rows),
     }
     if args.log_file:
@@ -581,6 +612,8 @@ def main() -> int:
         summary["archived_mutants_log"] = str(archived_mutants_log)
     if archived_build_xml is not None:
         summary["archived_build_xml"] = str(archived_build_xml)
+    if archived_mutants_dir is not None:
+        summary["archived_mutants_dir"] = str(archived_mutants_dir)
     if results_csv_path is not None:
         summary["results_csv"] = str(results_csv_path)
     summary["support_changes"] = support_changes
@@ -594,10 +627,14 @@ def main() -> int:
     print(f"Checkout: {checkout_dir}")
     print(f"Build XML: {patch_result['build_xml']}")
     print(f"Mutants log: {mutants_log}")
+    if mutants_dir is not None:
+        print(f"Mutants dir: {mutants_dir}")
     if generated_mutants is not None:
         print(f"Generated mutants: {generated_mutants}")
     if mutants_log_count is not None:
         print(f"mutants.log entries: {mutants_log_count}")
+    if exported_mutant_java_files is not None:
+        print(f"Exported mutant Java files: {exported_mutant_java_files}")
     print(f"Checkout elapsed: {checkout_elapsed_sec:.2f}s")
     print(f"Compile elapsed: {compile_elapsed_sec:.2f}s")
     print(f"Total elapsed: {total_elapsed_sec:.2f}s")
@@ -607,6 +644,8 @@ def main() -> int:
         print(f"Results CSV: {results_csv_path}")
     if archived_mutants_log is not None:
         print(f"Archived mutants log: {archived_mutants_log}")
+    if archived_mutants_dir is not None:
+        print(f"Archived mutants dir: {archived_mutants_dir}")
 
     if compile_result.returncode != 0:
         print("\nCompile output:\n")

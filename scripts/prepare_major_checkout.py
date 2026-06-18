@@ -46,6 +46,18 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--export-mutants",
+        action="store_true",
+        help="Enable Major source export for each generated mutant.",
+    )
+    parser.add_argument(
+        "--mutants-dir",
+        help=(
+            "Optional absolute path for exported mutant source files. "
+            "Defaults to <checkout>/mutants when --export-mutants is enabled."
+        ),
+    )
+    parser.add_argument(
         "--write-backup",
         action="store_true",
         help="Write .bak files before patching.",
@@ -240,6 +252,8 @@ def patch_checkout(
     mml_bin: Path,
     major_home: Path,
     mutants_log: Path | None = None,
+    export_mutants: bool = False,
+    mutants_dir: Path | None = None,
     write_backup: bool = False,
 ) -> dict[str, str]:
     checkout = checkout.resolve()
@@ -257,6 +271,12 @@ def patch_checkout(
 
     mutants_log = mutants_log.resolve() if mutants_log else (checkout / "mutants.log").resolve()
     compilerarg_value = f'-Xplugin:MajorPlugin mml:{mml_bin} mutants.log:{mutants_log}'
+    resolved_mutants_dir = None
+    if export_mutants:
+        resolved_mutants_dir = (
+            mutants_dir.resolve() if mutants_dir else (checkout / "mutants").resolve()
+        )
+        compilerarg_value += f" export.mutants mutants.directory:{resolved_mutants_dir}"
 
     build_xml, patch_file = choose_patch_file(checkout)
     compile_build_file = choose_compile_build_file(checkout)
@@ -312,6 +332,8 @@ def patch_checkout(
         "major_rt_jar": str(major_rt_jar),
         "mml_bin": str(mml_bin),
         "mutants_log": str(mutants_log),
+        "export_mutants": str(export_mutants),
+        "mutants_dir": str(resolved_mutants_dir) if resolved_mutants_dir else "",
         "path_block_patched": str(path_patched),
         "legacy_replacements": str(legacy_replacements),
     }
@@ -324,6 +346,8 @@ def main() -> int:
         mml_bin=Path(args.mml_bin),
         major_home=Path(args.major_home),
         mutants_log=Path(args.mutants_log) if args.mutants_log else None,
+        export_mutants=args.export_mutants,
+        mutants_dir=Path(args.mutants_dir) if args.mutants_dir else None,
         write_backup=args.write_backup,
     )
 
@@ -333,6 +357,8 @@ def main() -> int:
     print(f"  compile.tests/test classpath includes: {result['major_rt_jar']}")
     print(f"  compilerarg uses MML: {result['mml_bin']}")
     print(f"  mutants.log path: {result['mutants_log']}")
+    if result["mutants_dir"]:
+        print(f"  exported mutants dir: {result['mutants_dir']}")
     return 0
 
 

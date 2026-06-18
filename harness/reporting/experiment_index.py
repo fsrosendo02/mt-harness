@@ -7,16 +7,14 @@ from pathlib import Path
 
 from harness.reporting.summary import deduplicate_rows
 from harness.storage.layout import (
-    LEGACY_RUNS_DIR,
+    discover_run_dirs,
     manifest_path,
     resolve_results_path,
     resolve_summary_path,
     experiment_index_path,
-    runs_root,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-RUNS_DIR = runs_root() if runs_root().exists() else LEGACY_RUNS_DIR
 OUTPUT_CSV = experiment_index_path()
 
 
@@ -263,7 +261,7 @@ def build_experiment_index(
     output_csv: Path | None = None,
     print_to_stdout: bool = True,
 ) -> Path:
-    runs_dir = runs_dir or RUNS_DIR
+    runs_dir = runs_dir or BASE_DIR / "executions"
     output_csv = output_csv or OUTPUT_CSV
 
     if not runs_dir.exists():
@@ -271,10 +269,13 @@ def build_experiment_index(
 
     rows = []
 
-    for run_dir in sorted(runs_dir.iterdir()):
-        if not run_dir.is_dir():
-            continue
+    discovered = (
+        discover_run_dirs()
+        if runs_dir == BASE_DIR / "executions"
+        else sorted(path for path in runs_dir.rglob("*") if path.is_dir() and (path / "run_manifest.json").exists())
+    )
 
+    for run_dir in discovered:
         row = collect_run_row(run_dir)
         if row is not None:
             rows.append(row)

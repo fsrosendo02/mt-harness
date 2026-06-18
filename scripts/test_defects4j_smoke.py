@@ -4,7 +4,7 @@ from harness.adapters.defects4j import Defects4JAdapter
 from harness.models import Subject, Target, Mutant
 from harness.runners.mutation_runner import MutationRunner
 from harness.executions.metadata import build_experiment_metadata
-from harness.storage.layout import runs_root
+from harness.storage.layout import llm_run_dir
 
 
 def main():
@@ -230,7 +230,7 @@ public static Number createNumber(final String str) throws NumberFormatException
     adapter = Defects4JAdapter()
     runner = MutationRunner(adapter)
 
-    run_dir = runs_root() / "run_defects4j_smoke"
+    run_dir = llm_run_dir("run_defects4j_smoke", "smoke")
     workdir_base = "./tmp/Lang_1_multi"
     base_snapshot_dir = "./tmp/base_run_defects4j_smoke"
 
