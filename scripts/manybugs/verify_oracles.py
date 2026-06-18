@@ -1,18 +1,26 @@
 """
-Verify ManyBugs oracle tests: confirm buggy→FAIL and fixed→PASS within Docker.
+Verify ManyBugs oracle tests: confirm buggy→FAIL / fixed→PASS for every target.
 
 For each scenario:
   1. Start container (pre-built binary = buggy version)
-  2. Run oracle tests WITHOUT building → expect FAIL
-  3. Run `make` to compile fixed source
+  2. Run oracle (nN) tests WITHOUT rebuilding → expect FAIL
+  3. Apply diffs (if any) + make to get fixed binary
   4. Run oracle tests again → expect PASS
 
-Usage:
-    python scripts/manybugs/verify_oracles.py <scenario:n1,n2> [...]
-    e.g.: python scripts/manybugs/verify_oracles.py gzip-2009-09-26-a1d3d4019d-f17cbd13a1:n1
+Writes "verified": true/false back to each catalog JSON.
 
-Or read from a catalog JSON:
+Usage:
+    # single scenario
+    python scripts/manybugs/verify_oracles.py gzip-2009-08-16-3fe0caeada-39a362ae9d:n1,n2
+
+    # one catalog
     python scripts/manybugs/verify_oracles.py --catalog harness/datasets/catalogs/manybugs_gzip_pilot.json
+
+    # all pilot catalogs
+    python scripts/manybugs/verify_oracles.py --all-pilots
+
+    # dry-run (don't update catalogs)
+    python scripts/manybugs/verify_oracles.py --all-pilots --dry-run
 """
 import json
 import subprocess
@@ -27,6 +35,17 @@ TEST_SCRIPT = "/experiment/test.sh"
 WORK_DIR = "/experiment"
 BUILD_TIMEOUT = 300
 TEST_TIMEOUT = 60
+
+PILOT_CATALOGS = [
+    "harness/datasets/catalogs/manybugs_libtiff_pilot.json",
+    "harness/datasets/catalogs/manybugs_gzip_pilot.json",
+    "harness/datasets/catalogs/manybugs_lighttpd_pilot.json",
+]
+
+
+def ts():
+    from datetime import datetime
+    return datetime.now().strftime("%H:%M:%S")
 
 
 def run(cmd, timeout=60):
@@ -59,31 +78,20 @@ def run_test(cid, test_id):
 
 
 def build_fixed(cid):
-    """Apply diffs (if any) to the buggy source, then compile.
-
-    For gzip/lighttpd-style images: /experiment/src/ contains the buggy source
-    and /experiment/diffs/**/*.diff records the fix as standard diff hunks.
-    We apply each diff to the corresponding source file, then make.
-
-    For libtiff-style images: /experiment/src/ already contains the fixed
-    source — no diffs directory exists, so we just make.
-    """
-    # Collect all *.diff files under /experiment/diffs/ recursively
+    """Apply diffs (if any) then compile. Returns (success, log)."""
     rc, out = run(["docker", "exec", cid, "find", "/experiment/diffs", "-type", "f", "-name", "*-diff"])
     diff_paths = [p.strip() for p in out.splitlines() if p.strip()] if rc == 0 else []
 
     for diff_path in diff_paths:
-        # Derive target source file: strip /experiment/diffs/ prefix and -diff suffix
-        rel = diff_path.removeprefix("/experiment/diffs/")  # e.g. "src/mod_accesslog.c-diff"
-        target_file = rel.removesuffix("-diff")             # e.g. "src/mod_accesslog.c"
+        rel = diff_path.removeprefix("/experiment/diffs/")
+        target_file = rel.removesuffix("-diff")
         rc, out = run(
             ["docker", "exec", "-w", SRC_DIR, cid,
              "patch", target_file, "-i", diff_path, "--forward", "-s"],
             timeout=30,
         )
-        if rc not in (0, 1):  # 1 = already applied
+        if rc not in (0, 1):
             return False, f"patch failed for {target_file}: {out}"
-        # touch so make sees the source as newer than the pre-built binary
         run(["docker", "exec", "-w", SRC_DIR, cid, "touch", target_file], timeout=10)
 
     rc, out = run(
@@ -95,70 +103,117 @@ def build_fixed(cid):
 
 def verify_scenario(scenario, oracle_tests):
     image = f"{IMAGE_REGISTRY}:{scenario}"
-    print(f"\n[{scenario}]")
+    print(f"\n[{ts()}] {scenario}")
     print(f"  oracle tests: {oracle_tests}")
 
-    print(f"  pulling image...", flush=True)
     run(["docker", "pull", "--platform", PLATFORM, image], timeout=300)
 
+    t0 = time.time()
     cid = start_container(image)
-    results = {"scenario": scenario, "oracle_tests": oracle_tests, "buggy": {}, "fixed": {}, "ok": True}
+    result = {
+        "scenario": scenario,
+        "oracle_tests": oracle_tests,
+        "buggy_ok": False,
+        "build_ok": False,
+        "fixed_ok": False,
+        "verified": False,
+        "failure_reason": None,
+    }
 
     try:
-        # Step 1: run oracle tests on pre-built (buggy) binary
-        print("  [buggy] running oracle tests on pre-built binary...")
+        # Step 1: oracle tests on buggy (pre-built) binary — expect FAIL
         buggy_ok = True
         for test_id in oracle_tests:
-            passed, out = run_test(cid, test_id)
-            status = "PASS" if passed else "FAIL"
-            expected = "FAIL"
-            check = "✓" if not passed else "✗ UNEXPECTED"
-            print(f"    {test_id}: {status} (expected {expected}) {check}")
-            results["buggy"][test_id] = {"passed": passed, "expected_pass": False, "ok": not passed}
+            passed, _ = run_test(cid, test_id)
+            mark = "✓" if not passed else "✗"
+            print(f"  [buggy] {test_id}: {'PASS' if passed else 'FAIL'} (want FAIL) {mark}")
             if passed:
                 buggy_ok = False
+        result["buggy_ok"] = buggy_ok
+        if not buggy_ok:
+            result["failure_reason"] = "buggy binary passes oracle (test not discriminating)"
 
         # Step 2: build fixed source
-        print("  [build] compiling fixed source...")
+        print(f"  [build] compiling fixed...", flush=True)
         build_ok, build_log = build_fixed(cid)
-        results["build_ok"] = build_ok
+        result["build_ok"] = build_ok
         if not build_ok:
-            print(f"  [build] FAILED — cannot verify fixed")
-            print(f"  [build] log tail: {build_log[-300:]}")
-            results["ok"] = False
-            return results
+            short = build_log[-400:].strip().replace("\n", " | ")
+            print(f"  [build] FAILED — {short}")
+            result["failure_reason"] = f"build failed: {build_log[-200:].strip()}"
+            return result
 
-        # Step 3: run oracle tests on fixed binary
-        print("  [fixed] running oracle tests on fixed binary...")
+        print(f"  [build] OK")
+
+        # Step 3: oracle tests on fixed binary — expect PASS
         fixed_ok = True
         for test_id in oracle_tests:
-            passed, out = run_test(cid, test_id)
-            status = "PASS" if passed else "FAIL"
-            expected = "PASS"
-            check = "✓" if passed else "✗ UNEXPECTED"
-            print(f"    {test_id}: {status} (expected {expected}) {check}")
-            results["fixed"][test_id] = {"passed": passed, "expected_pass": True, "ok": passed}
+            passed, _ = run_test(cid, test_id)
+            mark = "✓" if passed else "✗"
+            print(f"  [fixed] {test_id}: {'PASS' if passed else 'FAIL'} (want PASS) {mark}")
             if not passed:
                 fixed_ok = False
+        result["fixed_ok"] = fixed_ok
+        if not fixed_ok:
+            result["failure_reason"] = "fixed binary fails oracle"
 
-        results["ok"] = buggy_ok and build_ok and fixed_ok
-        verdict = "VERIFIED ✓" if results["ok"] else "FAILED ✗"
-        print(f"  => {verdict}")
+        result["verified"] = buggy_ok and build_ok and fixed_ok
+        label = "VERIFIED ✓" if result["verified"] else "FAILED ✗"
+        print(f"  => {label}  ({time.time()-t0:.1f}s)")
 
     finally:
         stop_container(cid)
 
-    return results
+    return result
 
 
-def load_from_catalog(catalog_path):
-    data = json.loads(Path(catalog_path).read_text())
+def load_catalog(path):
+    data = json.loads(Path(path).read_text())
     specs = []
     for entry in data["targets"]:
         scenario = entry["subject"]
-        oracles = entry["metadata"].get("oracle_tests", ["n1"])
+        oracles = entry.get("metadata", {}).get("oracle_tests", ["n1"])
         specs.append((scenario, oracles))
     return specs
+
+
+def update_catalog(path, results_by_scenario, dry_run=False):
+    """Write verified field back into catalog JSON."""
+    data = json.loads(Path(path).read_text())
+    changed = 0
+    for entry in data["targets"]:
+        scenario = entry["subject"]
+        if scenario in results_by_scenario:
+            r = results_by_scenario[scenario]
+            old = entry.get("verified")
+            new = r["verified"]
+            if old != new:
+                entry["verified"] = new
+                changed += 1
+    if changed and not dry_run:
+        Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return changed
+
+
+def print_summary(all_results):
+    print("\n" + "="*60)
+    print("SUMMARY")
+    print("="*60)
+    verified = [r for r in all_results if r.get("verified")]
+    failed = [r for r in all_results if not r.get("verified")]
+    print(f"VERIFIED: {len(verified)}/{len(all_results)}")
+    print()
+    if verified:
+        print("✓ READY:")
+        for r in verified:
+            print(f"  {r['scenario']}")
+    if failed:
+        print()
+        print("✗ BROKEN:")
+        for r in failed:
+            reason = r.get("failure_reason") or r.get("error", "unknown")
+            print(f"  {r['scenario']}")
+            print(f"    reason: {reason}")
 
 
 def main():
@@ -167,9 +222,19 @@ def main():
         print(__doc__)
         sys.exit(1)
 
+    dry_run = "--dry-run" in args
+    args = [a for a in args if a != "--dry-run"]
+
+    catalog_paths = []
     specs = []
-    if args[0] == "--catalog":
-        specs = load_from_catalog(args[1])
+
+    if args[0] == "--all-pilots":
+        catalog_paths = PILOT_CATALOGS
+        for p in catalog_paths:
+            specs.extend(load_catalog(p))
+    elif args[0] == "--catalog":
+        catalog_paths = [args[1]]
+        specs = load_catalog(args[1])
     else:
         for arg in args:
             if ":" in arg:
@@ -182,19 +247,19 @@ def main():
     for scenario, oracles in specs:
         try:
             r = verify_scenario(scenario, oracles)
-            all_results.append(r)
         except Exception as e:
             print(f"  ERROR: {e}")
-            all_results.append({"scenario": scenario, "ok": False, "error": str(e)})
+            r = {"scenario": scenario, "verified": False, "error": str(e), "failure_reason": str(e)}
+        all_results.append(r)
 
-    print("\n\n=== SUMMARY ===")
-    passed = [r for r in all_results if r.get("ok")]
-    failed = [r for r in all_results if not r.get("ok")]
-    print(f"VERIFIED: {len(passed)}/{len(all_results)}")
-    if failed:
-        print("FAILED:")
-        for r in failed:
-            print(f"  {r['scenario']}: {r.get('error', 'oracle mismatch')}")
+    results_by_scenario = {r["scenario"]: r for r in all_results}
+
+    for path in catalog_paths:
+        changed = update_catalog(path, results_by_scenario, dry_run=dry_run)
+        tag = "(dry-run)" if dry_run else ""
+        print(f"\nUpdated {path}: {changed} target(s) changed {tag}")
+
+    print_summary(all_results)
 
 
 if __name__ == "__main__":
