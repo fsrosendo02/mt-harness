@@ -1,0 +1,20 @@
+{
+  "requested_count": 6,
+  "accepted_count": 5,
+  "rejected_count": 1,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the property that the function correctly writes the strips to the output TIFF file.",
+        "line": 19,
+        "precode": "if (TIFFWriteRawStrip(out, s, buf, bytecounts[s]) < 0)",
+        "aftercode": "if (TIFFWriteRawStrip(out, s, buf, bytecounts[s] + 1) < 0)",
+        "candidate_code": "cpStrips(TIFF* in, TIFF* out)\n{\n\ttsize_t bufsize  = TIFFStripSize(in);\n\tunsigned char *buf = (unsigned char *)_TIFFmalloc(bufsize);\n\n\tif (buf) {\n\t\ttstrip_t s, ns = TIFFNumberOfStrips(in);\n\t\tuint32 *bytecounts;\n\n\t\tTIFFGetField(in, TIFFTAG_STRIPBYTECOUNTS, &bytecounts);\n\t\tfor (s = 0; s < ns; s++) {\n\t\t\tif (bytecounts[s] > (uint32)bufsize) {\n\t\t\t\tbuf = (unsigned char *)_TIFFrealloc(buf, bytecounts[s]);\n\t\t\t\tif (!buf)\n\t\t\t\t\treturn (0);\n\t\t\t\tbufsize = bytecounts[s];\n\t\t\t}\n\t\t\tif (TIFFReadRawStrip(in, s, buf, bytecounts[s]) < 0 ||\n\t\t\t    if (TIFFWriteRawStrip(out, s, buf, bytecounts[s] + 1) < 0) {\n\t\t\t\t_TIFFfree(buf);\n\t\t\t\treturn (0);\n\t\t\t}\n\t\t}\n\t\t_TIFFfree(buf);\n\t\treturn (1);\n\t}\n\treturn (0);\n}\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}
