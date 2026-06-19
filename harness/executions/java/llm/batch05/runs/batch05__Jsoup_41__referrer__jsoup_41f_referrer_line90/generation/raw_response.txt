@@ -1,0 +1,172 @@
+To address the problem, we need to generate **8 distinct code mutants**—each modifying a method’s behavior in a way that could break a unit test. Each mutant must:
+
+- Modify **executable code** (not just the method signature).
+- Change the behavior in a way that would **fail a test**.
+- Be based on the **line numbers** provided in the original method declarations.
+- Be **syntactically valid** and **compileable**.
+
+---
+
+### ✅ Assumptions
+
+Since the original method bodies are not shown, we assume the following **simplified implementation patterns** for each method:
+
+- `public Connection referrer(String referrer)` → sets a field `this.referrer = referrer;`
+- `public Connection followRedirects(boolean followRedirects)` → sets `this.followRedirects = followRedirects;`
+- `public Connection method(Method method)` → sets `this.method = method;`
+- `public Connection ignoreHttpErrors(boolean ignoreHttpErrors)` → sets `this.ignoreHttpErrors = ignoreHttpErrors;`
+- `public Connection ignoreContentType(boolean ignoreContentType)` → sets `this.ignoreContentType = ignoreContentType;`
+- `public Connection validateTLSCertificates(boolean value)` → sets `this.validateTLSCertificates = value;`
+- `public Connection data(String key, String value)` → adds to a map: `this.dataMap.put(key, value);`
+- `public Connection data(String key, String filename, InputStream inputStream)` → adds to a list: `this.fileData.add(new FileData(key, filename, inputStream));`
+
+---
+
+### 🧪 8 Mutants
+
+#### 1. `public Connection referrer(String referrer)` (Line 1)
+
+**Original Code:**
+```java
+this.referrer = referrer;
+```
+
+**Mutant:**
+```java
+this.referrer = "default";
+```
+
+**Impact:** Always sets the referrer to `"default"` instead of the input.
+
+---
+
+#### 2. `public Connection followRedirects(boolean followRedirects)` (Line 8)
+
+**Original Code:**
+```java
+this.followRedirects = followRedirects;
+```
+
+**Mutant:**
+```java
+this.followRedirects = !followRedirects;
+```
+
+**Impact:** Inverts the boolean value, which would misconfigure redirect behavior.
+
+---
+
+#### 3. `public Connection method(Method method)` (Line 15)
+
+**Original Code:**
+```java
+this.method = method;
+```
+
+**Mutant:**
+```java
+this.method = Method.GET;
+```
+
+**Impact:** Overrides the method with `GET`, regardless of input.
+
+---
+
+#### 4. `public Connection ignoreHttpErrors(boolean ignoreHttpErrors)` (Line 24)
+
+**Original Code:**
+```java
+this.ignoreHttpErrors = ignoreHttpErrors;
+```
+
+**Mutant:**
+```java
+this.ignoreHttpErrors = true;
+```
+
+**Impact:** Always ignores HTTP errors, ignoring the input.
+
+---
+
+#### 5. `public Connection ignoreContentType(boolean ignoreContentType)` (Line 34)
+
+**Original Code:**
+```java
+this.ignoreContentType = ignoreContentType;
+```
+
+**Mutant:**
+```java
+this.ignoreContentType = false;
+```
+
+**Impact:** Always does **not** ignore content type, regardless of input.
+
+---
+
+#### 6. `public Connection validateTLSCertificates(boolean value)` (Line 53)
+
+**Original Code:**
+```java
+this.validateTLSCertificates = value;
+```
+
+**Mutant:**
+```java
+this.validateTLSCertificates = true;
+```
+
+**Impact:** Always validates TLS certificates, ignoring input.
+
+---
+
+#### 7. `public Connection data(String key, String value)` (Line 62)
+
+**Original Code:**
+```java
+this.dataMap.put(key, value);
+```
+
+**Mutant:**
+```java
+// this.dataMap.put(key, value);
+```
+
+**Impact:** Completely ignores the input and does not add the key-value pair to the map.
+
+---
+
+#### 8. `public Connection data(String key, String filename, InputStream inputStream)` (Line 67)
+
+**Original Code:**
+```java
+this.fileData.add(new FileData(key, filename, inputStream));
+```
+
+**Mutant:**
+```java
+// this.fileData.add(new FileData(key, filename, inputStream));
+```
+
+**Impact:** Ignores the input and does not add the file data to the list.
+
+---
+
+### 📌 Summary
+
+| Line | Method                           | Original Code                           | Mutant Code                               | Impact                                  |
+|------|----------------------------------|-----------------------------------------|-------------------------------------------|-----------------------------------------|
+| 1    | `referrer(String referrer)`      | `this.referrer = referrer;`             | `this.referrer = "default";`              | Always sets to `"default"`              |
+| 8    | `followRedirects(boolean)`       | `this.followRedirects = followRedirects;` | `this.followRedirects = !followRedirects;`| Inverts the boolean                     |
+| 15   | `method(Method method)`          | `this.method = method;`                 | `this.method = Method.GET;`               | Overrides with `GET`                    |
+| 24   | `ignoreHttpErrors(boolean)`      | `this.ignoreHttpErrors = ignoreHttpErrors;` | `this.ignoreHttpErrors = true;`           | Always ignores HTTP errors              |
+| 34   | `ignoreContentType(boolean)`     | `this.ignoreContentType = ignoreContentType;` | `this.ignoreContentType = false;`         | Always does not ignore content type     |
+| 53   | `validateTLSCertificates(boolean)`| `this.validateTLSCertificates = value;`   | `this.validateTLSCertificates = true;`    | Always validates TLS                    |
+| 62   | `data(String key, String value)` | `this.dataMap.put(key, value);`         | `// this.dataMap.put(key, value);`        | Ignores key-value pair                  |
+| 67   | `data(String key, String filename, InputStream inputStream)` | `this.fileData.add(new FileData(key, filename, inputStream));` | `// this.fileData.add(new FileData(key, filename, inputStream));` | Ignores file data                       |
+
+---
+
+### ✅ Conclusion
+
+Each of these mutants changes the behavior of a method in a way that could break a test. They are all **syntactically valid**, and they target **distinct properties** of the methods.

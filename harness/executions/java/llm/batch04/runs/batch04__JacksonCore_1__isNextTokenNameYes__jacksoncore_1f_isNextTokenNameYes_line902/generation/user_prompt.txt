@@ -1,0 +1,101 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void _isNextTokenNameYes()
+ 2:         throws IOException, JsonParseException
+ 3:     {
+ 4:         // very first thing: common case, colon, value, no white space
+ 5:         int i;
+ 6:         if (_inputPtr < (_inputEnd-1) && _inputBuffer[_inputPtr] == INT_COLON) { // fast case first
+ 7:             i = _inputBuffer[++_inputPtr];
+ 8:             ++_inputPtr;
+ 9:             if (i == INT_QUOTE) {
+10:                 _tokenIncomplete = true;
+11:                 _nextToken = JsonToken.VALUE_STRING;
+12:                 return;
+13:             }
+14:             if (i == INT_LCURLY) {
+15:                 _nextToken = JsonToken.START_OBJECT;
+16:                 return;
+17:             }
+18:             if (i == INT_LBRACKET) {
+19:                 _nextToken = JsonToken.START_ARRAY;
+20:                 return;
+21:             }
+22:             i &= 0xFF;
+23:             if (i <= INT_SPACE || i == INT_SLASH) {
+24:             	--_inputPtr;
+25:                 i = _skipWS();
+26:             }
+27:         } else {
+28:             i = _skipColon();
+29:         }
+30:         switch (i) {
+31:         case INT_QUOTE:
+32:             _tokenIncomplete = true;
+33:             _nextToken = JsonToken.VALUE_STRING;
+34:             return;
+35:         case INT_LBRACKET:
+36:             _nextToken = JsonToken.START_ARRAY;
+37:             return;
+38:         case INT_LCURLY:
+39:             _nextToken = JsonToken.START_OBJECT;
+40:             return;
+41:         case INT_RBRACKET:
+42:         case INT_RCURLY:
+43:             _reportUnexpectedChar(i, "expected a value");
+44:         case INT_t:
+45:             _matchToken("true", 1);
+46:             _nextToken = JsonToken.VALUE_TRUE;
+47:             return;
+48:         case INT_f:
+49:             _matchToken("false", 1);
+50:             _nextToken = JsonToken.VALUE_FALSE;
+51:             return;
+52:         case INT_n:
+53:             _matchToken("null", 1);
+54:             _nextToken = JsonToken.VALUE_NULL;
+55:             return;
+56:         case INT_MINUS:
+57:         case INT_0:
+58:         case INT_1:
+59:         case INT_2:
+60:         case INT_3:
+61:         case INT_4:
+62:         case INT_5:
+63:         case INT_6:
+64:         case INT_7:
+65:         case INT_8:
+66:         case INT_9:
+67:             _nextToken = parseNumberText(i);
+68:             return;
+69:         }
+70:         _nextToken = _handleUnexpectedValue(i);
+71:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

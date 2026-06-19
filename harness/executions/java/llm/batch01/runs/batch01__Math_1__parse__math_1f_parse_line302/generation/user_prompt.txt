@@ -1,0 +1,123 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public RealMatrix parse(String source, ParsePosition pos) {
+ 2:         int initialIndex = pos.getIndex();
+ 3: 
+ 4:         final String trimmedPrefix = prefix.trim();
+ 5:         final String trimmedSuffix = suffix.trim();
+ 6:         final String trimmedRowPrefix = rowPrefix.trim();
+ 7:         final String trimmedRowSuffix = rowSuffix.trim();
+ 8:         final String trimmedColumnSeparator = columnSeparator.trim();
+ 9:         final String trimmedRowSeparator = rowSeparator.trim();
+10: 
+11:         // parse prefix
+12:         CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+13:         if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {
+14:             return null;
+15:         }
+16: 
+17:         // parse components
+18:         List<List<Number>> matrix = new ArrayList<List<Number>>();
+19:         List<Number> rowComponents = new ArrayList<Number>();
+20:         for (boolean loop = true; loop;){
+21: 
+22:             if (!rowComponents.isEmpty()) {
+23:                 CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+24:                 if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {
+25:                     if (trimmedRowSuffix.length() != 0 &&
+26:                         !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {
+27:                         return null;
+28:                     } else {
+29:                         CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+30:                         if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {
+31:                             matrix.add(rowComponents);
+32:                             rowComponents = new ArrayList<Number>();
+33:                             continue;
+34:                         } else {
+35:                             loop = false;
+36:                         }
+37:                     }
+38:                 }
+39:             } else {
+40:                 CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+41:                 if (trimmedRowPrefix.length() != 0 &&
+42:                     !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {
+43:                     return null;
+44:                 }
+45:             }
+46: 
+47:             if (loop) {
+48:                 CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+49:                 Number component = CompositeFormat.parseNumber(source, format, pos);
+50:                 if (component != null) {
+51:                     rowComponents.add(component);
+52:                 } else {
+53:                     if (rowComponents.isEmpty()) {
+54:                         loop = false;
+55:                     } else {
+56:                         // invalid component
+57:                         // set index back to initial, error index should already be set
+58:                         pos.setIndex(initialIndex);
+59:                         return null;
+60:                     }
+61:                 }
+62:             }
+63: 
+64:         }
+65: 
+66:         if (!rowComponents.isEmpty()) {
+67:             matrix.add(rowComponents);
+68:         }
+69: 
+70:         // parse suffix
+71:         CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+72:         if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {
+73:             return null;
+74:         }
+75: 
+76:         // do not allow an empty matrix
+77:         if (matrix.isEmpty()) {
+78:             pos.setIndex(initialIndex);
+79:             return null;
+80:         }
+81: 
+82:         // build vector
+83:         double[][] data = new double[matrix.size()][];
+84:         int row = 0;
+85:         for (List<Number> rowList : matrix) {
+86:             data[row] = new double[rowList.size()];
+87:             for (int i = 0; i < rowList.size(); i++) {
+88:                 data[row][i] = rowList.get(i).doubleValue();
+89:             }
+90:             row++;
+91:         }
+92:         return MatrixUtils.createRealMatrix(data);
+93:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

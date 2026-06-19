@@ -1,0 +1,91 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   @SuppressWarnings("fallthrough")
+ 2:   private String nextUnquotedValue() throws IOException {
+ 3:     StringBuilder builder = null;
+ 4:     int i = 0;
+ 5: 
+ 6:     findNonLiteralCharacter:
+ 7:     while (true) {
+ 8:       for (; pos + i < limit; i++) {
+ 9:         switch (buffer[pos + i]) {
+10:         case '/':
+11:         case '\\':
+12:         case ';':
+13:         case '#':
+14:         case '=':
+15:           checkLenient(); // fall-through
+16:         case '{':
+17:         case '}':
+18:         case '[':
+19:         case ']':
+20:         case ':':
+21:         case ',':
+22:         case ' ':
+23:         case '\t':
+24:         case '\f':
+25:         case '\r':
+26:         case '\n':
+27:           break findNonLiteralCharacter;
+28:         }
+29:       }
+30: 
+31:       // Attempt to load the entire literal into the buffer at once.
+32:       if (i < buffer.length) {
+33:         if (fillBuffer(i + 1)) {
+34:           continue;
+35:         } else {
+36:           break;
+37:         }
+38:       }
+39: 
+40:       // use a StringBuilder when the value is too long. This is too long to be a number!
+41:       if (builder == null) {
+42:         builder = new StringBuilder();
+43:       }
+44:       builder.append(buffer, pos, i);
+45:       pos += i;
+46:       i = 0;
+47:       if (!fillBuffer(1)) {
+48:         break;
+49:       }
+50:     }
+51: 
+52:     String result;
+53:     if (builder == null) {
+54:       result = new String(buffer, pos, i);
+55:     } else {
+56:       builder.append(buffer, pos, i);
+57:       result = builder.toString();
+58:     }
+59:     pos += i;
+60:     return result;
+61:   }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

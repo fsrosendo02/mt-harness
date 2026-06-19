@@ -1,0 +1,75 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private Token parseEncapsulatedToken(final Token tkn) throws IOException {
+ 2:         // save current line number in case needed for IOE
+ 3:         final long startLineNumber = getLineNumber();
+ 4:         int c;
+ 5:         while (true) {
+ 6:             c = in.read();
+ 7: 
+ 8:             if (isEscape(c)) {
+ 9:                 tkn.content.append((char) readEscape());
+10:             } else if (isQuoteChar(c)) {
+11:                 if (isQuoteChar(in.lookAhead())) {
+12:                     // double or escaped encapsulator -> add single encapsulator to token
+13:                     c = in.read();
+14:                     tkn.content.append((char) c);
+15:                 } else {
+16:                     // token finish mark (encapsulator) reached: ignore whitespace till delimiter
+17:                     while (true) {
+18:                         c = in.read();
+19:                         if (isDelimiter(c)) {
+20:                             tkn.type = TOKEN;
+21:                             return tkn;
+22:                         } else if (isEndOfFile(c)) {
+23:                             tkn.type = EOF;
+24:                             tkn.isReady = true; // There is data at EOF
+25:                             return tkn;
+26:                         } else if (readEndOfLine(c)) {
+27:                             tkn.type = EORECORD;
+28:                             return tkn;
+29:                         } else if (!isWhitespace(c)) {
+30:                             // error invalid char between token and next delimiter
+31:                             throw new IOException("(line " + getLineNumber() +
+32:                                     ") invalid char between encapsulated token and delimiter");
+33:                         }
+34:                     }
+35:                 }
+36:             } else if (isEndOfFile(c)) {
+37:                 // error condition (end of file before end of token)
+38:                 throw new IOException("(startline " + startLineNumber +
+39:                         ") EOF reached before encapsulated token finished");
+40:             } else {
+41:                 // consume character
+42:                 tkn.content.append((char) c);
+43:             }
+44:         }
+45:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

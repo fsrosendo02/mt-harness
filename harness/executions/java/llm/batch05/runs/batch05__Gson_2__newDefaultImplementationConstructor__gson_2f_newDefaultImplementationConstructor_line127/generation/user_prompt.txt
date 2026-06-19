@@ -1,0 +1,102 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   @SuppressWarnings("unchecked") // use runtime checks to guarantee that 'T' is what it is
+ 2:   private <T> ObjectConstructor<T> newDefaultImplementationConstructor(
+ 3:       final Type type, Class<? super T> rawType) {
+ 4:     if (Collection.class.isAssignableFrom(rawType)) {
+ 5:       if (SortedSet.class.isAssignableFrom(rawType)) {
+ 6:         return new ObjectConstructor<T>() {
+ 7:           public T construct() {
+ 8:             return (T) new TreeSet<Object>();
+ 9:           }
+10:         };
+11:       } else if (EnumSet.class.isAssignableFrom(rawType)) {
+12:         return new ObjectConstructor<T>() {
+13:           @SuppressWarnings("rawtypes")
+14:           public T construct() {
+15:             if (type instanceof ParameterizedType) {
+16:               Type elementType = ((ParameterizedType) type).getActualTypeArguments()[0];
+17:               if (elementType instanceof Class) {
+18:                 return (T) EnumSet.noneOf((Class)elementType);
+19:               } else {
+20:                 throw new JsonIOException("Invalid EnumSet type: " + type.toString());
+21:               }
+22:             } else {
+23:               throw new JsonIOException("Invalid EnumSet type: " + type.toString());
+24:             }
+25:           }
+26:         };
+27:       } else if (Set.class.isAssignableFrom(rawType)) {
+28:         return new ObjectConstructor<T>() {
+29:           public T construct() {
+30:             return (T) new LinkedHashSet<Object>();
+31:           }
+32:         };
+33:       } else if (Queue.class.isAssignableFrom(rawType)) {
+34:         return new ObjectConstructor<T>() {
+35:           public T construct() {
+36:             return (T) new LinkedList<Object>();
+37:           }
+38:         };
+39:       } else {
+40:         return new ObjectConstructor<T>() {
+41:           public T construct() {
+42:             return (T) new ArrayList<Object>();
+43:           }
+44:         };
+45:       }
+46:     }
+47: 
+48:     if (Map.class.isAssignableFrom(rawType)) {
+49:       if (SortedMap.class.isAssignableFrom(rawType)) {
+50:         return new ObjectConstructor<T>() {
+51:           public T construct() {
+52:             return (T) new TreeMap<Object, Object>();
+53:           }
+54:         };
+55:       } else if (type instanceof ParameterizedType && !(String.class.isAssignableFrom(
+56:           TypeToken.get(((ParameterizedType) type).getActualTypeArguments()[0]).getRawType()))) {
+57:         return new ObjectConstructor<T>() {
+58:           public T construct() {
+59:             return (T) new LinkedHashMap<Object, Object>();
+60:           }
+61:         };
+62:       } else {
+63:         return new ObjectConstructor<T>() {
+64:           public T construct() {
+65:             return (T) new LinkedTreeMap<String, Object>();
+66:           }
+67:         };
+68:       }
+69:     }
+70: 
+71:     return null;
+72:   }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

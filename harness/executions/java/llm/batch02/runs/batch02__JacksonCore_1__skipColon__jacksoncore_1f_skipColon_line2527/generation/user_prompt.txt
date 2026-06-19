@@ -1,0 +1,101 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private int _skipColon()
+ 2:         throws IOException, JsonParseException
+ 3:     {
+ 4:         if (_inputPtr >= _inputEnd) {
+ 5:             loadMoreGuaranteed();
+ 6:         }
+ 7:         // first fast case: we just got a colon without white space:
+ 8:         int i = _inputBuffer[_inputPtr++];
+ 9:         if (i == INT_COLON) {
+10:             if (_inputPtr < _inputEnd) {
+11:                 i = _inputBuffer[_inputPtr] & 0xFF;
+12:                 if (i > INT_SPACE && i != INT_SLASH) {
+13:                     ++_inputPtr;
+14:                     return i;
+15:                 }
+16:             }
+17:         } else {
+18:             // need to skip potential leading space
+19:             i &= 0xFF;
+20:             
+21:             space_loop:
+22:             while (true) {
+23:                 switch (i) {
+24:                 case INT_SPACE:
+25:                 case INT_TAB:
+26:                     break;
+27:                 case INT_CR:
+28:                     _skipCR();
+29:                     break;
+30:                 case INT_LF:
+31:                     _skipLF();
+32:                     break;
+33:                 case INT_SLASH:
+34:                     _skipComment();
+35:                     break;
+36:                 default:
+37:                     if (i < INT_SPACE) {
+38:                         _throwInvalidSpace(i);
+39:                     }
+40:                     break space_loop;
+41:                 }
+42:                 if (_inputPtr >= _inputEnd) {
+43:                     loadMoreGuaranteed();
+44:                 }
+45:                 i = _inputBuffer[_inputPtr++] & 0xFF;
+46:             }
+47:             if (i != INT_COLON) {
+48:                 _reportUnexpectedChar(i, "was expecting a colon to separate field name and value");
+49:             }
+50:         }
+51: 
+52:             // either way, found colon, skip through trailing WS
+53:         while (_inputPtr < _inputEnd || loadMore()) {
+54:             i = _inputBuffer[_inputPtr++] & 0xFF;
+55:             if (i > INT_SPACE) {
+56:                 if (i != INT_SLASH) {
+57:                     return i;
+58:                 }
+59:                 _skipComment();
+60:             } else if (i != INT_SPACE) {
+61:                 if (i == INT_LF) {
+62:                     _skipLF();
+63:                 } else if (i == INT_CR) {
+64:                     _skipCR();
+65:                 } else if (i != INT_TAB) {
+66:                     _throwInvalidSpace(i);
+67:                 }
+68:             }
+69:         }
+70:         throw _constructError("Unexpected end-of-input within/between "+_parsingContext.getTypeDesc()+" entries");
+71:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

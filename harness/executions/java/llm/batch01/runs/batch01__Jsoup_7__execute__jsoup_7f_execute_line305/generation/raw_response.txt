@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The mutant violates the requirement that only 'http' and 'https' protocols are supported by allowing other protocols.",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(protocol.equals(\"http\"), \"Only http protocols supported\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "The mutant changes the condition for serialising the request URL, allowing it to serialize even if the method is not GET.",
+      "line": 9,
+      "precode": "serialiseRequestUrl(req); // appends query string",
+      "aftercode": "if (req.method() == Connection.Method.GET) { serialiseRequestUrl(req); }"
+    },
+    {
+      "id": 3,
+      "reasoning": "The mutant removes the check for redirect statuses, allowing the method to proceed without following redirects.",
+      "line": 20,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "The mutant changes the condition for checking if a request needs to be redirected, allowing it to redirect even on HTTP_OK status.",
+      "line": 21,
+      "precode": "needsRedirect = true;",
+      "aftercode": "if (status == HttpURLConnection.HTTP_OK) { needsRedirect = true; }"
+    },
+    {
+      "id": 5,
+      "reasoning": "The mutant incorrectly sets the response executed status to true, potentially leading to incorrect execution tracking.",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "res.executed = false;"
+    },
+    {
+      "id": 6,
+      "reasoning": "The mutant removes the check for 'Content-Encoding' header, potentially causing an error when trying to read data from a gzipped response.",
+      "line": 34,
+      "precode": "res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?",
+      "aftercode": ""
+    },
+    {
+      "id": 7,
+      "reasoning": "The mutant changes the error handling by throwing an IOException with a static message, which could hide the actual problem.",
+      "line": 23,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "throw new IOException(\"General error loading URL\");"
+    },
+    {
+      "id": 8,
+      "reasoning": "The mutant alters the way the response's byte data is read, potentially leading to incorrect or incomplete data processing.",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "res.byteData = new byte[0];"
+    }
+  ]
+}

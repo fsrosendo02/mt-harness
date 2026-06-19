@@ -1,0 +1,42 @@
+{
+  "requested_count": 8,
+  "accepted_count": 5,
+  "rejected_count": 3,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "_skipCR() and _skipLF() are not executed when CR/LF is encountered",
+        "line": 28,
+        "precode": "case INT_CR: _skipCR(); break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "_skipComment() is always executed, even if the character is not a slash",
+        "line": 34,
+        "precode": "case INT_SLASH: _skipComment(); break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 6,
+        "reasoning": "Always throw an exception when encountering unexpected characters in space",
+        "line": 38,
+        "precode": "if (i < INT_SPACE) {_throwInvalidSpace(i);}",
+        "aftercode": "_throwInvalidSpace(i);",
+        "candidate_code": "    private int _skipColon()\n        throws IOException, JsonParseException\n    {\n        if (_inputPtr >= _inputEnd) {\n            loadMoreGuaranteed();\n        }\n        // first fast case: we just got a colon without white space:\n        int i = _inputBuffer[_inputPtr++];\n        if (i == INT_COLON) {\n            if (_inputPtr < _inputEnd) {\n                i = _inputBuffer[_inputPtr] & 0xFF;\n                if (i > INT_SPACE && i != INT_SLASH) {\n                    ++_inputPtr;\n                    return i;\n                }\n            }\n        } else {\n            // need to skip potential leading space\n            i &= 0xFF;\n            \n            space_loop:\n            while (true) {\n                switch (i) {\n                case INT_SPACE:\n                case INT_TAB:\n                    break;\n                case INT_CR:\n                    _skipCR();\n                    break;\n                case INT_LF:\n                    _skipLF();\n                    break;\n                case INT_SLASH:\n                    _skipComment();\n                    break;\n                default:\n                    if (i < INT_SPACE) {\n                        _throwInvalidSpace(i);\n                    }\n                    break space_loop;\n                }\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                i = _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            if (i != INT_COLON) {\n                _reportUnexpectedChar(i, \"was expecting a colon to separate field name and value\");\n            }\n        }\n\n            // either way, found colon, skip through trailing WS\n        while (_inputPtr < _inputEnd || loadMore()) {\n            i = _inputBuffer[_inputPtr++] & 0xFF;\n            if (i > INT_SPACE) {\n                if (i != INT_SLASH) {\n                    return i;\n                }\n                _skipComment();\n            } else if (i != INT_SPACE) {\n                if (i == INT_LF) {\n                    _skipLF();\n                } else if (i == INT_CR) {\n                    _skipCR();\n                } else if (i != INT_TAB) {\n                    _throwInvalidSpace(i);\n                }\n            }\n        }\n        throw _constructError(\"Unexpected end-of-input within/between \"+_parsingContext.getTypeDesc()+\" entries\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     Token nextToken(Token tkn) throws IOException {
+ 3: 
+ 4:         // get the last read char (required for empty line detection)
+ 5:         int lastChar = in.readAgain();
+ 6: 
+ 7:         //  read the next char and set eol
+ 8:         /* note: unfortunately isEndOfLine may consumes a character silently.
+ 9:         *       this has no effect outside of the method. so a simple workaround
+10:         *       is to call 'readAgain' on the stream...
+11:         */
+12:         int c = in.read();
+13:         boolean eol = isEndOfLine(c);
+14:         c = in.readAgain();
+15: 
+16:         //  empty line detection: eol AND (last char was EOL or beginning)
+17:         if (emptyLinesIgnored) {
+18:             while (eol
+19:                     && (lastChar == '\n' || lastChar == '\r' || lastChar == ExtendedBufferedReader.UNDEFINED)
+20:                     && !isEndOfFile(lastChar)) {
+21:                 // go on char ahead ...
+22:                 lastChar = c;
+23:                 c = in.read();
+24:                 eol = isEndOfLine(c);
+25:                 c = in.readAgain();
+26:                 // reached end of file without any content (empty line at the end)
+27:                 if (isEndOfFile(c)) {
+28:                     tkn.type = EOF;
+29:                     // don't set tkn.isReady here because no content
+30:                     return tkn;
+31:                 }
+32:             }
+33:         }
+34: 
+35:         // did we reach eof during the last iteration already ? EOF
+36:         if (isEndOfFile(lastChar) || (!isDelimiter(lastChar) && isEndOfFile(c))) {
+37:             tkn.type = EOF;
+38:             // don't set tkn.isReady here because no content
+39:             return tkn;
+40:         }
+41: 
+42:         //  important: make sure a new char gets consumed in each iteration
+43:         while (tkn.type == INVALID) {
+44:             // ignore whitespaces at beginning of a token
+45:             if (surroundingSpacesIgnored) {
+46:                 while (isWhitespace(c) && !eol) {
+47:                     c = in.read();
+48:                     eol = isEndOfLine(c);
+49:                 }
+50:             }
+51:             
+52:             // ok, start of token reached: comment, encapsulated, or token
+53:             if (isCommentStart(c)) {
+54:                 // ignore everything till end of line and continue (incr linecount)
+55:                 in.readLine();
+56:                 tkn = nextToken(tkn.reset());
+57:             } else if (isDelimiter(c)) {
+58:                 // empty token return TOKEN("")
+59:                 tkn.type = TOKEN;
+60:             } else if (eol) {
+61:                 // empty token return EORECORD("")
+62:                 //noop: tkn.content.append("");
+63:                 tkn.type = EORECORD;
+64:             } else if (isEncapsulator(c)) {
+65:                 // consume encapsulated token
+66:                 encapsulatedTokenLexer(tkn, c);
+67:             } else if (isEndOfFile(c)) {
+68:                 // end of file return EOF()
+69:                 //noop: tkn.content.append("");
+70:                 tkn.type = EOF;
+71:                 tkn.isReady = true; // there is data at EOF
+72:             } else {
+73:                 // next token must be a simple token
+74:                 // add removed blanks when not ignoring whitespace chars...
+75:                 simpleTokenLexer(tkn, c);
+76:             }
+77:         }
+78:         return tkn;
+79:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method does not handle the case where no custom serializer is found, returning null instead of a default collection serializer.",
+      "line": 22,
+      "precode": "return null;",
+      "aftercode": "ser = buildDefaultCollectionSerializer(config); return ser;"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method does not check for the possibility that `format.getShape()` might return a shape other than OBJECT or NULL, which could lead to incorrect serialization behavior.",
+      "line": 19,
+      "precode": "JsonFormat.Value format = beanDesc.findExpectedFormat(null);",
+      "aftercode": "JsonFormat.Value format = beanDesc.findExpectedFormat(JsonFormat.Shape.ARRAY);"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method does not consider the possibility that the raw class of a collection might be a generic type, such as `List<String>`, and instead checks for all possible concrete classes.",
+      "line": 24,
+      "precode": "EnumSet.class.isAssignableFrom(raw)",
+      "aftercode": "type.getRawClass().getName().contains(\"<\")"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method assumes that if a custom serializer for a collection is found, it should be used without checking whether it is suitable for the given context.",
+      "line": 12,
+      "precode": "break;",
+      "aftercode": ""
+    },
+    {
+      "id": 5,
+      "reasoning": "The method incorrectly checks if an elementRaw class is String before deciding to use IndexedStringListSerializer. This could lead to incorrect serialization behavior for non-String collections.",
+      "line": 36,
+      "precode": "if (elementRaw == String.class)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method does not consider the possibility that the collection type might be a `Map`, which is not handled in the current implementation.",
+      "line": 33,
+      "precode": "Class<?> elementRaw = type.getContentType().getRawClass();",
+      "aftercode": "if (type.isTypeOrSubclass(Map.class)) { return buildMapSerializer(config, type, beanDesc, staticTyping); }"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method does not check if the enumType is actually an Enum before creating a serializer for it.",
+      "line": 31,
+      "precode": "ser = buildEnumSetSerializer(enumType);",
+      "aftercode": "ser = buildEnumSetSerializer(Object.class);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method does not account for the possibility that a collection serializer modifier might return null, which would leave `ser` in an undefined state.",
+      "line": 61,
+      "precode": "ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);",
+      "aftercode": "if (ser == null) { throw new JsonMappingException(\"Serializer modifier returned null\"); }"
+    }
+  ]
+}

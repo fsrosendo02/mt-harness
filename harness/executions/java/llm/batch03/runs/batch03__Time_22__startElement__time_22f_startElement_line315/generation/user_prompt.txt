@@ -1,0 +1,91 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:         public void startElement(String ns, String ln, String qn, Attributes a) {
+ 2:             // substitute our own parsed 'ln' if it's not provided
+ 3:             if (ln == null) {
+ 4:                 ln = getLocalPart(qn);
+ 5:             }
+ 6: 
+ 7:             // for simplicity, we can ignore <jsp:text> for our purposes
+ 8:             // (don't bother distinguishing between it and its characters)
+ 9:             if (qn.equals(JSP_TEXT)) {
+10:                 return;
+11:             }
+12: 
+13:             // check body-related constraint
+14:             if (bodyIllegal) {
+15:                 fail(Resources.getMessage("TLV_ILLEGAL_BODY", lastElementName));
+16:             }
+17: 
+18:             // validate expression syntax if we need to
+19:             /*
+20:              * Set expAtts; if (qn.startsWith(prefix + ":") && (expAtts = (Set)
+21:              * config.get(ln)) != null) { for (int i = 0; i < a.getLength();
+22:              * i++) { String attName = a.getLocalName(i); if
+23:              * (expAtts.contains(attName)) { String vMsg =
+24:              * validateExpression(ln, attName, a.getValue(i)); if (vMsg != null) {
+25:              * fail(vMsg); } } } }
+26:              */
+27: 
+28:             // validate attributes
+29:             if (qn.startsWith(prefix + ":") && !hasNoInvalidScope(a)) {
+30:                 fail(Resources.getMessage("TLV_INVALID_ATTRIBUTE", SCOPE, qn, a
+31:                         .getValue(SCOPE)));
+32:             }
+33:             if (qn.startsWith(prefix + ":") && hasEmptyVar(a)) {
+34:                 fail(Resources.getMessage("TLV_EMPTY_VAR", qn));
+35:             }
+36:             if (qn.startsWith(prefix + ":")
+37:                     && !isJodaTag(ns, ln, SET_DATETIMEZONE)
+38:                     && hasDanglingScope(a)) {
+39:                 fail(Resources.getMessage("TLV_DANGLING_SCOPE", qn));
+40:             }
+41: 
+42:             // now, modify state
+43: 
+44:             // set up a check against illegal attribute/body combinations
+45:             bodyIllegal = false;
+46:             bodyNecessary = false;
+47:             if (isJodaTag(ns, ln, PARSE_DATETIME)) {
+48:                 if (hasAttribute(a, VALUE)) {
+49:                     bodyIllegal = true;
+50:                 } else {
+51:                     bodyNecessary = true;
+52:                 }
+53:             }
+54: 
+55:             // record the most recent tag (for error reporting)
+56:             lastElementName = qn;
+57:             lastElementId = a.getValue(JSP, "id");
+58: 
+59:             // we're a new element, so increase depth
+60:             depth++;
+61:         }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

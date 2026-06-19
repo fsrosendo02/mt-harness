@@ -1,60 +1,60 @@
 {
-     "mutants": [
-       {
-         "id": 1,
-         "reasoning": "Violates the property that the method should ignore the given delimiter.",
-         "line": 5,
-         "precode": "// assert c == delimiter;",
-         "aftercode": "assert c != delimiter;"
-       },
-       {
-         "id": 2,
-         "reasoning": "Violates the property that the method should add a single encapsulator to the token when it encounters a double or escaped encapsulator.",
-         "line": 15,
-         "precode": "tkn.content.append((char) c);",
-         "aftercode": "tkn.content.append(\"\\\"\");" // Adding two encapsulators instead of one
-       },
-       {
-         "id": 3,
-         "reasoning": "Violates the property that the method should return a TOKEN type when it reaches the delimiter.",
-         "line": 21,
-         "precode": "tkn.type = TOKEN;",
-         "aftercode": "tkn.type = EOF;" // Returning EOF type instead of TOKEN
-       },
-       {
-         "id": 4,
-         "reasoning": "Violates the property that the method should throw an IOException when it encounters an invalid character between the token and the next delimiter.",
-         "line": 32,
-         "precode": "throw new IOException(\"(line \" + getLineNumber() + \") invalid char between encapsulated token and delimiter\");",
-         "aftercode": "// Do nothing when encountering an invalid character" // Removing the exception throw statement
-       },
-       {
-         "id": 5,
-         "reasoning": "Violates the property that the method should throw an IOException when it reaches the end of file before the encapsulated token is finished.",
-         "line": 39,
-         "precode": "throw new IOException(\"(startline \" + startLineNumber + \") EOF reached before encapsulated token finished\");",
-         "aftercode": "// Do nothing when reaching end of file before encapsulated token is finished" // Removing the exception throw statement
-       },
-       {
-         "id": 6,
-         "reasoning": "Violates the property that the method should consume characters and add them to the token's content.",
-         "line": 42,
-         "precode": "tkn.content.append((char) c);",
-         "aftercode": "// Do nothing when consuming a character" // Removing the append statement
-       },
-       {
-         "id": 7,
-         "reasoning": "Violates the property that the method should return an EOF type and set isReady to true when it reaches the end of file.",
-         "line": 25,
-         "precode": "tkn.isReady = true;",
-         "aftercode": "tkn.isReady = false;" // Setting isReady to false instead of true
-       },
-       {
-         "id": 8,
-         "reasoning": "Violates the property that the method should return an EORECORD type when it reaches the end of line.",
-         "line": 29,
-         "precode": "tkn.type = EORECORD;",
-         "aftercode": "tkn.type = TOKEN;" // Returning TOKEN type instead of EORECORD
-       }
-     ]
-   }
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "A single encapsulator is incorrectly interpreted as the end of a token, violating the behavior that double or escaped encapsulators should be treated differently.",
+      "line": 12,
+      "precode": "if (isEncapsulator(in.lookAhead())) {",
+      "aftercode": "if (isEndOfFile(in.lookAhead())) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method does not check for EOF after reading the next character, potentially leading to an infinite loop if EOF is reached without finding a delimiter.",
+      "line": 7,
+      "precode": "c = in.read();",
+      "aftercode": "// c = in.read();"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method fails to throw an error when encountering invalid characters between tokens and delimiters, violating the behavior that such cases should be treated as errors.",
+      "line": 19,
+      "precode": "if (isDelimiter(c)) {",
+      "aftercode": "// if (isDelimiter(c)) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method does not handle escape characters properly, potentially leading to incorrect token content.",
+      "line": 10,
+      "precode": "tkn.content.append((char) readEscape(c));",
+      "aftercode": "// tkn.content.append((char) c);"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method does not correctly identify and handle end-of-line characters, which could lead to errors in token type recognition.",
+      "line": 27,
+      "precode": "if (isEndOfLine(c)) {",
+      "aftercode": "// if (true) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method does not correctly identify and handle EOF characters, which could lead to premature termination of token processing.",
+      "line": 35,
+      "precode": "throw new IOException(\"(line \" + getLineNumber() + \") invalid char between encapsulated token and delimiter\");",
+      "aftercode": "// throw new IOException(\"(startline \" + startLineNumber + \") EOF reached before encapsulated token finished\");"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method incorrectly appends characters to the token content, potentially corrupting the token's content.",
+      "line": 42,
+      "precode": "tkn.content.append((char) c);",
+      "aftercode": "// tkn.content.append(\" \");"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method does not correctly handle encapsulators that are followed by non-whitespace characters, potentially leading to incorrect token type assignment.",
+      "line": 15,
+      "precode": "tkn.content.append((char) c);",
+      "aftercode": "// tkn.content.append(\" \");"
+    }
+  ]
+}

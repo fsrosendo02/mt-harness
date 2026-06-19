@@ -1,0 +1,122 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public CommandLine parse(Options options, String[] arguments, 
+ 2:                              Properties properties, boolean stopAtNonOption)
+ 3:         throws ParseException
+ 4:     {
+ 5:         // initialise members
+ 6:         this.options = options;
+ 7:         requiredOptions = options.getRequiredOptions();
+ 8:         cmd = new CommandLine();
+ 9: 
+10:         boolean eatTheRest = false;
+11: 
+12:         if (arguments == null)
+13:         {
+14:             arguments = new String[0];
+15:         }
+16: 
+17:         List tokenList = Arrays.asList(flatten(this.options, 
+18:                                                arguments, 
+19:                                                stopAtNonOption));
+20: 
+21:         ListIterator iterator = tokenList.listIterator();
+22: 
+23:         // process each flattened token
+24:         while (iterator.hasNext())
+25:         {
+26:             String t = (String) iterator.next();
+27: 
+28:             // the value is the double-dash
+29:             if ("--".equals(t))
+30:             {
+31:                 eatTheRest = true;
+32:             }
+33: 
+34:             // the value is a single dash
+35:             else if ("-".equals(t))
+36:             {
+37:                 if (stopAtNonOption)
+38:                 {
+39:                     eatTheRest = true;
+40:                 }
+41:                 else
+42:                 {
+43:                     cmd.addArg(t);
+44:                 }
+45:             }
+46: 
+47:             // the value is an option
+48:             else if (t.startsWith("-"))
+49:             {
+50:                 if (stopAtNonOption && !options.hasOption(t))
+51:                 {
+52:                     eatTheRest = true;
+53:                     cmd.addArg(t);
+54:                 }
+55:                 else
+56:                 {
+57:                     processOption(t, iterator);
+58:                 }
+59:             }
+60: 
+61:             // the value is an argument
+62:             else
+63:             {
+64:                 cmd.addArg(t);
+65: 
+66:                 if (stopAtNonOption)
+67:                 {
+68:                     eatTheRest = true;
+69:                 }
+70:             }
+71: 
+72:             // eat the remaining tokens
+73:             if (eatTheRest)
+74:             {
+75:                 while (iterator.hasNext())
+76:                 {
+77:                     String str = (String) iterator.next();
+78: 
+79:                     // ensure only one double-dash is added
+80:                     if (!"--".equals(str))
+81:                     {
+82:                         cmd.addArg(str);
+83:                     }
+84:                 }
+85:             }
+86:         }
+87: 
+88:         processProperties(properties);
+89:         checkRequiredOptions();
+90: 
+91:         return cmd;
+92:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

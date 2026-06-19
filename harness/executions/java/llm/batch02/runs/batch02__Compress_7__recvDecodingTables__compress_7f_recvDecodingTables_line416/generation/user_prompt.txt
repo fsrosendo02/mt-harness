@@ -1,0 +1,110 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void recvDecodingTables() throws IOException {
+ 2:         final Data dataShadow = this.data;
+ 3:         final boolean[] inUse = dataShadow.inUse;
+ 4:         final byte[] pos = dataShadow.recvDecodingTables_pos;
+ 5:         final byte[] selector = dataShadow.selector;
+ 6:         final byte[] selectorMtf = dataShadow.selectorMtf;
+ 7: 
+ 8:         int inUse16 = 0;
+ 9: 
+10:         /* Receive the mapping table */
+11:         for (int i = 0; i < 16; i++) {
+12:             if (bsGetBit()) {
+13:                 inUse16 |= 1 << i;
+14:             }
+15:         }
+16: 
+17:         for (int i = 256; --i >= 0;) {
+18:             inUse[i] = false;
+19:         }
+20: 
+21:         for (int i = 0; i < 16; i++) {
+22:             if ((inUse16 & (1 << i)) != 0) {
+23:                 final int i16 = i << 4;
+24:                 for (int j = 0; j < 16; j++) {
+25:                     if (bsGetBit()) {
+26:                         inUse[i16 + j] = true;
+27:                     }
+28:                 }
+29:             }
+30:         }
+31: 
+32:         makeMaps();
+33:         final int alphaSize = this.nInUse + 2;
+34: 
+35:         /* Now the selectors */
+36:         final int nGroups = bsR(3);
+37:         final int nSelectors = bsR(15);
+38: 
+39:         for (int i = 0; i < nSelectors; i++) {
+40:             int j = 0;
+41:             while (bsGetBit()) {
+42:                 j++;
+43:             }
+44:             selectorMtf[i] = (byte) j;
+45:         }
+46: 
+47:         /* Undo the MTF values for the selectors. */
+48:         for (int v = nGroups; --v >= 0;) {
+49:             pos[v] = (byte) v;
+50:         }
+51: 
+52:         for (int i = 0; i < nSelectors; i++) {
+53:             int v = selectorMtf[i] & 0xff;
+54:             final byte tmp = pos[v];
+55:             while (v > 0) {
+56:                 // nearly all times v is zero, 4 in most other cases
+57:                 pos[v] = pos[v - 1];
+58:                 v--;
+59:             }
+60:             pos[0] = tmp;
+61:             selector[i] = tmp;
+62:         }
+63: 
+64:         final char[][] len = dataShadow.temp_charArray2d;
+65: 
+66:         /* Now the coding tables */
+67:         for (int t = 0; t < nGroups; t++) {
+68:             int curr = bsR(5);
+69:             final char[] len_t = len[t];
+70:             for (int i = 0; i < alphaSize; i++) {
+71:                 while (bsGetBit()) {
+72:                     curr += bsGetBit() ? -1 : 1;
+73:                 }
+74:                 len_t[i] = (char) curr;
+75:             }
+76:         }
+77: 
+78:         // finally create the Huffman tables
+79:         createHuffmanDecodingTables(alphaSize, nGroups);
+80:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

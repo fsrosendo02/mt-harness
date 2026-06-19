@@ -1,0 +1,120 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void swapPosition(final Node<K, V> x, final Node<K, V> y, final DataElement dataElement) {
+ 2:         // Save initial values.
+ 3:         Node<K, V> xFormerParent = x.getParent(dataElement);
+ 4:         Node<K, V> xFormerLeftChild = x.getLeft(dataElement);
+ 5:         Node<K, V> xFormerRightChild = x.getRight(dataElement);
+ 6:         Node<K, V> yFormerParent = y.getParent(dataElement);
+ 7:         Node<K, V> yFormerLeftChild = y.getLeft(dataElement);
+ 8:         Node<K, V> yFormerRightChild = y.getRight(dataElement);
+ 9:         boolean xWasLeftChild =
+10:                 (x.getParent(dataElement) != null) && (x == x.getParent(dataElement).getLeft(dataElement));
+11:         boolean yWasLeftChild =
+12:                 (y.getParent(dataElement) != null) && (y == y.getParent(dataElement).getLeft(dataElement));
+13: 
+14:         // Swap, handling special cases of one being the other's parent.
+15:         if (x == yFormerParent) { // x was y's parent
+16:             x.setParent(y, dataElement);
+17: 
+18:             if (yWasLeftChild) {
+19:                 y.setLeft(x, dataElement);
+20:                 y.setRight(xFormerRightChild, dataElement);
+21:             } else {
+22:                 y.setRight(x, dataElement);
+23:                 y.setLeft(xFormerLeftChild, dataElement);
+24:             }
+25:         } else {
+26:             x.setParent(yFormerParent, dataElement);
+27: 
+28:             if (yFormerParent != null) {
+29:                 if (yWasLeftChild) {
+30:                     yFormerParent.setLeft(x, dataElement);
+31:                 } else {
+32:                     yFormerParent.setRight(x, dataElement);
+33:                 }
+34:             }
+35: 
+36:             y.setLeft(xFormerLeftChild, dataElement);
+37:             y.setRight(xFormerRightChild, dataElement);
+38:         }
+39: 
+40:         if (y == xFormerParent) { // y was x's parent
+41:             y.setParent(x, dataElement);
+42: 
+43:             if (xWasLeftChild) {
+44:                 x.setLeft(y, dataElement);
+45:                 x.setRight(yFormerRightChild, dataElement);
+46:             } else {
+47:                 x.setRight(y, dataElement);
+48:                 x.setLeft(yFormerLeftChild, dataElement);
+49:             }
+50:         } else {
+51:             y.setParent(xFormerParent, dataElement);
+52: 
+53:             if (xFormerParent != null) {
+54:                 if (xWasLeftChild) {
+55:                     xFormerParent.setLeft(y, dataElement);
+56:                 } else {
+57:                     xFormerParent.setRight(y, dataElement);
+58:                 }
+59:             }
+60: 
+61:             x.setLeft(yFormerLeftChild, dataElement);
+62:             x.setRight(yFormerRightChild, dataElement);
+63:         }
+64: 
+65:         // Fix children's parent pointers
+66:         if (x.getLeft(dataElement) != null) {
+67:             x.getLeft(dataElement).setParent(x, dataElement);
+68:         }
+69: 
+70:         if (x.getRight(dataElement) != null) {
+71:             x.getRight(dataElement).setParent(x, dataElement);
+72:         }
+73: 
+74:         if (y.getLeft(dataElement) != null) {
+75:             y.getLeft(dataElement).setParent(y, dataElement);
+76:         }
+77: 
+78:         if (y.getRight(dataElement) != null) {
+79:             y.getRight(dataElement).setParent(y, dataElement);
+80:         }
+81: 
+82:         x.swapColors(y, dataElement);
+83: 
+84:         // Check if root changed
+85:         if (rootNode[dataElement.ordinal()] == x) {
+86:             rootNode[dataElement.ordinal()] = y;
+87:         } else if (rootNode[dataElement.ordinal()] == y) {
+88:             rootNode[dataElement.ordinal()] = x;
+89:         }
+90:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

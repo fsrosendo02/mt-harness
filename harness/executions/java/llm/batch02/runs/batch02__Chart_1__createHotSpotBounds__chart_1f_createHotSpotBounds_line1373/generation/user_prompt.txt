@@ -1,0 +1,112 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public Rectangle2D createHotSpotBounds(Graphics2D g2, Rectangle2D dataArea,
+ 2:             CategoryPlot plot, CategoryAxis domainAxis, ValueAxis rangeAxis,
+ 3:             CategoryDataset dataset, int row, int column, boolean selected,
+ 4:             CategoryItemRendererState state, Rectangle2D result) {
+ 5: 
+ 6:         // nothing is drawn if the row index is not included in the list with
+ 7:         // the indices of the visible rows...
+ 8:         int visibleRow = state.getVisibleSeriesIndex(row);
+ 9:         if (visibleRow < 0) {
+10:             return null;
+11:         }
+12:         if (!this.getItemVisible(row, column)) {
+13:             return null;
+14:         }
+15:         // nothing is drawn for null values...
+16:         Number dataValue = dataset.getValue(row, column);
+17:         if (dataValue == null) {
+18:             return null;
+19:         }
+20: 
+21:         final double value = dataValue.doubleValue();
+22:         PlotOrientation orientation = plot.getOrientation();
+23:         double barW0 = calculateBarW0(plot, orientation, dataArea, domainAxis,
+24:                 state, visibleRow, column);
+25:         double[] barL0L1 = calculateBarL0L1(value, rangeAxis.getLowerBound(),
+26:                 rangeAxis.getUpperBound());
+27:         if (barL0L1 == null) {
+28:             return null;  // the bar is not visible
+29:         }
+30: 
+31:         RectangleEdge edge = plot.getRangeAxisEdge();
+32:         double transL0 = rangeAxis.valueToJava2D(barL0L1[0], dataArea, edge);
+33:         double transL1 = rangeAxis.valueToJava2D(barL0L1[1], dataArea, edge);
+34: 
+35:         // in the following code, barL0 is (in Java2D coordinates) the LEFT
+36:         // end of the bar for a horizontal bar chart, and the TOP end of the
+37:         // bar for a vertical bar chart.  Whether this is the BASE of the bar
+38:         // or not depends also on (a) whether the data value is 'negative'
+39:         // relative to the base value and (b) whether or not the range axis is
+40:         // inverted.  This only matters if/when we apply the minimumBarLength
+41:         // attribute, because we should extend the non-base end of the bar
+42:         boolean positive = (value >= this.base);
+43:         boolean inverted = rangeAxis.isInverted();
+44:         double barL0 = Math.min(transL0, transL1);
+45:         double barLength = Math.abs(transL1 - transL0);
+46:         double barLengthAdj = 0.0;
+47:         if (barLength > 0.0 && barLength < getMinimumBarLength()) {
+48:             barLengthAdj = getMinimumBarLength() - barLength;
+49:         }
+50:         double barL0Adj = 0.0;
+51:         RectangleEdge barBase;
+52:         if (orientation == PlotOrientation.HORIZONTAL) {
+53:             if (positive && inverted || !positive && !inverted) {
+54:                 barL0Adj = barLengthAdj;
+55:                 barBase = RectangleEdge.RIGHT;
+56:             }
+57:             else {
+58:                 barBase = RectangleEdge.LEFT;
+59:             }
+60:         }
+61:         else {
+62:             if (positive && !inverted || !positive && inverted) {
+63:                 barL0Adj = barLengthAdj;
+64:                 barBase = RectangleEdge.BOTTOM;
+65:             }
+66:             else {
+67:                 barBase = RectangleEdge.TOP;
+68:             }
+69:         }
+70: 
+71:         // draw the bar...
+72:         Rectangle2D bar = null;
+73:         if (orientation == PlotOrientation.HORIZONTAL) {
+74:             bar = new Rectangle2D.Double(barL0 - barL0Adj, barW0,
+75:                     barLength + barLengthAdj, state.getBarWidth());
+76:         }
+77:         else {
+78:             bar = new Rectangle2D.Double(barW0, barL0 - barL0Adj,
+79:                     state.getBarWidth(), barLength + barLengthAdj);
+80:         }
+81:         return bar;
+82:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

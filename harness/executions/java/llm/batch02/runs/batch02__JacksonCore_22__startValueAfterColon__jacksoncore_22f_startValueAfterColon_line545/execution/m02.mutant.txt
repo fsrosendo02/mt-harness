@@ -1,0 +1,65 @@
+    private final JsonToken _startValueAfterColon(int ch) throws IOException
+    {
+        // First: any leading white space?
+        if (ch <= 0x0020) {
+            ch = _skipWS(0);// will skip through all available ws (and comments)
+            if (ch <= 0) {
+                _minorState = MINOR_VALUE_LEADING_COLON;
+                return _currToken;
+            }
+        }
+        if (ch != INT_COLON) {
+            // can not omit colon here
+            _reportUnexpectedChar(ch, "was expecting a colon to separate field name and value");
+        }
+        int ptr = _inputPtr;
+        if (ptr >= _inputEnd) {
+            _minorState = MINOR_VALUE_LEADING_WS;
+            return (_currToken = JsonToken.NOT_AVAILABLE);
+        }
+        ch = _inputBuffer[ptr];
+        _inputPtr = ptr+1;
+        if (ch <= 0x0020) {
+            ch = _skipWS(ch); // will skip through all available ws (and comments)
+            if (ch <= 0) {
+                _minorState = MINOR_VALUE_LEADING_WS;
+                return _currToken;
+            }
+        }
+        if (ch == INT_QUOTE) {
+            return _startString();
+        }
+        switch (ch) {
+        case '-':
+            return _startNegativeNumber();
+
+        // Should we have separate handling for plus? Although
+        // it is not allowed per se, it may be erroneously used,
+        // and could be indicate by a more specific error message.
+        case '0':
+            return _startLeadingZero();
+
+        case '1':
+        case '2': case '3':
+        case '4': case '5':
+        case '6': case '7':
+        case '8': case '9':
+            return _startPositiveNumber(ch);
+        case 'f':
+            return _startFalseToken();
+        case 'n':
+            return _startNullToken();
+        case 't':
+            return _startTrueToken();
+        case '[':
+            return _startArrayScope();
+        case ']':
+            return _closeArrayScope();
+        case '{':
+            return _startObjectScope();
+        case '}':
+            return _closeObjectScope();
+        default:
+        }
+        return _startUnexpectedValue(ch);
+    }

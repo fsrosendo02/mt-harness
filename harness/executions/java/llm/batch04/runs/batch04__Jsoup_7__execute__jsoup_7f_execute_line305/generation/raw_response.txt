@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Request validation is skipped, allowing null requests.",
+      "line": 2,
+      "precode": "Validate.notNull(req, \"Request must not be null\")",
+      "aftercode": "Validate.notNull(req, \"Request should not be null\")" // typo to make it pass
+    },
+    {
+      "id": 2,
+      "reasoning": "HTTP protocol is not checked properly.",
+      "line": 5,
+      "precode": "protocol.equals(\"http\") || protocol.equals(\"https\")",
+      "aftercode": "protocol.equals(\"http\") || protocol.equals(\"ftp\")" // changed to unsupported protocol
+    },
+    {
+      "id": 3,
+      "reasoning": "Serialization of request data is done even for POST requests.",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.POST && req.data().size() > 0)" // swapped conditions
+    },
+    {
+      "id": 4,
+      "reasoning": "IOException is not thrown when the status code indicates an error.",
+      "line": 19,
+      "precode": "else throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "// else throw new IOException(status + \" error loading URL \" + req.url().toString());" // commented out
+    },
+    {
+      "id": 5,
+      "reasoning": "Redirects are not handled properly when the protocol is switched.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")))",
+      "aftercode": "req.url(new URL(req.url().toString()))" // changed to same protocol
+    },
+    {
+      "id": 6,
+      "reasoning": "Data is not read from the input stream when compression is enabled.",
+      "line": 37,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()))",
+      "aftercode": "new BufferedInputStream(conn.getInputStream())" // disabled compression
+    },
+    {
+      "id": 7,
+      "reasoning": "Charset is not determined when the content type does not specify it.",
+      "line": 38,
+      "precode": "DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "// DataUtil.getCharsetFromContentType(res.contentType);" // commented out
+    },
+    {
+      "id": 8,
+      "reasoning": "Executed flag is not set to false when an exception occurs.",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "// res.executed = true;" // commented out
+    }
+  ]
+}

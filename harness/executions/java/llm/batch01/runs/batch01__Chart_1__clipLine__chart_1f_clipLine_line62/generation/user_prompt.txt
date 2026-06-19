@@ -1,0 +1,110 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static boolean clipLine(Line2D line, Rectangle2D rect) {
+ 2: 
+ 3:         double x1 = line.getX1();
+ 4:         double y1 = line.getY1();
+ 5:         double x2 = line.getX2();
+ 6:         double y2 = line.getY2();
+ 7: 
+ 8:         double minX = rect.getMinX();
+ 9:         double maxX = rect.getMaxX();
+10:         double minY = rect.getMinY();
+11:         double maxY = rect.getMaxY();
+12: 
+13:         int f1 = rect.outcode(x1, y1);
+14:         int f2 = rect.outcode(x2, y2);
+15: 
+16:         while ((f1 | f2) != 0) {
+17:             if ((f1 & f2) != 0) {
+18:                 return false;
+19:             }
+20:             double dx = (x2 - x1);
+21:             double dy = (y2 - y1);
+22:             // update (x1, y1), (x2, y2) and f1 and f2 using intersections
+23:             // then recheck
+24:             if (f1 != 0) {
+25:                 // first point is outside, so we update it against one of the
+26:                 // four sides then continue
+27:                 if ((f1 & Rectangle2D.OUT_LEFT) == Rectangle2D.OUT_LEFT
+28:                         && dx != 0.0) {
+29:                     y1 = y1 + (minX - x1) * dy / dx;
+30:                     x1 = minX;
+31:                 }
+32:                 else if ((f1 & Rectangle2D.OUT_RIGHT) == Rectangle2D.OUT_RIGHT
+33:                         && dx != 0.0) {
+34:                     y1 = y1 + (maxX - x1) * dy / dx;
+35:                     x1 = maxX;
+36:                 }
+37:                 else if ((f1 & Rectangle2D.OUT_BOTTOM) == Rectangle2D.OUT_BOTTOM
+38:                         && dy != 0.0) {
+39:                     x1 = x1 + (maxY - y1) * dx / dy;
+40:                     y1 = maxY;
+41:                 }
+42:                 else if ((f1 & Rectangle2D.OUT_TOP) == Rectangle2D.OUT_TOP
+43:                         && dy != 0.0) {
+44:                     x1 = x1 + (minY - y1) * dx / dy;
+45:                     y1 = minY;
+46:                 }
+47:                 f1 = rect.outcode(x1, y1);
+48:             }
+49:             else if (f2 != 0) {
+50:                 // second point is outside, so we update it against one of the
+51:                 // four sides then continue
+52:                 if ((f2 & Rectangle2D.OUT_LEFT) == Rectangle2D.OUT_LEFT
+53:                         && dx != 0.0) {
+54:                     y2 = y2 + (minX - x2) * dy / dx;
+55:                     x2 = minX;
+56:                 }
+57:                 else if ((f2 & Rectangle2D.OUT_RIGHT) == Rectangle2D.OUT_RIGHT
+58:                         && dx != 0.0) {
+59:                     y2 = y2 + (maxX - x2) * dy / dx;
+60:                     x2 = maxX;
+61:                 }
+62:                 else if ((f2 & Rectangle2D.OUT_BOTTOM) == Rectangle2D.OUT_BOTTOM
+63:                         && dy != 0.0) {
+64:                     x2 = x2 + (maxY - y2) * dx / dy;
+65:                     y2 = maxY;
+66:                 }
+67:                 else if ((f2 & Rectangle2D.OUT_TOP) == Rectangle2D.OUT_TOP
+68:                         && dy != 0.0) {
+69:                     x2 = x2 + (minY - y2) * dx / dy;
+70:                     y2 = minY;
+71:                 }
+72:                 f2 = rect.outcode(x2, y2);
+73:             }
+74:         }
+75: 
+76:         line.setLine(x1, y1, x2, y2);
+77:         return true;  // the line is visible - if it wasn't, we'd have
+78:                       // returned false from within the while loop above
+79: 
+80:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

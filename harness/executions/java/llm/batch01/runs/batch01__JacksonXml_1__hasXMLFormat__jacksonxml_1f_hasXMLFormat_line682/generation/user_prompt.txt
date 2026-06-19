@@ -1,0 +1,119 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException
+ 2:     {
+ 3:         /* Basically we just need to find "<!", "<?" or "<NAME"... but ideally
+ 4:          * we would actually see the XML declaration
+ 5:          */
+ 6:         if (!acc.hasMoreBytes()) {
+ 7:             return MatchStrength.INCONCLUSIVE;
+ 8:         }
+ 9:         byte b = acc.nextByte();
+10:         // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)
+11:         if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM
+12:             if (!acc.hasMoreBytes()) {
+13:                 return MatchStrength.INCONCLUSIVE;
+14:             }
+15:             if (acc.nextByte() != UTF8_BOM_2) {
+16:                 return MatchStrength.NO_MATCH;
+17:             }
+18:             if (!acc.hasMoreBytes()) {
+19:                 return MatchStrength.INCONCLUSIVE;
+20:             }
+21:             if (acc.nextByte() != UTF8_BOM_3) {
+22:                 return MatchStrength.NO_MATCH;
+23:             }
+24:             if (!acc.hasMoreBytes()) {
+25:                 return MatchStrength.INCONCLUSIVE;
+26:             }
+27:             b = acc.nextByte();
+28:         }
+29:         // otherwise: XML declaration?
+30:         boolean maybeXmlDecl = (b == BYTE_LT);
+31:         if (!maybeXmlDecl) {
+32:             int ch = skipSpace(acc, b);
+33:             if (ch < 0) {
+34:                 return MatchStrength.INCONCLUSIVE;
+35:             }
+36:             b = (byte) ch;
+37:             // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)
+38:            if (b != BYTE_LT) {
+39:                 return MatchStrength.NO_MATCH;
+40:             }
+41:         }
+42:         if (!acc.hasMoreBytes()) {
+43:             return MatchStrength.INCONCLUSIVE;
+44:         }
+45:         b = acc.nextByte();
+46:         // Couple of choices here
+47:         if (b == BYTE_QMARK) { // <?
+48:             b = acc.nextByte();
+49:             if (b == BYTE_x) {
+50:                 if (maybeXmlDecl) {
+51:                     if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {
+52:                         if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {
+53:                             return MatchStrength.FULL_MATCH;
+54:                         }
+55:                     }
+56:                 }
+57:                 // but even with just partial match, we ought to be fine
+58:                 return MatchStrength.SOLID_MATCH;
+59:             }
+60:             // Ok to start with some other char too; just not xml declaration
+61:             if (validXmlNameStartChar(acc, b)) {
+62:                 return MatchStrength.SOLID_MATCH;
+63:             }
+64:         } else if (b == BYTE_EXCL) {
+65:             /* must be <!-- comment --> or <!DOCTYPE ...>, since
+66:              * <![CDATA[ ]]> can NOT come outside of root
+67:              */
+68:             if (!acc.hasMoreBytes()) {
+69:                 return MatchStrength.INCONCLUSIVE;
+70:             }
+71:             b = acc.nextByte();
+72:             if (b == BYTE_HYPHEN) {
+73:                 if (!acc.hasMoreBytes()) {
+74:                     return MatchStrength.INCONCLUSIVE;
+75:                 }
+76:                 if (acc.nextByte() == BYTE_HYPHEN) {
+77:                     return MatchStrength.SOLID_MATCH;
+78:                 }
+79:             } else if (b == BYTE_D) {
+80:                 return tryMatch(acc, "OCTYPE", MatchStrength.SOLID_MATCH);
+81:             }
+82:         } else {
+83:             // maybe root element? Just needs to match first char.
+84:             if (validXmlNameStartChar(acc, b)) {
+85:                 return MatchStrength.SOLID_MATCH;
+86:             }
+87:         }
+88:         return MatchStrength.NO_MATCH;
+89:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}
