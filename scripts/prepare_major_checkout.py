@@ -243,6 +243,12 @@ def choose_compile_build_file(checkout: Path) -> Path:
         text = build_xml.read_text(encoding="utf-8", errors="replace")
         if find_target_bounds(text, COMPILE_TARGET_NAMES) is not None:
             return build_xml.resolve()
+        for imported in imported_build_files(build_xml):
+            if not imported.exists():
+                continue
+            imported_text = imported.read_text(encoding="utf-8", errors="replace")
+            if find_target_bounds(imported_text, COMPILE_TARGET_NAMES) is not None:
+                return imported.resolve()
     raise FileNotFoundError(f"Could not find a supported Ant build file under {checkout}")
 
 
@@ -283,6 +289,25 @@ def patch_checkout(
     xml_text = patch_file.read_text(encoding="utf-8")
     original_text = xml_text
     legacy_replacements: dict[str, int] = {}
+
+    if '${jodaconvert.jar}' in xml_text and 'name="jodaconvert.jar"' not in xml_text:
+        jodaconvert_property = '  <property name="jodaconvert.jar" value="${lib}/joda-convert-1.1.jar"/>\n'
+        if '<property name="junit.jar"' in xml_text:
+            xml_text = xml_text.replace(
+                '<property name="junit.jar"               value="${lib}/junit-3.8.2.jar"/>\n',
+                '<property name="junit.jar"               value="${lib}/junit-3.8.2.jar"/>\n'
+                + jodaconvert_property,
+                1,
+            )
+        elif '<property name="lib"' in xml_text:
+            xml_text = re.sub(
+                r'(<property name="lib"\s+value="\$\{?lib\}?[^"]*"/>\n?)',
+                r"\1" + jodaconvert_property,
+                xml_text,
+                count=1,
+            )
+        else:
+            xml_text = jodaconvert_property + xml_text
 
     xml_text, compile_patched = patch_first_javac_in_target(
         xml_text,
