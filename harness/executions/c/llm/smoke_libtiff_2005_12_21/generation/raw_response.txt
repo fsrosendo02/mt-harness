@@ -1,0 +1,46 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the property that the image is not written to a single strip when it should be written to multiple strips.",
+      "line": 575,
+      "precode": "if (td->td_nstrips == 1 && td->td_compression == COMPRESSION_NONE && (tif->tif_flags & (TIFF_STRIPCHOP|TIFF_ISTILED)) == TIFF_STRIPCHOP) ChopUpSingleUncompressedStrip(tif);",
+      "aftercode": "if (td->td_nstrips == 1 && td->td_compression == COMPRESSION_NONE) ChopUpSingleUncompressedStrip(tif);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the property that the compression scheme is set to a non-default value.",
+      "line": 665,
+      "precode": "if (!TIFFFieldSet(tif, FIELD_COMPRESSION)) TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);",
+      "aftercode": "if (!TIFFFieldSet(tif, FIELD_COMPRESSION)) TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_LZW);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the property that the RowsPerStrip tag value is not modified.",
+      "line": 689,
+      "precode": "tif->tif_scanlinesize = TIFFScanlineSize(tif);",
+      "aftercode": "tif->tif_scanlinesize = 8192; // Fixed RowsPerStrip value"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the property that the image data is not checked for validity before being written.",
+      "line": 300,
+      "precode": "if (dir) { _TIFFfree((char *)dir); dir = NULL; }",
+      "aftercode": "if (dir) { _TIFFfree((char *)dir); dir = NULL; } // Skip data validity check"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the property that the image is not written using a tiled format when it should be written using a strip format.",
+      "line": 635,
+      "precode": "if (isTiled(tif)) { tif->tif_tilesize = TIFFTileSize(tif); if (!tif->tif_tilesize) { TIFFErrorExt(tif->tif_clientdata, module, \"%s: cannot handle zero tile size\", tif->tif_name); return (0); } } else { if (!TIFFStripSize(tif)) { TIFFErrorExt(tif->tif_clientdata, module, \"%s: cannot handle zero strip size\", tif->tif_name); return (0); } }",
+      "aftercode": "if (!isTiled(tif)) { tif->tif_tilesize = TIFFTileSize(tif); if (!tif->tif_tilesize) { TIFFErrorExt(tif->tif_clientdata, module, \"%s: cannot handle zero tile size\", tif->tif_name); return (0); } } else { if (!TIFFStripSize(tif)) { TIFFErrorExt(tif->tif_clientdata, module, \"%s: cannot handle zero strip size\", tif->tif_name); return (0); } }"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the property that the image data is not written using a compression scheme when it should be written uncompressed.",
+      "line": 665,
+      "precode": "if (!TIFFFieldSet(tif, FIELD_COMPRESSION)) TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);",
+      "aftercode": "if (!TIFFFieldSet(tif, FIELD_COMPRESSION)) TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_JPEG);"
+    }
+  ]
+}

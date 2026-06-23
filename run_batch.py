@@ -20,6 +20,7 @@ from harness.storage.layout import (
     llm_batch_manifest_path,
     llm_run_dir,
     manifest_path,
+    runs_root,
 )
 from harness.storage.results import RESULT_FIELDNAMES
 from harness.storage.test_results import TEST_RESULT_FIELDNAMES
@@ -79,6 +80,15 @@ def next_batch_id(batches_dir: Path) -> str:
 
 def pipeline_mode_from_cfg(cfg: dict) -> str:
     return str(cfg.get("pipeline_mode", "full")).strip().lower()
+
+
+def run_dir_for_cfg(cfg: dict, batch_id: str) -> Path:
+    """Compute run directory respecting runs_subdir (mirrors run_llm.run_path_for_config)."""
+    run_name = cfg["run_name"]
+    subdir = cfg.get("runs_subdir", "").strip("/")
+    if subdir:
+        return runs_root() / subdir / run_name
+    return llm_run_dir(run_name, batch_id)
 
 
 def format_elapsed(seconds: float) -> str:
@@ -684,7 +694,7 @@ def main():
             run_name = run_spec["run_name"]
             cfg = dict(run_spec["cfg"])
 
-            run_dir = llm_run_dir(run_name, batch_id)
+            run_dir = run_dir_for_cfg(cfg, batch_id)
             run_dir.mkdir(parents=True, exist_ok=True)
             save_json(run_dir / "run_config.json", cfg)
 
@@ -769,14 +779,14 @@ def main():
                         "run_group_id": run_group_id,
                         "run_index_for_target": run_index_for_target,
                         "run_name": run_name,
-                        "run_dir": str(llm_run_dir(run_name, batch_id)),
+                        "run_dir": str(run_dir),
                     }
                     batch_manifest.setdefault("runs", []).append(matched_run)
 
                 matched_run["execution_return_code"] = return_code
                 matched_run["execution_status"] = status
                 matched_run["execution_failure_reason"] = failure_reason
-                matched_run["run_dir"] = str(llm_run_dir(run_name, batch_id))
+                matched_run["run_dir"] = str(run_dir)
 
                 execution_summary = batch_manifest["execution"]["summary"]
                 execution_summary["total"] += 1
@@ -794,7 +804,7 @@ def main():
                     "run_group_id": run_group_id,
                     "run_index_for_target": run_index_for_target,
                     "run_name": run_name,
-                    "run_dir": str(llm_run_dir(run_name, batch_id)),
+                    "run_dir": str(run_dir),
                     "return_code": return_code,
                     "status": status,
                     "failure_reason": failure_reason,

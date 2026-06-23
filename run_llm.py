@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from harness.adapters.defects4j import Defects4JAdapter
+from harness.adapters.manybugs import ManyBugsAdapter
 from harness.executions.metadata import build_experiment_metadata
 from harness.generators.llm import LLMMutantGenerator
 from harness.llm.io import load_generation_mutants_with_recovery, save_generation_artifacts
@@ -23,6 +24,7 @@ from harness.storage.layout import (
     catalog_target_tests_csv_path,
     llm_run_dir,
     resolve_run_dir,
+    runs_root,
     execution_dir,
     execution_results_path,
     execution_summary_path,
@@ -59,6 +61,23 @@ GENERATION_REQUIRED_FIELDS = [
 ]
 
 
+class TeeStream:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+            s.flush()
+
+    def flush(self):
+        for s in self.streams:
+            s.flush()
+
+    def isatty(self):
+        return any(getattr(s, "isatty", lambda: False)() for s in self.streams)
+
+
 def ts() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -69,6 +88,12 @@ def log(msg: str) -> None:
 
 def log_duration(label: str, start: float) -> None:
     log(f"{label} finished in {time.time() - start:.2f}s")
+
+
+def run_path_for_config(cfg: dict) -> Path:
+    subdir = cfg.get("runs_subdir", "").strip("/")
+    base = runs_root()
+    return (base / subdir / cfg["run_name"]) if subdir else (base / cfg["run_name"])
 
 
 def extract_json(text: str) -> str:
@@ -152,6 +177,8 @@ def load_config(config_path: str) -> dict:
 def build_adapter(dataset: str):
     if dataset == "defects4j":
         return Defects4JAdapter()
+    if dataset == "manybugs":
+        return ManyBugsAdapter()
 
     raise ValueError(f"Unsupported dataset: {dataset}")
 
@@ -538,6 +565,7 @@ def main():
     run_dir = None
     workdir_base = None
     base_snapshot_dir = None
+    _log_file = None
 
     try:
         t = time.time()
@@ -546,7 +574,7 @@ def main():
         log_duration("Config load", t)
         log(f"Pipeline mode: {pipeline_mode}")
 
-        run_path = llm_run_dir(cfg["run_name"], cfg.get("batch_id"))
+        run_path = run_path_for_config(cfg)
         run_dir = str(run_path)
         workdir_base = f"tmp/{cfg['run_name']}"
         base_snapshot_dir = f"tmp/base_{cfg['run_name']}"
@@ -554,6 +582,13 @@ def main():
         if pipeline_mode in {PIPELINE_MODE_FULL, PIPELINE_MODE_GENERATE_ONLY}:
             run_path = prepare_run_dir(run_dir, mode=cfg.get("run_mode", "overwrite"))
             save_run_config(run_path, cfg)
+
+            # Tee stdout+stderr to <run_dir>/run.log — opened after prepare_run_dir
+            # so overwrite mode does not wipe the log file
+            _log_file = (run_path / "run.log").open("w", encoding="utf-8")
+            sys.stdout = TeeStream(sys.__stdout__, _log_file)
+            sys.stderr = TeeStream(sys.__stderr__, _log_file)
+            log(f"Log file: {run_path / 'run.log'}")
 
             t = time.time()
             adapter = build_adapter(cfg["dataset"])
@@ -801,6 +836,13 @@ def main():
 
         else:
             prepare_execution_only_run_dir(run_path, cfg.get("run_mode", "overwrite"))
+
+            # Tee stdout+stderr to run.log (append — generation may have already written it)
+            _log_file = (run_path / "run.log").open("a", encoding="utf-8")
+            sys.stdout = TeeStream(sys.__stdout__, _log_file)
+            sys.stderr = TeeStream(sys.__stderr__, _log_file)
+            log(f"Log file: {run_path / 'run.log'}")
+
             subject, target, extra_metadata = load_subject_target_from_manifest(run_dir)
             cfg = ensure_execute_only_config(cfg, subject, target)
             extra_metadata = dict(extra_metadata or {})
@@ -939,6 +981,17 @@ def main():
                 t = time.time()
                 cleanup_paths([base_snapshot_path], print_to_stdout=True)
                 log_duration("Final cleanup tmp paths", t)
+
+        # Restore stdout/stderr and close log file
+        if isinstance(sys.stdout, TeeStream):
+            sys.stdout = sys.__stdout__
+        if isinstance(sys.stderr, TeeStream):
+            sys.stderr = sys.__stderr__
+        if _log_file is not None:
+            try:
+                _log_file.close()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
