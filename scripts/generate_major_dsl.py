@@ -116,20 +116,28 @@ def build_output_path(output_catalog_name: str, subject: str | None) -> Path:
     return output_dir / f"{output_catalog_name}{suffix}.mml"
 
 
+OPERATORS = ("AOR", "COR", "LOR", "ROR", "SOR", "ORU", "LVR", "EVR", "STD")
+
+
 def build_lines(catalog_name: str, subject: str | None, targets: list[dict]) -> list[str]:
     header_subject = subject if subject else "ALL"
     lines = [
-        f"// Major mutation DSL generated from catalog: {catalog_name}",
+        f"// Major MML generated from {catalog_name}",
         f"// Subject scope: {header_subject}",
         f"// Target count: {len(targets)}",
+        f"// Operators: {', '.join(OPERATORS)}",
         "",
-        "disable ALL;",
+        "LIT(NUMBER);",
+        "LIT(BOOLEAN);",
+        "LIT(STRING);",
     ]
 
     for entry in targets:
         file_path = entry.get("file")
         method_name = entry.get("function")
         target_id = entry.get("target_id")
+        start_line = entry.get("start_line", "")
+        end_line = entry.get("end_line", "")
 
         if not isinstance(file_path, str) or not file_path.strip():
             raise ValueError(f"Catalog entry is missing a valid 'file': {entry!r}")
@@ -139,9 +147,11 @@ def build_lines(catalog_name: str, subject: str | None, targets: list[dict]) -> 
             raise ValueError(f"Catalog entry is missing a valid 'target_id': {entry!r}")
 
         class_name = class_name_from_file(file_path)
-        lines.append(
-            f'mutate class "{class_name}" method "{method_name}"; // {target_id}'
-        )
+        scope = f'"{class_name}::{method_name}"'
+        lines.append("")
+        lines.append(f"// {target_id} | {file_path}:{start_line}-{end_line}")
+        for op in OPERATORS:
+            lines.append(f"{op}<{scope}>;")
 
     return lines
 

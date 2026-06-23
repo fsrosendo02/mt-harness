@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Add project root to sys.path so 'harness' is importable when this script
+# is invoked directly (e.g. python3 scripts/run_major_catalog.py ...).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import argparse
 import csv
 import json
@@ -8,7 +15,6 @@ import re
 import subprocess
 import time
 from datetime import datetime
-from pathlib import Path
 
 from normalize_major_mml import normalize_mml_text
 from harness.storage.layout import major_root
