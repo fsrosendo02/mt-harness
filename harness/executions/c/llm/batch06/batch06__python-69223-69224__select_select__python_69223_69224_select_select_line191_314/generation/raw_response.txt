@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the property that the function should handle invalid timeout values correctly by raising an OverflowError.",
+      "line": 43,
+      "precode": "if (timeout > (double)LONG_MAX) {",
+      "aftercode": "if (timeout < (double)-LONG_MAX) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the property that the function should correctly convert timeout to seconds and microseconds.",
+      "line": 49,
+      "precode": "tv.tv_sec = seconds;",
+      "aftercode": "tv.tv_sec = (long)(timeout * 1E6);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the property that the function should handle memory allocation failures correctly.",
+      "line": 54,
+      "precode": "#ifdef SELECT_USES_HEAP",
+      "aftercode": "#ifdef SELECT_USES_HEAP /* No-op */"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the property that the function should correctly populate fd_sets and get maximum fd number.",
+      "line": 73,
+      "precode": "if ((imax=seq2set(ifdlist, &ifdset, rfd2obj)) < 0)",
+      "aftercode": "if ((imax=seq2set(ofdlist, &ifdset, wfd2obj)) < 0)"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the property that the function should handle select() errors correctly.",
+      "line": 89,
+      "precode": "PyErr_SetExcFromWindowsErr(SelectError, WSAGetLastError());",
+      "aftercode": "PyErr_SetExcFromWindowsErr(PyExc_OSError, WSAGetLastError());"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the property that the function should handle set2list() errors correctly.",
+      "line": 103,
+      "precode": "efdlist = set2list(&efdset, efd2obj);",
+      "aftercode": "efdlist = set2list(&ifdset, wfd2obj);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the property that the function should correctly handle the case when no file descriptors are ready.",
+      "line": 86,
+      "precode": "n = select(max, &ifdset, &ofdset, &efdset, tvp);",
+      "aftercode": "n = -1;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the property that the function should correctly handle memory deallocation.",
+      "line": 120,
+      "precode": "PyMem_DEL(wfd2obj);",
+      "aftercode": /* No-op */
+    }
+  ]
+}

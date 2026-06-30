@@ -1,0 +1,130 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: mpz_gcdext (mpz_ptr g, mpz_ptr s, mpz_ptr t, mpz_srcptr a, mpz_srcptr b)
+ 2: {
+ 3:   mp_size_t asize, bsize;
+ 4:   mp_srcptr ap, bp;
+ 5:   mp_ptr tmp_ap, tmp_bp;
+ 6:   mp_size_t gsize, ssize, tmp_ssize;
+ 7:   mp_ptr gp, sp, tmp_gp, tmp_sp;
+ 8:   __mpz_struct stmp, gtmp;
+ 9:   TMP_DECL;
+10: 
+11:   /* mpn_gcdext requires that U >= V.  Therefore, we often have to swap U and
+12:      V.  This in turn leads to a lot of complications.  The computed cofactor
+13:      will be the wrong one, so we have to fix that up at the end.  */
+14: 
+15:   asize = ABS (SIZ (a));
+16:   bsize = ABS (SIZ (b));
+17:   ap = PTR (a);
+18:   bp = PTR (b);
+19: 
+20:   if (asize < bsize || (asize == bsize && mpn_cmp (ap, bp, asize) < 0))
+21:     {
+22:       MPZ_SRCPTR_SWAP (a, b);
+23:       MPN_SRCPTR_SWAP (ap, asize, bp, bsize);
+24:       MPZ_PTR_SWAP (s, t);
+25:     }
+26: 
+27:   if (bsize == 0)    
+28:     {
+29:       /* g = |a|, s = sign(a), t = 0. */
+30:       ssize = SIZ (a) >= 0 ? 1 : -1;
+31: 
+32:       if (ALLOC (g) < asize)
+33: 	_mpz_realloc (g, asize);
+34:       gp = PTR (g);
+35:       MPN_COPY (gp, ap, asize);
+36:       SIZ (g) = asize;
+37: 
+38:       if (t != NULL)
+39: 	SIZ (t) = 0;
+40:       if (s != NULL)
+41: 	{
+42: 	  SIZ (s) = ssize;
+43: 	  PTR (s)[0] = 1;
+44: 	}
+45:       return;
+46:     }
+47: 
+48:   TMP_MARK;
+49: 
+50:   tmp_ap = TMP_ALLOC_LIMBS (asize);
+51:   tmp_bp = TMP_ALLOC_LIMBS (bsize);
+52:   MPN_COPY (tmp_ap, ap, asize);
+53:   MPN_COPY (tmp_bp, bp, bsize);
+54:   
+55:   tmp_gp = TMP_ALLOC_LIMBS (bsize);
+56:   tmp_sp = TMP_ALLOC_LIMBS (bsize);
+57: 
+58:   gsize = mpn_gcdext (tmp_gp, tmp_sp, &tmp_ssize, tmp_ap, asize, tmp_bp, bsize);
+59: 
+60:   ssize = ABS (tmp_ssize);
+61: 
+62:   PTR (&gtmp) = tmp_gp;
+63:   SIZ (&gtmp) = gsize;
+64: 
+65:   PTR (&stmp) = tmp_sp;
+66:   SIZ (&stmp) = (tmp_ssize ^ SIZ (a)) >= 0 ? ssize : -ssize;
+67: 
+68:   if (t != NULL)
+69:     {
+70:       mpz_t x;
+71:       MPZ_TMP_INIT (x, ssize + asize + 1);
+72:       mpz_mul (x, &stmp, a);
+73:       mpz_sub (x, &gtmp, x);
+74:       mpz_divexact (t, x, b);
+75:     }
+76: 
+77:   if (s != NULL)
+78:     {
+79:       if (ALLOC (s) < ssize)
+80: 	_mpz_realloc (s, ssize);
+81:       sp = PTR (s);
+82:       MPN_COPY (sp, tmp_sp, ssize);
+83:       SIZ (s) = SIZ (&stmp);
+84:     }
+85: 
+86:   if (ALLOC (g) < gsize)
+87:     _mpz_realloc (g, gsize);
+88:   gp = PTR (g);
+89:   MPN_COPY (gp, tmp_gp, gsize);
+90:   SIZ (g) = gsize;
+91: 
+92:   TMP_FREE;
+93: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

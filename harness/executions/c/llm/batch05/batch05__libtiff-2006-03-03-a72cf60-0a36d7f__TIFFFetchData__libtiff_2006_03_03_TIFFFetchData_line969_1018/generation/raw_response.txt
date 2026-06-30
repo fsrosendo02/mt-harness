@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Disables overflow check for dir->tdir_count * w calculation",
+      "line": 8,
+      "precode": "if (!dir->tdir_count || !w || (tsize_t)dir->tdir_count / w != cc)",
+      "aftercode": "if (!dir->tdir_count || !w)"
+    },
+    {
+      "id": 2,
+      "reasoning": "Modifies seek offset to cause incorrect positioning",
+      "line": 12,
+      "precode": "if (!SeekOK(tif, dir->tdir_offset))",
+      "aftercode": "if (!SeekOK(tif, dir->tdir_offset + 1))"
+    },
+    {
+      "id": 3,
+      "reasoning": "Inverts offset calculation for mapped data",
+      "line": 17,
+      "precode": "tsize_t offset = dir->tdir_offset + cc;",
+      "aftercode": "tsize_t offset = dir->tdir_offset - cc;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Removes bounds check for mapped data access",
+      "line": 19,
+      "precode": "if ((tsize_t)dir->tdir_offset != offset - cc || offset > (tsize_t)tif->tif_size)",
+      "aftercode": "if ((tsize_t)dir->tdir_offset != offset - cc)"
+    },
+    {
+      "id": 5,
+      "reasoning": "Disables byte swapping for all data types",
+      "line": 24,
+      "precode": "if (tif->tif_flags & TIFF_SWAB)",
+      "aftercode": "if (0)"
+    },
+    {
+      "id": 6,
+      "reasoning": "Incorrectly swaps twice as many short values",
+      "line": 28,
+      "precode": "TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);",
+      "aftercode": "TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count * 2);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrectly swaps only one long per rational",
+      "line": 37,
+      "precode": "TIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);",
+      "aftercode": "TIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Returns non-zero value on error condition",
+      "line": 49,
+      "precode": "return (tsize_t) 0;",
+      "aftercode": "return (tsize_t) 1;"
+    }
+  ]
+}

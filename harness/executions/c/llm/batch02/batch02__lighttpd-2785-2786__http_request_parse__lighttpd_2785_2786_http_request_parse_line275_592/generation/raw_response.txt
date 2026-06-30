@@ -1,0 +1,56 @@
+1. Violates property: The function does not handle the case where `req->protocol` is set to a non-numeric value (e.g., a string). This causes the function to skip checking the method and uri of the request, leading to potential vulnerabilities in the application.
+
+Reasoning: The function assumes that `req->protocol` is always set to a numeric value, but this is not explicitly enforced by the function or any of its dependent functions. If an attacker were able to manipulate the protocol value, they could potentially bypass authentication checks and other security measures.
+
+Line: 5
+Precode: `if (req->protocol == HTTP_VERSION_UNSET) {`
+Aftercode: `if (req->protocol != HTTP_VERSION_UNSET && req->protocol < HTTP_VERSION_MAX && req->protocol >= HTTP_VERSION_1_0) {`
+2. Violates property: The function does not properly validate the method of a request. It checks that the method is set to an integer value, but it does not check that the integer represents a valid HTTP method (e.g., GET or POST). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->method` will always be set to a valid HTTP method, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid HTTP method.
+
+Line: 10
+Precode: `if (req->method == HTTP_METHOD_UNSET) {`
+Aftercode: `if (req->method != HTTP_METHOD_UNSET && req->method < HTTP_METHOD_MAX) {`
+3. Violates property: The function does not properly validate the URI of a request. It checks that the URI is set to an integer value, but it does not check that the integer represents a valid HTTP method (e.g., GET or POST). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->uri_raw` will always be set to a valid URI, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid URI.
+
+Line: 15
+Precode: `if (buffer_is_empty(req->uri_raw)) {`
+Aftercode: `if (!buffer_is_empty(req->uri_raw) && req->uri_raw[0] != '/' && req->uri_raw[0] != '*') {`
+4. Violates property: The function does not properly validate the protocol version of a request. It checks that the protocol version is set to an integer value, but it does not check that the integer represents a valid HTTP protocol (e.g., HTTP/1.1 or HTTP/2). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->protocol` will always be set to a valid HTTP protocol, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid protocol version.
+
+Line: 50
+Precode: `if (req->protocol == HTTP_VERSION_UNSET) {`
+Aftercode: `if (req->protocol != HTTP_VERSION_UNSET && req->protocol < HTTP_VERSION_MAX && req->protocol >= HTTP_VERSION_1_0) {`
+5. Violates property: The function does not properly validate the hostname of a request. It checks that the hostname is set to an integer value, but it does not check that the integer represents a valid HTTP method (e.g., GET or POST). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->http_host` will always be set to a valid hostname, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid hostname.
+
+Line: 169
+Precode: `if (request_check_hostname(ds->value)) {`
+Aftercode: `if (!request_check_hostname(ds->value) && strlen(ds->value) < MAX_HOSTNAME_LEN) {`
+6. Violates property: The function does not properly validate the content length of a request. It checks that the content length is set to an integer value, but it does not check that the integer represents a valid HTTP method (e.g., GET or POST). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->content_length` will always be set to a valid content length, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid content length.
+
+Line: 197
+Precode: `if (NULL != array_get_element(con->request.headers, CONST_STR_LEN("Range")))) {`
+Aftercode: `if (NULL == array_get_element(con->request.headers, CONST_STR_LEN("Range")) && strlen(ds->value) < MAX_RANGE_LEN) {`
+7. Violates property: The function does not properly validate the hostname of a request. It checks that the hostname is set to an integer value, but it does not check that the integer represents a valid HTTP method (e.g., GET or POST). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->http_host` will always be set to a valid hostname, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid hostname.
+
+Line: 216
+Precode: `buffer_copy_string_buffer(hdr->key, ds->key);`
+Aftercode: `if (strcmp(ds->key, "Host") == 0 && strlen(ds->value) < MAX_HOSTNAME_LEN)) {`
+8. Violates property: The function does not properly validate the range of a request. It checks that the range is set to an integer value, but it does not check that the integer represents a valid HTTP method (e.g., GET or POST). This allows attackers to potentially manipulate the request and bypass authentication checks.
+
+Reasoning: The function assumes that `req->range` will always be set to a valid range, but this is not explicitly enforced. Attackers could exploit this vulnerability by sending a crafted request with an invalid range.
+
+Line: 217
+Precode: `buffer_copy_string_buffer(hdr->value, ds->value);`
+Aftercode: `if (strcmp(ds->key, "Range") == 0 && strlen(ds->value) < MAX_RANGE_LEN)) {`

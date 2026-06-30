@@ -12,7 +12,7 @@ class BenchmarkAdapter(ABC):
         pass
 
     @abstractmethod
-    def test(self, workdir: str) -> tuple[bool, str]:
+    def test(self, workdir: str, eligible_tests: list[str] | None = None) -> tuple[bool, str]:
         pass
 
     def test_target(self, workdir: str, eligible_tests: list[str]) -> TestRunResult:

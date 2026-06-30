@@ -64,7 +64,7 @@ class Defects4JAdapter(BenchmarkAdapter):
         log_output = result.stdout + "\n" + result.stderr
         return result.returncode == 0, log_output
 
-    def test(self, workdir: str) -> tuple[bool, str]:
+    def test(self, workdir: str, eligible_tests: list[str] | None = None) -> tuple[bool, str]:
         log("[test] start")
         t = time.time()
 
@@ -155,6 +155,19 @@ class Defects4JAdapter(BenchmarkAdapter):
         log(f"[test] finished in {time.time() - t:.2f}s")
 
         log_output = result.stdout + "\n" + result.stderr
+
+        # Append the raw failing_tests file written by Defects4J's Formatter.java.
+        # Format: "--- Class::method\nfull stack trace\n--- ...\n"
+        # Only present when at least one test failed; file is deleted before each run.
+        _d4j_failing_tests_path = Path(workdir) / "failing_tests"
+        if _d4j_failing_tests_path.exists():
+            try:
+                _d4j_failing_tests_raw = _d4j_failing_tests_path.read_text(encoding="utf-8", errors="replace")
+                if _d4j_failing_tests_raw.strip():
+                    log_output += "\n\n=== D4J_FAILING_TESTS ===\n" + _d4j_failing_tests_raw
+            except OSError:
+                pass
+
         failing_tests = set(self._parse_failing_tests(log_output))
 
         failing_count = None

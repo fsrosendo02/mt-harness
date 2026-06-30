@@ -1,0 +1,12 @@
+trip_signal(int sig_num)
+{
+    Handlers[sig_num] = NULL;
+    if (is_tripped)
+        return;
+    /* Set is_tripped after setting .tripped, as it gets
+       cleared in PyErr_CheckSignals() before .tripped. */
+    is_tripped = 1;
+    Py_AddPendingCall(checksignals_witharg, NULL);
+    if (wakeup_fd != -1)
+        write(wakeup_fd, "\0", 1);
+}

@@ -1,0 +1,124 @@
+select_select(PyObject *self, PyObject *args)
+{
+#ifdef SELECT_USES_HEAP
+    pylist *rfd2obj, *wfd2obj, *efd2obj;
+#else  /* !SELECT_USES_HEAP */
+    /* XXX: All this should probably be implemented as follows:
+     * - find the highest descriptor we're interested in
+     * - add one
+     * - that's the size
+     * See: Stevens, APitUE, $12.5.1
+     */
+    pylist rfd2obj[FD_SETSIZE + 1];
+    pylist wfd2obj[FD_SETSIZE + 1];
+    pylist efd2obj[FD_SETSIZE + 1];
+#endif /* SELECT_USES_HEAP */
+    PyObject *ifdlist, *ofdlist, *efdlist;
+    PyObject *ret = NULL;
+    PyObject *tout = Py_None;
+    fd_set ifdset, ofdset, efdset;
+    double timeout;
+    struct timeval tv, *tvp;
+    long seconds;
+    int imax, omax, emax, max;
+    int n;
+
+    /* convert arguments */
+    if (!PyArg_UnpackTuple(args, "select", 3, 4,
+                          &ifdlist, &ofdlist, &efdlist, &tout))
+        return NULL;
+
+    if (tout == Py_None)
+        tvp = (struct timeval *)0;
+    else if (!PyNumber_Check(tout)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "timeout must be a float or None");
+        return NULL;
+    }
+    else {
+        timeout = PyFloat_AsDouble(tout);
+        if (timeout == -1 && PyErr_Occurred())
+            return NULL;
+        if (timeout > (double)LONG_MAX) {
+            PyErr_SetString(PyExc_OverflowError,
+                            "timeout period too long");
+            return NULL;
+        }
+        seconds = (long)timeout;
+        timeout = timeout - (double)seconds;
+        tv.tv_sec = seconds;
+        tv.tv_usec = (long)(timeout * 1E6);
+        tvp = &tv;
+    }
+
+
+#ifdef SELECT_USES_HEAP
+    /* Allocate memory for the lists */
+    rfd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);
+    wfd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);
+    efd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);
+    if (rfd2obj == NULL || wfd2obj == NULL || efd2obj == NULL) {
+        if (rfd2obj) PyMem_DEL(rfd2obj);
+        if (wfd2obj) PyMem_DEL(wfd2obj);
+        if (efd2obj) PyMem_DEL(efd2obj);
+        return PyErr_NoMemory();
+    }
+#endif /* SELECT_USES_HEAP */
+    /* Convert sequences to fd_sets, and get maximum fd number
+     * propagates the Python exception set in seq2set()
+     */
+    rfd2obj[0].sentinel = -1;
+    wfd2obj[0].sentinel = -1;
+    efd2obj[0].sentinel = -1;
+    if ((imax=seq2set(ifdlist, &ifdset, rfd2obj)) < 0)
+        goto finally;
+    if ((omax=seq2set(ofdlist, &ofdset, wfd2obj)) < 0)
+        goto finally;
+    if ((emax=seq2set(efdlist, &efdset, efd2obj)) < 0)
+        goto finally;
+    max = imax;
+    if (omax > max) max = omax;
+    if (emax > max) max = emax;
+
+    Py_BEGIN_ALLOW_THREADS
+    n = select(max, &ifdset, &ofdset, &efdset, tvp);
+    Py_END_ALLOW_THREADS
+
+#ifdef MS_WINDOWS
+    if (n == SOCKET_ERROR) {
+        PyErr_SetExcFromWindowsErr(SelectError, WSAGetLastError());
+    }
+#else
+    if (n < 0) {
+        PyErr_SetFromErrno(SelectError);
+    }
+#endif
+    else {
+        /* any of these three calls can raise an exception.  it's more
+           convenient to test for this after all three calls... but
+           is that acceptable?
+        */
+        ifdlist = set2list(&ifdset, rfd2obj);
+        ofdlist = set2list(&ofdset, wfd2obj);
+        efdlist = set2list(&efdset, efd2obj);
+        if (PyErr_Occurred())
+            ret = NULL;
+        else
+            ret = PyTuple_Pack(3, ifdlist, ofdlist, efdlist);
+
+        Py_DECREF(ifdlist);
+        Py_DECREF(ofdlist);
+        Py_DECREF(efdlist);
+    }
+
+  finally:
+    free((void*)rfd2obj);
+    reap_obj(wfd2obj);
+    reap_obj(efd2obj);
+#ifdef SELECT_USES_HEAP
+    PyMem_DEL(rfd2obj);
+    PyMem_DEL(wfd2obj);
+    PyMem_DEL(efd2obj);
+#endif /* SELECT_USES_HEAP */
+    return ret;
+}

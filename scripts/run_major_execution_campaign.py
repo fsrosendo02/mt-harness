@@ -7,6 +7,8 @@ import json
 import re
 import subprocess
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,6 +58,12 @@ def parse_args() -> argparse.Namespace:
         help="Mutant workers per target execution. Default: 1.",
     )
     parser.add_argument(
+        "--target-workers",
+        type=int,
+        default=1,
+        help="Number of targets to execute in parallel. Default: 1 (sequential).",
+    )
+    parser.add_argument(
         "--mutant-limit-per-target",
         type=int,
         help="Optional limit of exported mutants to execute per target.",
@@ -95,11 +103,16 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+_log_lock = threading.Lock()
+_manifest_lock = threading.Lock()
+
+
 def append_log(log_path: Path, message: str) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    with log_path.open("a", encoding="utf-8") as handle:
-        timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
-        for line in message.splitlines() or [""]:
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    lines = message.splitlines() or [""]
+    with _log_lock, log_path.open("a", encoding="utf-8") as handle:
+        for line in lines:
             handle.write(f"[{timestamp}] {line}\n")
 
 
@@ -338,6 +351,7 @@ def main() -> int:
         "source_campaign_dir": str(paths["source_campaign_dir"]),
         "catalog": str(Path(args.catalog).resolve()),
         "mutant_workers": args.mutant_workers,
+        "target_workers": args.target_workers,
         "mutant_limit_per_target": args.mutant_limit_per_target,
         "prepare_only": args.prepare_only,
         "created_at_utc": now_utc(),
@@ -390,12 +404,13 @@ def main() -> int:
         return 0
 
     final_rows: list[dict[str, object]] = [dict(row) for row in merged_rows]
-    for index, row in enumerate(final_rows):
-        target_id = str(row["target_id"])
-        if not args.rerun_existing and str(row.get("status", "")).lower() == "ok":
-            append_log(paths["log"], f"[skip] {target_id} already marked ok")
-            continue
+    stop_event = threading.Event()
 
+    def run_target(row: dict[str, object]) -> None:
+        target_id = str(row["target_id"])
+        if stop_event.is_set():
+            append_log(paths["log"], f"[skip] {target_id} cancelled due to earlier error")
+            return
         cmd = build_prepare_cmd(
             catalog=args.catalog,
             major_target_dir=str(row["major_target_dir"]),
@@ -422,13 +437,35 @@ def main() -> int:
             paths["log"],
             f"[target {target_id}] returncode={result.returncode} status={row['status']}",
         )
-        write_targets_manifest(paths["targets_csv"], final_rows)
+        with _manifest_lock:
+            write_targets_manifest(paths["targets_csv"], final_rows)
 
         if result.returncode != 0 and args.stop_on_error:
             append_log(paths["log"], f"[stop] stopping on first error at {target_id}")
-            break
+            stop_event.set()
 
-    write_targets_manifest(paths["targets_csv"], final_rows)
+    pending = []
+    for row in final_rows:
+        target_id = str(row["target_id"])
+        if not args.rerun_existing and str(row.get("status", "")).lower() == "ok":
+            append_log(paths["log"], f"[skip] {target_id} already marked ok")
+        else:
+            pending.append(row)
+
+    if args.target_workers > 1:
+        append_log(paths["log"], f"Running {len(pending)} targets with {args.target_workers} parallel target workers")
+        with ThreadPoolExecutor(max_workers=args.target_workers) as executor:
+            futures = {executor.submit(run_target, row): row for row in pending}
+            for future in as_completed(futures):
+                future.result()
+    else:
+        for row in pending:
+            run_target(row)
+            if stop_event.is_set():
+                break
+
+    with _manifest_lock:
+        write_targets_manifest(paths["targets_csv"], final_rows)
     summary = aggregate_campaign(paths)
     print(f"Execution campaign: {paths['root']}")
     print(f"Targets selected: {len(final_rows)}")

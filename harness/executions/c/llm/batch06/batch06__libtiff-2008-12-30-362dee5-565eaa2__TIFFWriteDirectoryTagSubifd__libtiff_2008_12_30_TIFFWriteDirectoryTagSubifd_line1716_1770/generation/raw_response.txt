@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changes the return value when no subdirectories are present, violating the property that no action should be taken if there are no subifds.",
+      "line": 6,
+      "precode": "	if (tif->tif_dir.td_nsubifd==0)",
+      "aftercode": "	if (tif->tif_dir.td_nsubifd!=0)"
+    },
+    {
+      "id": 2,
+      "reasoning": "Changes the behavior when dir is NULL, violating the property that if dir is NULL, it should increment ndir and return.",
+      "line": 9,
+      "precode": "	if (dir==NULL)",
+      "aftercode": "	if (dir!=NULL)"
+    },
+    {
+      "id": 3,
+      "reasoning": "Changes the memory allocation size, violating the property that it should allocate enough space for td_nsubifd elements.",
+      "line": 20,
+      "precode": "	o=_TIFFmalloc(tif->tif_dir.td_nsubifd*sizeof(uint32));",
+      "aftercode": "	o=_TIFFmalloc((tif->tif_dir.td_nsubifd+1)*sizeof(uint32));"
+    },
+    {
+      "id": 4,
+      "reasoning": "Changes the assertion check, violating the property that each subifd offset should be within the range of uint32.",
+      "line": 30,
+      "precode": "	assert(*pa<=0xFFFFFFFFUL);",
+      "aftercode": "	// Removed assertion"
+    },
+    {
+      "id": 5,
+      "reasoning": "Changes the condition for calling TIFFWriteDirectoryTagCheckedIfdArray, violating the property that it should only call this function if not in bigTIFF mode.",
+      "line": 14,
+      "precode": "	if (!(tif->tif_flags&TIFF_BIGTIFF))",
+      "aftercode": "	if (tif->tif_flags&TIFF_BIGTIFF)"
+    },
+    {
+      "id": 6,
+      "reasoning": "Changes the condition for setting TIFF_INSUBIFD flag, violating the property that this flag should only be set if td_nsubifd is greater than 0.",
+      "line": 48,
+      "precode": "	tif->tif_flags|=TIFF_INSUBIFD;",
+      "aftercode": "	if (tif->tif_dir.td_nsubifd==0) tif->tif_flags|=TIFF_INSUBIFD;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Changes the assignment of tif_subifdoff, violating the property that if there is only one subifd, it should be set to 0.",
+      "line": 51,
+      "precode": "	tif->tif_subifdoff=0;",
+      "aftercode": "	tif->tif_subifdoff=m;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Changes the return value at the end, violating the property that it should return 1 if successful.",
+      "line": 54,
+      "precode": "	return(1);",
+      "aftercode": "	return(0);"
+    }
+  ]
+}

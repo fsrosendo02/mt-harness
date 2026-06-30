@@ -1,0 +1,50 @@
+{"id": 1, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 2: Violate the buffer overflow property
+    reasoning = "Violate the buffer overflow property by passing a very long timeout value"
+    line = 37
+    precode = "if (timeout > (double)LONG_MAX) {"
+    aftercode = "if (timeout > (double)LONG_MAX) { tv.tv_sec = seconds; tv.tv_usec = (long)(timeout * 1E6); tvp = &tv; } else { tvp = NULL; }"
+    mutants.append({"id": 2, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 3: Violate the data race property
+    reasoning = "Violate the data race property by using shared variables without synchronization"
+    line = 47
+    precode = "rfd2obj[0].sentinel = -1;"
+    aftercode = "rfd2obj[0].sentinel = -1; rfd2obj_shared = &rfd2obj[0];"
+    mutants.append({"id": 3, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 4: Violate the null pointer dereference property
+    reasoning = "Violate the null pointer dereference property by passing a NULL pointer as an argument"
+    line = 57
+    precode = "if (rfd2obj == NULL || wfd2obj == NULL || efd2obj == NULL) {"
+    aftercode = "if (rfd2obj == NULL || wfd2obj == NULL || efd2obj == NULL) { rfd2obj_shared = &rfd2obj[0]; wfd2obj_shared = &wfd2obj[0]; efd2obj_shared = &efd2obj[0]; } else {"
+    mutants.append({"id": 4, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 5: Violate the integer overflow property
+    reasoning = "Violate the integer overflow property by passing a very large file descriptor"
+    line = 69
+    precode = "if ((imax=seq2set(ifdlist, &ifdset, rfd2obj)) < 0) goto finally;"
+    aftercode = "if ((imax=seq2set(ifdlist, &ifdset, rfd2obj)) < 0) goto finally; if (imax > INT_MAX - 1) imax = INT_MAX - 1;"
+    mutants.append({"id": 5, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 6: Violate the floating-point exception property
+    reasoning = "Violate the floating-point exception property by dividing by zero"
+    line = 84
+    precode = "n = select(max, &ifdset, &ofdset, &efdset, tvp);"
+    aftercode = "n = select(max, &ifdset, &ofdset, &efdset, tvp) / 0.0;"
+    mutants.append({"id": 6, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 7: Violate the resource leak property
+    reasoning = "Violate the resource leak property by leaking memory"
+    line = 96
+    precode = "reap_obj(rfd2obj);"
+    aftercode = "PyMem_DEL(rfd2obj); reap_obj(wfd2obj); reap_obj(efd2obj); PyMem_DEL(wfd2obj); PyMem_DEL(efd2obj);"
+    mutants.append({"id": 7, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode})
+    
+    # Mutant 8: Violate the data race property (again)
+    reasoning = "Violate the data race property by using shared variables without synchronization"
+    line = 109
+    precode = "ifdlist = set2list(&ifdset, rfd2obj);"
+    aftercode = "ifdlist_shared = &ifdlist[0]; ifdlist = set2list(&ifdset, rfd2obj);"
+    mutants.append({"id": 8, "reasoning": reasoning, "line": line, "precode": precode, "aftercode": aftercode}

@@ -1,0 +1,82 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: TIFFReadEncodedStrip(TIFF* tif, uint32 strip, void* buf, tmsize_t size)
+ 2: {
+ 3: 	static const char module[] = "TIFFReadEncodedStrip";
+ 4: 	TIFFDirectory *td = &tif->tif_dir;
+ 5: 	uint32 rowsperstrip;
+ 6: 	uint32 stripsperplane;
+ 7: 	uint32 stripinplane;
+ 8: 	uint16 plane;
+ 9: 	uint32 rows;
+10: 	tmsize_t stripsize;
+11: 	if (!TIFFCheckRead(tif,0))
+12: 		return((tmsize_t)(-1));
+13: 	if (strip>=td->td_nstrips)
+14: 	{
+15: 		TIFFErrorExt(tif->tif_clientdata,module,
+16: 		    "%uld: Strip out of range, max %uld",(unsigned long)strip,
+17: 		    (unsigned long)td->td_nstrips);
+18: 		return((tmsize_t)(-1));
+19: 	}
+20: 	/*
+21: 	 * Calculate the strip size according to the number of
+22: 	 * rows in the strip (check for truncated last strip on any
+23: 	 * of the separations).
+24: 	 */
+25: 	rowsperstrip=td->td_rowsperstrip;
+26: 	if (rowsperstrip>td->td_imagelength)
+27: 		rowsperstrip=td->td_imagelength;
+28: 	stripsperplane=((td->td_imagelength+rowsperstrip-1)/rowsperstrip);
+29: 	stripinplane=(strip%stripsperplane);
+30: 	plane=(strip/stripsperplane);
+31: 	rows=td->td_imagelength-stripinplane*rowsperstrip;
+32: 	if (rows>rowsperstrip)
+33: 		rows=rowsperstrip;
+34: 	stripsize=TIFFVStripSize(tif,rows);
+35: 	if (stripsize==0)
+36: 		return((tmsize_t)(-1));
+37: 	if ((size!=(tmsize_t)(-1))&&(size<stripsize))
+38: 		stripsize=size;
+39: 	if (!TIFFFillStrip(tif,strip))
+40: 		return((tmsize_t)(-1));
+41: 	if ((*tif->tif_decodestrip)(tif,buf,size,plane)<=0)
+42: 		return((tmsize_t)(-1));
+43: 	(*tif->tif_postdecode)(tif,buf,size);
+44: 	return(size);
+45: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

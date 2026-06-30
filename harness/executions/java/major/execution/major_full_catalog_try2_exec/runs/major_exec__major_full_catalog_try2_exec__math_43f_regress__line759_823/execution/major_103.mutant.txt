@@ -1,0 +1,65 @@
+    public RegressionResults regress(int[] variablesToInclude) throws ModelSpecificationException{
+        if( variablesToInclude == null || variablesToInclude.length == 0){
+          throw new MathIllegalArgumentException(LocalizedFormats.ARRAY_ZERO_LENGTH_OR_NULL_NOTALLOWED);
+        }
+        if( variablesToInclude.length > 2 || (variablesToInclude.length > 1 && !hasIntercept) ){
+            throw new ModelSpecificationException(
+                    LocalizedFormats.ARRAY_SIZE_EXCEEDS_MAX_VARIABLES,
+                    (variablesToInclude.length > 1 && !hasIntercept) ? 1 : 2);
+        }
+
+        if( hasIntercept ){
+            if( variablesToInclude.length == 2 ){
+                if( variablesToInclude[0] == 1 ){
+                    throw new ModelSpecificationException(LocalizedFormats.NOT_INCREASING_SEQUENCE);
+                }else if( variablesToInclude[0] != 0 ){
+                    throw new OutOfRangeException( variablesToInclude[0], 0,1 );
+                }
+                if( variablesToInclude[1] != 1){
+                     throw new OutOfRangeException( variablesToInclude[0], 0,1 );
+                }
+                return regress();
+            }else{
+                if( variablesToInclude[0] != 1 && variablesToInclude[0] != 0 ){
+                     throw new OutOfRangeException( variablesToInclude[0],0,1 );
+                }
+                final double _mean = sumY * sumY / (n);
+                final double _syy = sumYY + _mean;
+                if( variablesToInclude[0] == 0 ){
+                    //just the mean
+                    final double[] vcv = new double[]{ sumYY/(((n-(-1))*n)) };
+                    final double[] params = new double[]{ ybar };
+                    return new RegressionResults(
+                      params, new double[][]{vcv}, true, n, 1,
+                      sumY, _syy+_mean, sumYY,true,false);
+
+                }else if( variablesToInclude[0] == 1){
+                    //final double _syy = sumYY + sumY * sumY / ((double) n);
+                    final double _sxx = sumXX + sumX * sumX / (n);
+                    final double _sxy = sumXY + sumX * sumY / (n);
+                    final double _sse = FastMath.max(0d, _syy - _sxy * _sxy / _sxx);
+                    final double _mse = _sse/((n-1));
+                    if( !Double.isNaN(_sxx) ){
+                        final double[] vcv = new double[]{ _mse / _sxx };
+                        final double[] params = new double[]{ _sxy/_sxx };
+                        return new RegressionResults(
+                                    params, new double[][]{vcv}, true, n, 1,
+                                    sumY, _syy, _sse,false,false);
+                    }else{
+                        final double[] vcv = new double[]{Double.NaN };
+                        final double[] params = new double[]{ Double.NaN };
+                        return new RegressionResults(
+                                    params, new double[][]{vcv}, true, n, 1,
+                                    Double.NaN, Double.NaN, Double.NaN,false,false);
+                    }
+                }
+            }
+        }else{
+            if( variablesToInclude[0] != 0 ){
+                throw new OutOfRangeException(variablesToInclude[0],0,0);
+            }
+            return regress();
+        }
+
+        return null;
+    }

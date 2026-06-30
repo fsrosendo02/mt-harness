@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The mutant changes the condition to always enter the 'bad' block, even when there should be no overflow.",
+      "line": 8,
+      "precode": "if (!dir->tdir_count || !w || (tsize_t)dir->tdir_count / w != cc)",
+      "aftercode": "if (!0)"
+    },
+    {
+      "id": 2,
+      "reasoning": "The mutant modifies the seek and read checks to always fail, simulating a failure in accessing data.",
+      "line": 12,
+      "precode": "if (!SeekOK(tif, dir->tdir_offset))",
+      "aftercode": "if (1)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The mutant changes the condition to incorrectly check for overflow in mapped memory access.",
+      "line": 19,
+      "precode": "if ((tsize_t)dir->tdir_offset != offset - cc || offset > (tsize_t)tif->tif_size)",
+      "aftercode": "if ((tsize_t)dir->tdir_offset == offset - cc && offset < (tsize_t)tif->tif_size)"
+    },
+    {
+      "id": 4,
+      "reasoning": "The mutant removes the swab operation, which might lead to incorrect data interpretation on big-endian systems.",
+      "line": 24,
+      "precode": "if (tif->tif_flags & TIFF_SWAB)",
+      "aftercode": "if (!(tif->tif_flags & TIFF_SWAB))"
+    },
+    {
+      "id": 5,
+      "reasoning": "The mutant incorrectly swaps the data only for a subset of TIFF types, potentially leading to incorrect data representation.",
+      "line": 28,
+      "precode": "TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);",
+      "aftercode": "TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count / 2);"
+    },
+    {
+      "id": 6,
+      "reasoning": "The mutant changes the memcpy operation to copy an incorrect number of bytes.",
+      "line": 22,
+      "precode": "_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);",
+      "aftercode": "_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc - 1);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The mutant incorrectly swaps the order of long data in rational types, leading to incorrect data interpretation.",
+      "line": 37,
+      "precode": "TIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);",
+      "aftercode": "TIFFSwabArrayOfLong((uint32*) cp + dir->tdir_count, 2*dir->tdir_count - 1);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The mutant incorrectly returns a non-zero value when an error occurs.",
+      "line": 49,
+      "precode": "return (tsize_t) 0;",
+      "aftercode": "return cc;"
+    }
+  ]
+}

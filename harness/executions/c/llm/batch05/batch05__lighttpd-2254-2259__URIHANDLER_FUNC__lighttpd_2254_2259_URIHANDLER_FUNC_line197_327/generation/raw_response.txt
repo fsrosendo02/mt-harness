@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "URI prefix matching is bypassed by changing the comparison string",
+      "line": 35,
+      "precode": "if (0 != strncmp(con->uri.path->ptr, p->conf.uri_prefix->ptr, p->conf.uri_prefix->used - 1))",
+      "aftercode": "if (0 != strncmp(con->uri.path->ptr, \"somethingelse\", p->conf.uri_prefix->used - 1))"
+    },
+    {
+      "id": 2,
+      "reasoning": "MD5 hash length check is relaxed to accept 31 characters",
+      "line": 45,
+      "precode": "if (!is_hex_len(md5_str, 32))",
+      "aftercode": "if (!is_hex_len(md5_str, 31))"
+    },
+    {
+      "id": 3,
+      "reasoning": "Timestamp hex length check is relaxed to accept 7 characters",
+      "line": 62,
+      "precode": "if (!is_hex_len(ts_str, 8))",
+      "aftercode": "if (!is_hex_len(ts_str, 7))"
+    },
+    {
+      "id": 4,
+      "reasoning": "Timestamp conversion uses incorrect shift value (8 instead of 4)",
+      "line": 78,
+      "precode": "ts = (ts << 4) + hex2int(*(ts_str + i));",
+      "aftercode": "ts = (ts << 8) + hex2int(*(ts_str + i));"
+    },
+    {
+      "id": 5,
+      "reasoning": "Timeout check uses >= instead of > for timestamp comparison",
+      "line": 82,
+      "precode": "if (srv->cur_ts - ts > p->conf.timeout ||",
+      "aftercode": "if (srv->cur_ts - ts >= p->conf.timeout ||"
+    },
+    {
+      "id": 6,
+      "reasoning": "MD5 calculation omits the timestamp component",
+      "line": 102,
+      "precode": "buffer_append_string_len(p->md5, ts_str, 8);",
+      "aftercode": "buffer_append_string_len(p->md5, \"\", 0);"
+    },
+    {
+      "id": 7,
+      "reasoning": "MD5 comparison uses binary memcmp instead of case-insensitive string comparison",
+      "line": 110,
+      "precode": "buffer_copy_string_hex(p->md5, (char *)HA1, 16);",
+      "aftercode": "memcpy(p->md5->ptr, HA1, 16);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Physical path construction prepends instead of appending the relative path",
+      "line": 124,
+      "precode": "buffer_append_string_buffer(con->physical.path, con->physical.rel_path);",
+      "aftercode": "buffer_prepend_string_buffer(con->physical.path, con->physical.rel_path);"
+    }
+  ]
+}

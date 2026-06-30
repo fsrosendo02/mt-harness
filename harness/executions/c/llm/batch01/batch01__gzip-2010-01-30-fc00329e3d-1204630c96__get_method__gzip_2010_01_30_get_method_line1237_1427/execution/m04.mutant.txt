@@ -1,0 +1,191 @@
+local int get_method(in)
+    int in;        /* input file descriptor */
+{
+    uch flags;     /* compression flags */
+    char magic[2]; /* magic header */
+    int imagic1;   /* like magic[1], but can represent EOF */
+    ulg stamp;     /* time stamp */
+
+    /* If --force and --stdout, zcat == cat, so do not complain about
+     * premature end of file: use try_byte instead of get_byte.
+     */
+    if (force && to_stdout) {
+        magic[0] = (char)try_byte();
+        imagic1 = try_byte ();
+        magic[1] = (char) imagic1;
+        /* If try_byte returned EOF, magic[1] == (char) EOF.  */
+    } else {
+        magic[0] = (char)get_byte();
+        if (magic[0]) {
+            magic[1] = (char)get_byte();
+            imagic1 = 0; /* avoid lint warning */
+        } else {
+            imagic1 = try_byte ();
+            magic[1] = (char) imagic1;
+        }
+    }
+    method = -1;                 /* unknown yet */
+    part_nb++;                   /* number of parts in gzip file */
+    header_bytes = 0;
+    last_member = RECORD_IO;
+    /* assume multiple members in gzip file except for record oriented I/O */
+
+    if (memcmp(magic, GZIP_MAGIC, 2) == 0
+        || memcmp(magic, OLD_GZIP_MAGIC, 2) == 0) {
+
+        method = (int)get_byte();
+        if (method != DEFLATED) {
+            fprintf(stderr,
+                    "%s: %s: unknown method %d -- not supported\n",
+                    program_name, ifname, method);
+            exit_code = ERROR;
+            return -1;
+        }
+        work = unzip;
+        flags  = (uch)get_byte();
+
+        if ((flags & ENCRYPTED) != 0) {
+            fprintf(stderr,
+                    "%s: %s is encrypted -- not supported\n",
+                    program_name, ifname);
+            exit_code = ERROR;
+            return -1;
+        }
+        if ((flags & CONTINUATION) != 0) {
+            fprintf(stderr,
+                    "%s: %s is a multi-part gzip file -- not supported\n",
+                    program_name, ifname);
+            exit_code = ERROR;
+            if (force <= 1) return -1;
+        }
+        if ((flags & RESERVED) != 0) {
+            fprintf(stderr,
+                    "%s: %s has flags 0x%x -- not supported\n",
+                    program_name, ifname, flags);
+            exit_code = ERROR;
+            if (force <= 1) return -1;
+        }
+        stamp  = (ulg)get_byte();
+        stamp |= ((ulg)get_byte()) << 8;
+        stamp |= ((ulg)get_byte()) << 16;
+        stamp |= ((ulg)get_byte()) << 24;
+        if (stamp != 0 && !no_time)
+          {
+            time_stamp.tv_sec = stamp;
+            time_stamp.tv_nsec = 0;
+          }
+
+        (void)get_byte();  /* Ignore extra flags for the moment */
+        (void)get_byte();  /* Ignore OS type for the moment */
+
+        if ((flags & CONTINUATION) != 0) {
+            unsigned part = (unsigned)get_byte();
+            part |= ((unsigned)get_byte())<<8;
+            if (verbose) {
+                fprintf(stderr,"%s: %s: part number %u\n",
+                        program_name, ifname, part);
+            }
+        }
+        if ((flags & EXTRA_FIELD) != 0) {
+            unsigned len = (unsigned)get_byte();
+            len |= ((unsigned)get_byte())<<8;
+            if (verbose) {
+                fprintf(stderr,"%s: %s: extra field of %u bytes ignored\n",
+                        program_name, ifname, len);
+            }
+            while (len--) (void)get_byte();
+        }
+
+        /* Get original file name if it was truncated */
+        if (1) {
+            if (no_name || (to_stdout && !list) || part_nb > 1) {
+                /* Discard the old name */
+                char c; /* dummy used for NeXTstep 3.0 cc optimizer bug */
+                do {c=get_byte();} while (c != 0);
+            } else {
+                /* Copy the base name. Keep a directory prefix intact. */
+                char *p = gzip_base_name (ofname);
+                char *base = p;
+                for (;;) {
+                    *p = (char)get_char();
+                    if (*p++ == '\0') break;
+                    if (p >= ofname+sizeof(ofname)) {
+                        gzip_error ("corrupted input -- file name too large");
+                    }
+                }
+                p = gzip_base_name (base);
+                memmove (base, p, strlen (p) + 1);
+                /* If necessary, adapt the name to local OS conventions: */
+                if (!list) {
+                   MAKE_LEGAL_NAME(base);
+                   if (base) list=0; /* avoid warning about unused variable */
+                }
+            } /* no_name || to_stdout */
+        } /* ORIG_NAME */
+
+        /* Discard file comment if any */
+        if ((flags & COMMENT) != 0) {
+            while (get_char() != 0) /* null */ ;
+        }
+        if (part_nb == 1) {
+            header_bytes = inptr + 2*sizeof(long); /* include crc and size */
+        }
+
+    } else if (memcmp(magic, PKZIP_MAGIC, 2) == 0 && inptr == 2
+            && memcmp((char*)inbuf, PKZIP_MAGIC, 4) == 0) {
+        /* To simplify the code, we support a zip file when alone only.
+         * We are thus guaranteed that the entire local header fits in inbuf.
+         */
+        inptr = 0;
+        work = unzip;
+        if (check_zipfile(in) != OK) return -1;
+        /* check_zipfile may get ofname from the local header */
+        last_member = 1;
+
+    } else if (memcmp(magic, PACK_MAGIC, 2) == 0) {
+        work = unpack;
+        method = PACKED;
+
+    } else if (memcmp(magic, LZW_MAGIC, 2) == 0) {
+        work = unlzw;
+        method = COMPRESSED;
+        last_member = 1;
+
+    } else if (memcmp(magic, LZH_MAGIC, 2) == 0) {
+        work = unlzh;
+        method = LZHED;
+        last_member = 1;
+
+    } else if (force && to_stdout && !list) { /* pass input unchanged */
+        method = STORED;
+        work = copy;
+        inptr = 0;
+        last_member = 1;
+    }
+    if (method >= 0) return method;
+
+    if (part_nb == 1) {
+        fprintf (stderr, "\n%s: %s: not in gzip format\n",
+                 program_name, ifname);
+        exit_code = ERROR;
+        return -1;
+    } else {
+        if (magic[0] == 0)
+          {
+            int inbyte;
+            for (inbyte = imagic1;  inbyte == 0;  inbyte = try_byte ())
+              continue;
+            if (inbyte == EOF)
+              {
+                if (verbose)
+                  WARN ((stderr, "\n%s: %s: decompression OK, trailing zero bytes ignored\n",
+                         program_name, ifname));
+                return -3;
+              }
+          }
+
+        WARN((stderr, "\n%s: %s: decompression OK, trailing garbage ignored\n",
+              program_name, ifname));
+        return -2;
+    }
+}

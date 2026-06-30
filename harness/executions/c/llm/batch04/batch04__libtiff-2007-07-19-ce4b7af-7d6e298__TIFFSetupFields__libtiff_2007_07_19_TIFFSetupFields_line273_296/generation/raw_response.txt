@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The condition in line 4 is removed, allowing invalid TIFF structures to pass through.",
+      "line": 4,
+      "precode": "if (tif->tif_fields && tif->tif_nfields > 0)",
+      "aftercode": ""
+    },
+    {
+      "id": 2,
+      "reasoning": "The loop counter `i` is changed to wrap around after reaching the last field, causing incorrect processing.",
+      "line": 7,
+      "precode": "for (i = 0; i < tif->tif_nfields; i++)",
+      "aftercode": "for (i = 0; i >= tif->tif_nfields; i++)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The field check in line 9 is disabled, allowing any custom fields to be processed.",
+      "line": 9,
+      "precode": "if (fld->field_bit == FIELD_CUSTOM &&",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "The field name is freed prematurely, causing a memory leak when the field is not custom.",
+      "line": 11,
+      "precode": "_TIFFfree(fld->field_name);",
+      "aftercode": "_TIFFfree(fld->field_name); _TIFFfree(fld);"
+    },
+    {
+      "id": 5,
+      "reasoning": "The free of `tif->tif_fields` is removed, leaving the structure with dangling pointers.",
+      "line": 16,
+      "precode": "_TIFFfree(tif->tif_fields);",
+      "aftercode": ""
+    },
+    {
+      "id": 6,
+      "reasoning": "The condition in line 20 is removed, allowing merge failures to be silently ignored.",
+      "line": 20,
+      "precode": "if (!_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count))",
+      "aftercode": ""
+    },
+    {
+      "id": 7,
+      "reasoning": "The error message in line 21 is changed to a success message, hiding potential issues.",
+      "line": 21,
+      "precode": "TIFFErrorExt(tif->tif_clientdata, \"_TIFFSetupFields\",",
+      "aftercode": "TIFFErrorExt(tif->tif_clientdata, \"_TIFFSetupFields\", \"Success\")"
+    },
+    {
+      "id": 8,
+      "reasoning": "The `fieldarray` parameter is set to `NULL`, causing a null pointer dereference.",
+      "line": 20,
+      "precode": "_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count)",
+      "aftercode": "_TIFFMergeFields(tif, NULL, fieldarray->count)"
+    }
+  ]
+}

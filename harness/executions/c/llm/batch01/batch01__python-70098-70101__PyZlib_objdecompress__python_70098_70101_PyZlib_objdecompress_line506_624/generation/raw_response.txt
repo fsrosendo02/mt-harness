@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function expects the 'max_length' parameter to be greater than zero. Mutating this condition will allow negative values, which should not affect the zlib decompression process.",
+      "line": 15,
+      "precode": "if (max_length < 0) {",
+      "aftercode": "if (max_length > 0) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The function allocates memory for the output buffer based on 'length'. Mutating this value will likely cause the decompression to fail, as it does not handle smaller or larger buffers correctly.",
+      "line": 24,
+      "precode": "if (max_length && length > max_length)",
+      "aftercode": "if (length < max_length)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The function expects the zlib inflate call to return Z_OK or Z_BUF_ERROR. Mutating this check will allow other error codes, which should not affect the decompression process as long as they are handled correctly.",
+      "line": 103,
+      "precode": "err != Z_OK && err != Z_BUF_ERROR",
+      "aftercode": "err != Z_OK"
+    },
+    {
+      "id": 4,
+      "reasoning": "The function doubles the 'length' of the output buffer when it's full. Mutating this to increase the buffer size by a constant instead will likely cause memory issues.",
+      "line": 54,
+      "precode": "length = length << 1;",
+      "aftercode": "length += 1000;"
+    },
+    {
+      "id": 5,
+      "reasoning": "The function sets the 'unconsumed_tail' attribute when max_length is set. Mutating this to not set it will result in loss of information about unconsumed input data.",
+      "line": 75,
+      "precode": "Py_DECREF(self->unconsumed_tail);",
+      "aftercode": "// Py_DECREF(self->unconsumed_tail);"
+    },
+    {
+      "id": 6,
+      "reasoning": "The function checks if the output buffer is full before calling inflate again. Mutating this check to always assume it's not full will cause an infinite loop.",
+      "line": 45,
+      "precode": "while (err == Z_OK && self->zst.avail_out == 0)",
+      "aftercode": "while (err == Z_OK)"
+    },
+    {
+      "id": 7,
+      "reasoning": "The function resizes the output buffer after decompression. Mutating this to not resize will cause incorrect output lengths.",
+      "line": 110,
+      "precode": "_PyBytes_Resize(&RetVal, self->zst.total_out - start_total_out)",
+      "aftercode": "// _PyBytes_Resize(&RetVal, self->zst.total_out - start_total_out)"
+    },
+    {
+      "id": 8,
+      "reasoning": "The function sets the 'unused_data' attribute when the end of the compressed data is reached. Mutating this to not set it will result in loss of information about remaining input data.",
+      "line": 92,
+      "precode": "Py_XDECREF(self->unused_data);",
+      "aftercode": "// Py_XDECREF(self->unused_data);"
+    }
+  ]
+}

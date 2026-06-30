@@ -1,0 +1,298 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: static cond_result_t config_check_cond_nocache(server *srv, connection *con, data_config *dc) {
+  2: 	buffer *l;
+  3: 	server_socket *srv_sock = con->srv_socket;
+  4: 	/* check parent first */
+  5: 	if (dc->parent && dc->parent->context_ndx) {
+  6: 		if (con->conf.log_condition_handling) {
+  7: 			log_error_write(srv, __FILE__, __LINE__,  "sb", "go parent", dc->parent->key);
+  8: 		}
+  9: 		if (config_check_cond_cached(srv, con, dc->parent) == COND_RESULT_FALSE) {
+ 10: 			return COND_RESULT_FALSE;
+ 11: 		}
+ 12: 	}
+ 13: 
+ 14: 	if (dc->prev) {
+ 15: 		if (con->conf.log_condition_handling) {
+ 16: 			log_error_write(srv, __FILE__, __LINE__,  "sb", "go prev", dc->prev->key);
+ 17: 		}
+ 18: 		/* make sure prev is checked first */
+ 19: 		config_check_cond_cached(srv, con, dc->prev);
+ 20: 		/* one of prev set me to FALSE */
+ 21: 		if (COND_RESULT_FALSE == con->cond_cache[dc->context_ndx].result) {
+ 22: 			return COND_RESULT_FALSE;
+ 23: 		}
+ 24: 	}
+ 25: 
+ 26: 	if (!con->conditional_is_valid[dc->comp]) {
+ 27: 		if (con->conf.log_condition_handling) {
+ 28: 			TRACE("cond[%d] is valid: %d", dc->comp, con->conditional_is_valid[dc->comp]);
+ 29: 		}
+ 30: 
+ 31: 		return COND_RESULT_UNSET;
+ 32: 	}
+ 33: 
+ 34: 	/* pass the rules */
+ 35: 
+ 36: 	switch (dc->comp) {
+ 37: 	case COMP_HTTP_HOST: {
+ 38: 		char *ck_colon = NULL, *val_colon = NULL;
+ 39: 
+ 40: 		if (!buffer_is_empty(con->uri.authority)) {
+ 41: 
+ 42: 			/*
+ 43: 			 * append server-port to the HTTP_POST if necessary
+ 44: 			 */
+ 45: 
+ 46: 			l = con->uri.authority;
+ 47: 
+ 48: 			switch(dc->cond) {
+ 49: 			case CONFIG_COND_NE:
+ 50: 			case CONFIG_COND_EQ:
+ 51: 				ck_colon = strchr(dc->string->ptr, ':');
+ 52: 				val_colon = strchr(l->ptr, ':');
+ 53: 
+ 54: 				if (ck_colon == val_colon) {
+ 55: 					/* nothing to do with it */
+ 56: 					break;
+ 57: 				}
+ 58: 				if (ck_colon) {
+ 59: 					/* condition "host:port" but client send "host" */
+ 60: 					buffer_copy_string_buffer(srv->cond_check_buf, l);
+ 61: 					BUFFER_APPEND_STRING_CONST(srv->cond_check_buf, ":");
+ 62: 					buffer_append_long(srv->cond_check_buf, sock_addr_get_port(&(srv_sock->addr)));
+ 63: 					l = srv->cond_check_buf;
+ 64: 				} else if (!ck_colon) {
+ 65: 					/* condition "host" but client send "host:port" */
+ 66: 					buffer_copy_string_len(srv->cond_check_buf, l->ptr, val_colon - l->ptr);
+ 67: 					l = srv->cond_check_buf;
+ 68: 				}
+ 69: 				break;
+ 70: 			default:
+ 71: 				break;
+ 72: 			}
+ 73: 		} else {
+ 74: 			l = srv->empty_string;
+ 75: 		}
+ 76: 		break;
+ 77: 	}
+ 78: 	case COMP_HTTP_REMOTE_IP: {
+ 79: 		char *nm_slash;
+ 80: 		/* handle remoteip limitations
+ 81: 		 *
+ 82: 		 * "10.0.0.1" is provided for all comparisions
+ 83: 		 *
+ 84: 		 * only for == and != we support
+ 85: 		 *
+ 86: 		 * "10.0.0.1/24"
+ 87: 		 */
+ 88: 
+ 89: 		if ((dc->cond == CONFIG_COND_EQ ||
+ 90: 		     dc->cond == CONFIG_COND_NE) &&
+ 91: 		    (con->dst_addr.plain.sa_family == AF_INET) &&
+ 92: 		    (NULL != (nm_slash = strchr(dc->string->ptr, '/')))) {
+ 93: 			int nm_bits;
+ 94: 			long nm;
+ 95: 			char *err;
+ 96: 			struct in_addr val_inp;
+ 97: 
+ 98: 			if (con->conf.log_condition_handling) {
+ 99: 				l = srv->empty_string;
+100: 
+101: 				log_error_write(srv, __FILE__, __LINE__,  "bsbsb", dc->comp_key,
+102: 						"(", l, ") compare to", dc->string);
+103: 			}
+104: 
+105: 			if (*(nm_slash+1) == '\0') {
+106: 				log_error_write(srv, __FILE__, __LINE__, "sb", "ERROR: no number after / ", dc->string);
+107: 
+108: 				return COND_RESULT_FALSE;
+109: 			}
+110: 
+111: 			nm_bits = strtol(nm_slash + 1, &err, 10);
+112: 
+113: 			if (*err) {
+114: 				log_error_write(srv, __FILE__, __LINE__, "sbs", "ERROR: non-digit found in netmask:", dc->string, *err);
+115: 
+116: 				return COND_RESULT_FALSE;
+117: 			}
+118: 
+119: 			/* take IP convert to the native */
+120: 			buffer_copy_string_len(srv->cond_check_buf, dc->string->ptr, nm_slash - dc->string->ptr);
+121: #ifdef _WIN32
+122: 			if (INADDR_NONE == (val_inp.s_addr = inet_addr(srv->cond_check_buf->ptr))) {
+123: 				log_error_write(srv, __FILE__, __LINE__, "sb", "ERROR: ip addr is invalid:", srv->cond_check_buf);
+124: 
+125: 				return COND_RESULT_FALSE;
+126: 			}
+127: 
+128: #else
+129: 			if (0 == inet_aton(srv->cond_check_buf->ptr, &val_inp)) {
+130: 				log_error_write(srv, __FILE__, __LINE__, "sb", "ERROR: ip addr is invalid:", srv->cond_check_buf);
+131: 
+132: 				return COND_RESULT_FALSE;
+133: 			}
+134: #endif
+135: 
+136: 			/* build netmask */
+137: 			nm = htonl(~((1 << (32 - nm_bits)) - 1));
+138: 
+139: 			if ((val_inp.s_addr & nm) == (con->dst_addr.ipv4.sin_addr.s_addr & nm)) {
+140: 				return (dc->cond == CONFIG_COND_EQ) ? COND_RESULT_TRUE : COND_RESULT_FALSE;
+141: 			} else {
+142: 				return (dc->cond == CONFIG_COND_EQ) ? COND_RESULT_FALSE : COND_RESULT_TRUE;
+143: 			}
+144: 		} else {
+145: 			l = con->dst_addr_buf;
+146: 		}
+147: 		break;
+148: 	}
+149: 	case COMP_HTTP_URL:
+150: 		l = con->uri.path;
+151: 		break;
+152: 
+153: 	case COMP_HTTP_QUERY_STRING:
+154: 		l = con->uri.query;
+155: 		break;
+156: 
+157: 	case COMP_SERVER_SOCKET:
+158: 		l = srv_sock->srv_token;
+159: 		break;
+160: 
+161: 	case COMP_HTTP_REFERER: {
+162: 		data_string *ds;
+163: 
+164: 		if (NULL != (ds = (data_string *)array_get_element(con->request.headers, CONST_STR_LEN("Referer")))) {
+165: 			l = ds->value;
+166: 		} else {
+167: 			l = srv->empty_string;
+168: 		}
+169: 		break;
+170: 	}
+171: 	case COMP_HTTP_COOKIE: {
+172: 		data_string *ds;
+173: 		if (NULL != (ds = (data_string *)array_get_element(con->request.headers, CONST_STR_LEN("Cookie")))) {
+174: 			l = ds->value;
+175: 		} else {
+176: 			l = srv->empty_string;
+177: 		}
+178: 		break;
+179: 	}
+180: 	case COMP_HTTP_USER_AGENT: {
+181: 		data_string *ds;
+182: 		if (NULL != (ds = (data_string *)array_get_element(con->request.headers, CONST_STR_LEN("User-Agent")))) {
+183: 			l = ds->value;
+184: 		} else {
+185: 			l = srv->empty_string;
+186: 		}
+187: 		break;
+188: 	}
+189: 	case COMP_HTTP_REQUEST_METHOD: {
+190: 		const char *method = get_http_method_name(con->request.http_method);
+191: 
+192: 		/* we only have the request method as const char but we need a buffer for comparing */
+193: 
+194: 		buffer_copy_string(srv->tmp_buf, method);
+195: 
+196: 		l = srv->tmp_buf;
+197: 
+198: 		break;
+199: 	}
+200: 	case COMP_PHYSICAL_PATH_EXISTS: 
+201: 	case COMP_PHYSICAL_PATH: 
+202: 		l = con->physical.path;
+203: 		break;
+204: 	default:
+205: 		return COND_RESULT_FALSE;
+206: 	}
+207: 
+208: 	if (NULL == l) {
+209: 		if (con->conf.log_condition_handling) {
+210: 			log_error_write(srv, __FILE__, __LINE__,  "bsbs", dc->comp_key,
+211: 					"(", l, ") compare to NULL");
+212: 		}
+213: 		return COND_RESULT_FALSE;
+214: 	}
+215: 
+216: 	if (con->conf.log_condition_handling) {
+217: 		TRACE("'%s': '%s' is matched against '%s'", 
+218: 				BUF_STR(dc->comp_key),
+219: 				BUF_STR(l),
+220: 				BUF_STR(dc->string));
+221: 	}
+222: 
+223: 	switch(dc->cond) {
+224: 	case CONFIG_COND_NE:
+225: 	case CONFIG_COND_EQ:
+226: 		if (buffer_is_equal(l, dc->string)) {
+227: 			return (dc->cond == CONFIG_COND_EQ) ? COND_RESULT_TRUE : COND_RESULT_FALSE;
+228: 		} else {
+229: 			return (dc->cond == CONFIG_COND_EQ) ? COND_RESULT_FALSE : COND_RESULT_TRUE;
+230: 		}
+231: 		break;
+232: #ifdef HAVE_PCRE_H
+233: 	case CONFIG_COND_NOMATCH:
+234: 	case CONFIG_COND_MATCH: {
+235: 		cond_cache_t *cache = &con->cond_cache[dc->context_ndx];
+236: 		int n;
+237: 
+238: #ifndef elementsof
+239: #define elementsof(x) (sizeof(x) / sizeof(x[0]))
+240: #endif
+241: 		n = pcre_exec(dc->regex, dc->regex_study, l->ptr, l->used - 1, 0, 0,
+242: 				cache->matches, elementsof(cache->matches));
+243: 
+244: 		cache->patterncount = n;
+245: 		if (n > 0) {
+246: 			cache->comp_value = l;
+247: 			return (dc->cond == CONFIG_COND_MATCH) ? COND_RESULT_TRUE : COND_RESULT_FALSE;
+248: 		} else {
+249: 			/* cache is already cleared */
+250: 			return (dc->cond == CONFIG_COND_MATCH) ? COND_RESULT_FALSE : COND_RESULT_TRUE;
+251: 		}
+252: 		break;
+253: 	}
+254: #endif
+255: 	default:
+256: 		/* no way */
+257: 		break;
+258: 	}
+259: 
+260: 	return COND_RESULT_FALSE;
+261: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

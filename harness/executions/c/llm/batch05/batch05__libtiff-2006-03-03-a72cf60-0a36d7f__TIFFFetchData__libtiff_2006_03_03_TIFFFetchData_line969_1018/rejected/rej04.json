@@ -1,0 +1,29 @@
+{
+  "dataset": "manybugs",
+  "subject_id": "libtiff-2006-03-03-a72cf60-0a36d7f",
+  "language": "c",
+  "version": "f",
+  "target_id": "libtiff_2006_03_03_TIFFFetchData__line969_1018",
+  "file_path": "libtiff/tif_dirread.c",
+  "function_name": "TIFFFetchData",
+  "start_line": 969,
+  "end_line": 1018,
+  "mutant_id": "rej04",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 4,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: )",
+  "raw_response_path": "harness/executions/c/llm/batch05/batch05__libtiff-2006-03-03-a72cf60-0a36d7f__TIFFFetchData__libtiff_2006_03_03_TIFFFetchData_line969_1018/generation/raw_response.txt",
+  "payload": {
+    "id": 4,
+    "reasoning": "Removes bounds check for mapped data access",
+    "line": 19,
+    "precode": "if ((tsize_t)dir->tdir_offset != offset - cc || offset > (tsize_t)tif->tif_size)",
+    "aftercode": "if ((tsize_t)dir->tdir_offset != offset - cc)",
+    "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\t/* Check for overflow. */\n\tif (!dir->tdir_count || !w || (tsize_t)dir->tdir_count / w != cc)\n\t\tgoto bad;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\ttsize_t offset = dir->tdir_offset + cc;\n\t\t/* Check for overflow. */\n\t\tif ((tsize_t)dir->tdir_offset != offset - cc)\n\t\t    || offset > (tsize_t)tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name,\n\t\t     \"Error fetching data for field \\\"%s\\\"\",\n\t\t     _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn (tsize_t) 0;\n}\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/executions/c/llm/batch05/batch05__libtiff-2006-03-03-a72cf60-0a36d7f__TIFFFetchData__libtiff_2006_03_03_TIFFFetchData_line969_1018/rejected/rej04.log",
+  "mutant_path": "harness/executions/c/llm/batch05/batch05__libtiff-2006-03-03-a72cf60-0a36d7f__TIFFFetchData__libtiff_2006_03_03_TIFFFetchData_line969_1018/rejected/rej04.mutant.txt",
+  "original_path": "harness/executions/c/llm/batch05/batch05__libtiff-2006-03-03-a72cf60-0a36d7f__TIFFFetchData__libtiff_2006_03_03_TIFFFetchData_line969_1018/rejected/original.txt"
+}

@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition check for mapped files. It allows reading past the file size.",
+      "line": 14,
+      "precode": "if (dir->tdir_offset + cc > tif->tif_size)",
+      "aftercode": "if (dir->tdir_offset + cc >= tif->tif_size)"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the data width calculation. It incorrectly calculates the total count of bytes to read.",
+      "line": 5,
+      "precode": "tsize_t cc = dir->tdir_count * w;",
+      "aftercode": "tsize_t cc = (dir->tdir_count - 1) * w;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the seek operation. It does not check if seeking was successful.",
+      "line": 8,
+      "precode": "if (!SeekOK(tif, dir->tdir_offset))",
+      "aftercode": "if (SeekOK(tif, dir->tdir_offset))"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the read operation. It does not check if reading was successful.",
+      "line": 10,
+      "precode": "if (!ReadOK(tif, cp, cc))",
+      "aftercode": "if (ReadOK(tif, cp, cc))"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the byte swap condition. It swaps bytes for all types instead of specific ones.",
+      "line": 17,
+      "precode": "if (tif->tif_flags & TIFF_SWAB)",
+      "aftercode": "if (!(tif->tif_flags & TIFF_SWAB))"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the type-specific byte swap for short types. It incorrectly handles short types.",
+      "line": 20,
+      "precode": "case TIFF_SHORT:",
+      "aftercode": "case TIFF_LONG:"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the type-specific byte swap for rational types. It swaps more than necessary.",
+      "line": 30,
+      "precode": "TIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);",
+      "aftercode": "TIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the error handling. It does not return an error code.",
+      "line": 40,
+      "precode": "TIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",
+      "aftercode": ""
+    }
+  ]
+}

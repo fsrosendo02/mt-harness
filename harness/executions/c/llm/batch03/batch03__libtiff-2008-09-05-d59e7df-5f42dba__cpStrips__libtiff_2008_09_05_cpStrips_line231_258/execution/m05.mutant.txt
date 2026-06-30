@@ -1,0 +1,28 @@
+cpStrips(TIFF* in, TIFF* out)
+{
+	tsize_t bufsize  = TIFFStripSize(in);
+	unsigned char *buf = (unsigned char *)_TIFFmalloc(bufsize);
+
+	if (buf) {
+		tstrip_t s, ns = TIFFNumberOfStrips(in);
+		uint32 *bytecounts;
+
+		TIFFGetField(in, TIFFTAG_STRIPBYTECOUNTS, &bytecounts);
+		for (s = 0; s < ns; s++) {
+			if (bytecounts[s] > (uint32)bufsize) {
+				buf = (unsigned char *)_TIFFrealloc(buf, bytecounts[s]);
+				if (!buf)
+					return (0);
+				bufsize = bytecounts[s];
+			}
+			if (TIFFReadRawStrip(in, s, buf, bytecounts[s]) < 0 ||
+			    TIFFWriteRawStrip(out, s, buf, bytecounts[s]) < 0) {
+				_TIFFfree(buf);
+				return (0);
+			}
+		}
+		_TIFFfree(buf);
+		if(buf) return (1);
+	}
+	return (0);
+}

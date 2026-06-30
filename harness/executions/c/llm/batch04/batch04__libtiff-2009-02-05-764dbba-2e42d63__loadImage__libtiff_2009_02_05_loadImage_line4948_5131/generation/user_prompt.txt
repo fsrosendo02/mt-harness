@@ -1,0 +1,221 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: loadImage(TIFF* in, struct image_data *image, struct dump_opts * dump, unsigned char **read_ptr)
+  2:   {
+  3:   uint32   i;
+  4:   float    xres=0.0, yres=0.0;
+  5:   uint16   nstrips, ntiles, planar, bps, spp, res_unit, photometric, orientation;
+  6:   uint32   width, length, rowsperstrip;
+  7:   uint32   stsize, tlsize, buffsize, scanlinesize;
+  8:   unsigned char *read_buff = NULL;
+  9:   unsigned char *new_buff  = NULL;
+ 10:   int      readunit = 0;
+ 11:   static   uint32  prev_readsize = 0;
+ 12: 
+ 13:   TIFFGetFieldDefaulted(in, TIFFTAG_BITSPERSAMPLE, &bps);
+ 14:   TIFFGetFieldDefaulted(in, TIFFTAG_SAMPLESPERPIXEL, &spp);
+ 15:   TIFFGetFieldDefaulted(in, TIFFTAG_PLANARCONFIG, &planar);
+ 16:   TIFFGetFieldDefaulted(in, TIFFTAG_ORIENTATION, &orientation);
+ 17:   TIFFGetField(in, TIFFTAG_PHOTOMETRIC, &photometric);
+ 18:   TIFFGetField(in, TIFFTAG_IMAGEWIDTH,  &width);
+ 19:   TIFFGetField(in, TIFFTAG_IMAGELENGTH, &length);
+ 20:   TIFFGetField(in, TIFFTAG_XRESOLUTION, &xres);
+ 21:   TIFFGetField(in, TIFFTAG_YRESOLUTION, &yres);
+ 22:   TIFFGetFieldDefaulted(in, TIFFTAG_RESOLUTIONUNIT, &res_unit);
+ 23:   scanlinesize = TIFFScanlineSize(in);
+ 24: 
+ 25:   image->bps = bps;
+ 26:   image->spp = spp;
+ 27:   image->planar = planar;
+ 28:   image->width = width;
+ 29:   image->length = length;
+ 30:   image->xres = xres;
+ 31:   image->yres = yres;
+ 32:   image->res_unit = res_unit;
+ 33:   image->photometric = photometric;
+ 34:   image->orientation = orientation;
+ 35:   switch (orientation)
+ 36:     {
+ 37:     case 0:
+ 38:     case ORIENTATION_TOPLEFT:
+ 39:          image->adjustments = 0;
+ 40: 	 break;
+ 41:     case ORIENTATION_TOPRIGHT:
+ 42:          image->adjustments = MIRROR_HORIZ;
+ 43: 	 break;
+ 44:     case ORIENTATION_BOTRIGHT:
+ 45:          image->adjustments = ROTATECW_180;
+ 46: 	 break;
+ 47:     case ORIENTATION_BOTLEFT:
+ 48:          image->adjustments = MIRROR_VERT; 
+ 49: 	 break;
+ 50:     case ORIENTATION_LEFTTOP:
+ 51:          image->adjustments = MIRROR_VERT | ROTATECW_90;
+ 52: 	 break;
+ 53:     case ORIENTATION_RIGHTTOP:
+ 54:          image->adjustments = ROTATECW_90;
+ 55: 	 break;
+ 56:     case ORIENTATION_RIGHTBOT:
+ 57:          image->adjustments = MIRROR_VERT | ROTATECW_270;
+ 58: 	 break; 
+ 59:     case ORIENTATION_LEFTBOT:
+ 60:          image->adjustments = ROTATECW_270;
+ 61: 	 break;
+ 62:     default:
+ 63:          image->adjustments = 0;
+ 64:          image->orientation = ORIENTATION_TOPLEFT;
+ 65:    }
+ 66: 
+ 67:   if ((bps == 0) || (spp == 0))
+ 68:     {
+ 69:     TIFFError("loadImage", "Invalid samples per pixel (%d) or bits per sample (%d)",
+ 70: 	       spp, bps);
+ 71:     return (-1);
+ 72:     }
+ 73: 
+ 74:   if (TIFFIsTiled(in))
+ 75:     {
+ 76:     readunit = TILE;
+ 77:     tlsize = TIFFTileSize(in);
+ 78:     ntiles = TIFFNumberOfTiles(in);
+ 79:     buffsize = tlsize * ntiles;
+ 80:     if (dump->infile != NULL)
+ 81:       dump_info (dump->infile, dump->format, "", 
+ 82:                  "Tilesize: %u, Number of Tiles: %u, Scanline size: %u",
+ 83:                  tlsize, ntiles, scanlinesize);
+ 84:     }
+ 85:   else
+ 86:     {
+ 87:     readunit = STRIP;
+ 88:     TIFFGetFieldDefaulted(in, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
+ 89:     stsize = TIFFStripSize(in);
+ 90:     nstrips = TIFFNumberOfStrips(in);
+ 91:     buffsize = stsize * nstrips;
+ 92:     if (dump->infile != NULL)
+ 93:       dump_info (dump->infile, dump->format, "",
+ 94:                  "Stripsize: %u, Number of Strips: %u, Rows per Strip: %u, Scanline size: %u",
+ 95: 		 stsize, nstrips, rowsperstrip, scanlinesize);
+ 96:     }
+ 97: 
+ 98:   read_buff = *read_ptr;
+ 99:   if (!read_buff)
+100:     read_buff = (unsigned char *)_TIFFmalloc(buffsize);
+101:   else
+102:     {
+103:     if (prev_readsize < buffsize)
+104:       {
+105:       new_buff = _TIFFrealloc(read_buff, buffsize);
+106:       if (!new_buff)
+107:         {
+108: 	free (read_buff);
+109:         read_buff = (unsigned char *)_TIFFmalloc(buffsize);
+110:         }
+111:       else
+112:         read_buff = new_buff;
+113:       }
+114:     }
+115: 
+116:   if (!read_buff)
+117:     {
+118:     TIFFError("loadImage", "Unable to allocate/reallocate read buffer");
+119:     return (-1);
+120:     }
+121:   _TIFFmemset(read_buff, '\0', buffsize);
+122:   prev_readsize = buffsize;
+123:   *read_ptr = read_buff;
+124: 
+125:   /* N.B. The read functions used copy separate plane data into a buffer as interleaved
+126:    * samples rather than separate planes so the same logic works to extract regions
+127:    * regardless of the way the data are organized in the input file.
+128:    */
+129:   switch (readunit) {
+130:     case STRIP:
+131:          if (planar == PLANARCONFIG_CONTIG)
+132:            {
+133: 	   if (!(readContigStripsIntoBuffer(in, read_buff, length, width, spp)))
+134: 	     {
+135: 	     TIFFError("loadImage", "Unable to read contiguous strips into buffer");
+136: 	     return (-1);
+137:              }
+138:            }
+139:          else
+140:            {
+141: 	   if (!(readSeparateStripsIntoBuffer(in, read_buff, length, width, spp, dump)))
+142: 	     {
+143: 	     TIFFError("loadImage", "Unable to read separate strips into buffer");
+144: 	     return (-1);
+145:              }
+146:            }
+147:          break;
+148: 
+149:     case TILE:
+150:          if (planar == PLANARCONFIG_CONTIG)
+151:            {
+152: 	   if (!(readContigTilesIntoBuffer(in, read_buff, length, width, spp)))
+153: 	     {
+154: 	     TIFFError("loadImage", "Unable to read contiguous tiles into buffer");
+155: 	     return (-1);
+156:              }
+157:            }
+158:          else
+159:            {
+160: 	   if (!(readSeparateTilesIntoBuffer(in, read_buff, length, width, spp)))
+161: 	     {
+162: 	     TIFFError("loadImage", "Unable to read separate tiles into buffer");
+163: 	     return (-1);
+164:              }
+165:            }
+166:          break;
+167:     default: TIFFError("loadImage", "Unsupported image file format");
+168:           return (-1);
+169:           break;
+170:     }
+171:   if ((dump->infile != NULL) && (dump->level == 2))
+172:     {
+173:     dump_info  (dump->infile, dump->format, "loadImage", 
+174:                 "Image width %d, length %d, Raw image data, %4d bytes",
+175:                 width, length,  buffsize);
+176:     dump_info  (dump->infile, dump->format, "", 
+177:                 "Bits per sample %d, Samples per pixel %d", bps, spp);
+178: 
+179:     for (i = 0; i < length; i++)
+180:       dump_buffer(dump->infile, dump->format, 1, scanlinesize, 
+181:                   i, read_buff + (i * scanlinesize));
+182:     }
+183:   return (0);
+184:   }   /* end loadImage */
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

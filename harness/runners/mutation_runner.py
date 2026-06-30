@@ -166,7 +166,7 @@ class MutationRunner:
             f"[{worker_label}] cloning base snapshot into {workdir_path} "
             f"for mutant {mutant.mutant_id}"
         )
-        shutil.copytree(base_snapshot_path, workdir_path)
+        shutil.copytree(base_snapshot_path, workdir_path, symlinks=True, ignore_dangling_symlinks=True)
         log_duration(
             f"[{worker_label}] [mutant {mutant.mutant_id}] copy base snapshot",
             t,
@@ -390,7 +390,7 @@ class MutationRunner:
 
         log("[baseline] running shared baseline once for all mutants")
         baseline_start = time.time()
-        baseline = self.evaluator.baseline_evaluator.evaluate(subject, base_snapshot_dir)
+        baseline = self.evaluator.baseline_evaluator.evaluate(subject, base_snapshot_dir, eligible_tests=eligible_tests)
         log_duration("Shared baseline evaluation", baseline_start)
         try:
             pending_mutants = []

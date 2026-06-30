@@ -1,0 +1,304 @@
+PyInit_signal(void)
+{
+    PyObject *m, *d, *x;
+    int i;
+
+#ifdef WITH_THREAD
+    main_thread = PyThread_get_thread_ident();
+    main_pid = getpid();
+#endif
+
+    /* Create the module and add the functions */
+    m = PyModule_Create(&signalmodule);
+    if (m == NULL)
+        return NULL;
+
+    /* Add some symbolic constants to the module */
+    d = PyModule_GetDict(m);
+
+    x = DefaultHandler = PyLong_FromVoidPtr((void *)SIG_DFL);
+    if (!x || PyDict_SetItemString(d, "SIG_DFL", x) < 0)
+        goto finally;
+
+    x = IgnoreHandler = PyLong_FromVoidPtr((void *)SIG_IGN);
+    if (!x || PyDict_SetItemString(d, "SIG_IGN", x) < 0)
+        goto finally;
+
+    x = PyLong_FromLong((long)NSIG);
+    if (!x || PyDict_SetItemString(d, "NSIG", x) < 0)
+        goto finally;
+    Py_DECREF(x);
+
+#ifdef SIG_BLOCK
+    if (PyModule_AddIntMacro(m, SIG_BLOCK))
+         goto finally;
+#endif
+#ifdef SIG_UNBLOCK
+    if (PyModule_AddIntMacro(m, SIG_UNBLOCK))
+         goto finally;
+#endif
+#ifdef SIG_SETMASK
+    if (PyModule_AddIntMacro(m, SIG_SETMASK))
+         goto finally;
+#endif
+
+    x = IntHandler = PyDict_GetItemString(d, "default_int_handler");
+    if (!x)
+        goto finally;
+    Py_INCREF(IntHandler);
+
+    Handlers[0].tripped = 0;
+    for (i = 1; i < NSIG; i++) {
+        void (*t)(int);
+        /* t = PyOS_getsig(i); */
+        Handlers[i].tripped = 0;
+        if (t == SIG_DFL)
+            Handlers[i].func = DefaultHandler;
+        else if (t == SIG_IGN)
+            Handlers[i].func = IgnoreHandler;
+        else
+            Handlers[i].func = Py_None; /* None of our business */
+        Py_INCREF(Handlers[i].func);
+    }
+    if (Handlers[SIGINT].func == DefaultHandler) {
+        /* Install default int handler */
+        Py_INCREF(IntHandler);
+        Py_DECREF(Handlers[SIGINT].func);
+        Handlers[SIGINT].func = IntHandler;
+        old_siginthandler = PyOS_setsig(SIGINT, signal_handler);
+    }
+
+#ifdef SIGHUP
+    x = PyLong_FromLong(SIGHUP);
+    PyDict_SetItemString(d, "SIGHUP", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGINT
+    x = PyLong_FromLong(SIGINT);
+    PyDict_SetItemString(d, "SIGINT", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGBREAK
+    x = PyLong_FromLong(SIGBREAK);
+    PyDict_SetItemString(d, "SIGBREAK", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGQUIT
+    x = PyLong_FromLong(SIGQUIT);
+    PyDict_SetItemString(d, "SIGQUIT", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGILL
+    x = PyLong_FromLong(SIGILL);
+    PyDict_SetItemString(d, "SIGILL", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGTRAP
+    x = PyLong_FromLong(SIGTRAP);
+    PyDict_SetItemString(d, "SIGTRAP", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGIOT
+    x = PyLong_FromLong(SIGIOT);
+    PyDict_SetItemString(d, "SIGIOT", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGABRT
+    x = PyLong_FromLong(SIGABRT);
+    PyDict_SetItemString(d, "SIGABRT", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGEMT
+    x = PyLong_FromLong(SIGEMT);
+    PyDict_SetItemString(d, "SIGEMT", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGFPE
+    x = PyLong_FromLong(SIGFPE);
+    PyDict_SetItemString(d, "SIGFPE", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGKILL
+    x = PyLong_FromLong(SIGKILL);
+    PyDict_SetItemString(d, "SIGKILL", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGBUS
+    x = PyLong_FromLong(SIGBUS);
+    PyDict_SetItemString(d, "SIGBUS", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGSEGV
+    x = PyLong_FromLong(SIGSEGV);
+    PyDict_SetItemString(d, "SIGSEGV", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGSYS
+    x = PyLong_FromLong(SIGSYS);
+    PyDict_SetItemString(d, "SIGSYS", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGPIPE
+    x = PyLong_FromLong(SIGPIPE);
+    PyDict_SetItemString(d, "SIGPIPE", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGALRM
+    x = PyLong_FromLong(SIGALRM);
+    PyDict_SetItemString(d, "SIGALRM", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGTERM
+    x = PyLong_FromLong(SIGTERM);
+    PyDict_SetItemString(d, "SIGTERM", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGUSR1
+    x = PyLong_FromLong(SIGUSR1);
+    PyDict_SetItemString(d, "SIGUSR1", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGUSR2
+    x = PyLong_FromLong(SIGUSR2);
+    PyDict_SetItemString(d, "SIGUSR2", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGCLD
+    x = PyLong_FromLong(SIGCLD);
+    PyDict_SetItemString(d, "SIGCLD", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGCHLD
+    x = PyLong_FromLong(SIGCHLD);
+    PyDict_SetItemString(d, "SIGCHLD", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGPWR
+    x = PyLong_FromLong(SIGPWR);
+    PyDict_SetItemString(d, "SIGPWR", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGIO
+    x = PyLong_FromLong(SIGIO);
+    PyDict_SetItemString(d, "SIGIO", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGURG
+    x = PyLong_FromLong(SIGURG);
+    PyDict_SetItemString(d, "SIGURG", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGWINCH
+    x = PyLong_FromLong(SIGWINCH);
+    PyDict_SetItemString(d, "SIGWINCH", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGPOLL
+    x = PyLong_FromLong(SIGPOLL);
+    PyDict_SetItemString(d, "SIGPOLL", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGSTOP
+    x = PyLong_FromLong(SIGSTOP);
+    PyDict_SetItemString(d, "SIGSTOP", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGTSTP
+    x = PyLong_FromLong(SIGTSTP);
+    PyDict_SetItemString(d, "SIGTSTP", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGCONT
+    x = PyLong_FromLong(SIGCONT);
+    PyDict_SetItemString(d, "SIGCONT", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGTTIN
+    x = PyLong_FromLong(SIGTTIN);
+    PyDict_SetItemString(d, "SIGTTIN", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGTTOU
+    x = PyLong_FromLong(SIGTTOU);
+    PyDict_SetItemString(d, "SIGTTOU", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGVTALRM
+    x = PyLong_FromLong(SIGVTALRM);
+    PyDict_SetItemString(d, "SIGVTALRM", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGPROF
+    x = PyLong_FromLong(SIGPROF);
+    PyDict_SetItemString(d, "SIGPROF", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGXCPU
+    x = PyLong_FromLong(SIGXCPU);
+    PyDict_SetItemString(d, "SIGXCPU", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGXFSZ
+    x = PyLong_FromLong(SIGXFSZ);
+    PyDict_SetItemString(d, "SIGXFSZ", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGRTMIN
+    x = PyLong_FromLong(SIGRTMIN);
+    PyDict_SetItemString(d, "SIGRTMIN", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGRTMAX
+    x = PyLong_FromLong(SIGRTMAX);
+    PyDict_SetItemString(d, "SIGRTMAX", x);
+    Py_XDECREF(x);
+#endif
+#ifdef SIGINFO
+    x = PyLong_FromLong(SIGINFO);
+    PyDict_SetItemString(d, "SIGINFO", x);
+    Py_XDECREF(x);
+#endif
+
+#ifdef ITIMER_REAL
+    x = PyLong_FromLong(ITIMER_REAL);
+    PyDict_SetItemString(d, "ITIMER_REAL", x);
+    Py_DECREF(x);
+#endif
+#ifdef ITIMER_VIRTUAL
+    x = PyLong_FromLong(ITIMER_VIRTUAL);
+    PyDict_SetItemString(d, "ITIMER_VIRTUAL", x);
+    Py_DECREF(x);
+#endif
+#ifdef ITIMER_PROF
+    x = PyLong_FromLong(ITIMER_PROF);
+    PyDict_SetItemString(d, "ITIMER_PROF", x);
+    Py_DECREF(x);
+#endif
+
+#if defined (HAVE_SETITIMER) || defined (HAVE_GETITIMER)
+    ItimerError = PyErr_NewException("signal.ItimerError",
+     PyExc_IOError, NULL);
+    if (ItimerError != NULL)
+    PyDict_SetItemString(d, "ItimerError", ItimerError);
+#endif
+
+#ifdef CTRL_C_EVENT
+    x = PyLong_FromLong(CTRL_C_EVENT);
+    PyDict_SetItemString(d, "CTRL_C_EVENT", x);
+    Py_DECREF(x);
+#endif
+
+#ifdef CTRL_BREAK_EVENT
+    x = PyLong_FromLong(CTRL_BREAK_EVENT);
+    PyDict_SetItemString(d, "CTRL_BREAK_EVENT", x);
+    Py_DECREF(x);
+#endif
+
+    if (PyErr_Occurred()) {
+        Py_DECREF(m);
+        m = NULL;
+    }
+
+  finally:
+    return m;
+}

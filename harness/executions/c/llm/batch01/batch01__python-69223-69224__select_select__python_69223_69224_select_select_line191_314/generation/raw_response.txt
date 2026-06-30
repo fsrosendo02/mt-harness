@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the property of correctly handling timeout periods, as it sets tvp to &tv even when tout is Py_None.",
+      "line": 52,
+      "precode": "tvp = &tv;",
+      "aftercode": "tvp = NULL;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the property of ensuring that all allocated memory is freed if an error occurs during conversion of sequences to fd_sets.",
+      "line": 65,
+      "precode": "return PyErr_NoMemory();",
+      "aftercode": "PyMem_DEL(rfd2obj); PyMem_DEL(wfd2obj); PyMem_DEL(efd2obj); return NULL;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the property of correctly handling file descriptor sets, as it uses imax instead of max in the select() call.",
+      "line": 84,
+      "precode": "n = select(max, &ifdset, &ofdset, &efdset, tvp);",
+      "aftercode": "n = select(imax, &ifdset, &ofdset, &efdset, tvp);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the property of correctly initializing all file descriptor sets to zero before calling seq2set().",
+      "line": 71,
+      "precode": "rfd2obj[0].sentinel = -1;",
+      "aftercode": "// rfd2obj[0].sentinel = -1;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the property of correctly allocating memory for the file descriptor lists, as it does not check if malloc() fails.",
+      "line": 57,
+      "precode": "rfd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);",
+      "aftercode": "rfd2obj = malloc(sizeof(pylist) * (FD_SETSIZE + 1));"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the property of correctly handling the result of select(), as it does not check if n is SOCKET_ERROR on MS_WINDOWS.",
+      "line": 88,
+      "precode": "PyErr_SetExcFromWindowsErr(SelectError, WSAGetLastError());",
+      "aftercode": "// PyErr_SetExcFromWindowsErr(SelectError, WSAGetLastError());"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the property of correctly setting up the return value in case of an error during set2list() calls.",
+      "line": 105,
+      "precode": "ret = NULL;",
+      "aftercode": "ret = PyTuple_Pack(3, NULL, NULL, NULL);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the property of correctly handling fd_sets by not clearing them before each select() call.",
+      "line": 84,
+      "precode": "Py_BEGIN_ALLOW_THREADS\nn = select(max, &ifdset, &ofdset, &efdset, tvp);\nPy_END_ALLOW_THREADS",
+      "aftercode": "Py_BEGIN_ALLOW_THREADS\nFD_ZERO(&ifdset); FD_ZERO(&ofdset); FD_ZERO(&efdset);\nn = select(max, &ifdset, &ofdset, &efdset, tvp);\nPy_END_ALLOW_THREADS"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changing the return value to a non-zero value when TIFFWriteDirectorySec is called in read-only mode should not violate its intended behavior of returning zero.",
+      "line": 11,
+      "precode": "return (1);",
+      "aftercode": "return (0);"
+    },
+    {
+      "id": 2,
+      "reasoning": "If the TIFFWriteDirectorySec function fails to write a directory tag, it should return zero. Changing this behavior could affect how error handling is performed elsewhere in the application.",
+      "line": 67,
+      "precode": "goto bad;",
+      "aftercode": "return (1);"
+    },
+    {
+      "id": 3,
+      "reasoning": "The original code does not explicitly handle cases where memory allocation fails. Returning zero indicates a failure, while returning one could lead to undefined behavior.",
+      "line": 398,
+      "precode": "tif->tif_dataoff = tif->tif_diroff + dirsize;",
+      "aftercode": "tif->tif_dataoff = tif->tif_diroff - dirsize;"
+    },
+    {
+      "id": 4,
+      "reasoning": "The original code checks if the TIFF file size exceeds the maximum allowed value and returns an error. Returning zero could mask this issue, leading to potential data loss or corruption.",
+      "line": 420,
+      "precode": "tif->tif_dataoff = (uint64)tif->tif_dataoff;",
+      "aftercode": "tif->tif_dataoff = (uint64)tif->tif_dataoff + 1;"
+    },
+    {
+      "id": 5,
+      "reasoning": "The original code ensures that the TIFF file size is always even. Returning zero could break this alignment, leading to compatibility issues with other TIFF viewers or editors.",
+      "line": 425,
+      "precode": "tif->tif_dataoff++",
+      "aftercode": "tif->tif_dataoff--"
+    },
+    {
+      "id": 6,
+      "reasoning": "The original code resets the TIFF directory-related state after processing an image. Returning zero instead could lead to incorrect directory processing in subsequent images.",
+      "line": 436,
+      "precode": "tif->tif_flags &= ~TIFF_DIRTYDIRECT;",
+      "aftercode": "tif->tif_flags |= TIFF_DIRTYDIRECT;"
+    },
+    {
+      "id": 7,
+      "reasoning": "The original code checks for an error condition when writing the directory and returns zero. Returning one could mask this issue, leading to potential data loss or corruption.",
+      "line": 522,
+      "precode": "goto bad;",
+      "aftercode": "return (1);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The original code swabs the directory entry tags and values based on the TIFF_SWAB flag. Returning zero could lead to incorrect directory data in non-swabbed systems.",
+      "line": 460,
+      "precode": "if (tif->tif_flags & TIFF_SWAB)",
+      "aftercode": "if (!(tif->tif_flags & TIFF_SWAB))"
+    }
+  ]
+}

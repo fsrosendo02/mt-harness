@@ -92,13 +92,23 @@ def extract_execution_metrics(summary: dict):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-id", required=True, help="Batch id, e.g. batch01")
+    parser.add_argument("--runs-subdir", default=None, help="Runs subdir, e.g. c/llm")
     args = parser.parse_args()
 
     batch_id = args.batch_id
-    batch_manifest_path = llm_batch_manifest_path(batch_id)
+    runs_subdir = args.runs_subdir or None
+    batch_manifest_path = llm_batch_manifest_path(batch_id, runs_subdir)
     if not batch_manifest_path.exists():
         legacy_path = BATCHES_DIR / f"{batch_id}.json"
         batch_manifest_path = legacy_path if legacy_path.exists() else batch_manifest_path
+
+    if not batch_manifest_path.exists():
+        discovered = [
+            p for p in discover_batch_manifest_paths()
+            if p.parent.name == batch_id or p.parent.name == batch_id.replace("-", "_")
+        ]
+        if discovered:
+            batch_manifest_path = discovered[0]
 
     if not batch_manifest_path.exists():
         raise FileNotFoundError(f"Batch manifest not found: {batch_manifest_path}")
@@ -106,7 +116,7 @@ def main():
     batch_manifest = load_json(batch_manifest_path)
     batch_runs = batch_manifest.get("runs", [])
 
-    out_dir = llm_batch_summary_dir(batch_id)
+    out_dir = llm_batch_summary_dir(batch_id, runs_subdir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     overall = {

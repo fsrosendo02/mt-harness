@@ -1,0 +1,215 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: int main (int argc, char **argv)
+  2: {
+  3:     int file_count;     /* number of files to process */
+  4:     size_t proglen;     /* length of program_name */
+  5:     int optc;           /* current option */
+  6: 
+  7:     EXPAND(argc, argv); /* wild card expansion if necessary */
+  8: 
+  9:     program_name = gzip_base_name (argv[0]);
+ 10:     proglen = strlen (program_name);
+ 11: 
+ 12:     atexit (close_stdin);
+ 13: 
+ 14:     /* Suppress .exe for MSDOS, OS/2 and VMS: */
+ 15:     if (4 < proglen && strequ (program_name + proglen - 4, ".exe"))
+ 16:       program_name[proglen - 4] = '\0';
+ 17: 
+ 18:     /* Add options in GZIP environment variable if there is one */
+ 19:     env = add_envopt(&argc, &argv, OPTIONS_VAR);
+ 20:     if (env != NULL) args = argv;
+ 21: 
+ 22: #ifndef GNU_STANDARD
+ 23: # define GNU_STANDARD 1
+ 24: #endif
+ 25: #if !GNU_STANDARD
+ 26:     /* For compatibility with old compress, use program name as an option.
+ 27:      * Unless you compile with -DGNU_STANDARD=0, this program will behave as
+ 28:      * gzip even if it is invoked under the name gunzip or zcat.
+ 29:      *
+ 30:      * Systems which do not support links can still use -d or -dc.
+ 31:      * Ignore an .exe extension for MSDOS, OS/2 and VMS.
+ 32:      */
+ 33:     if (strncmp (program_name, "un",  2) == 0     /* ungzip, uncompress */
+ 34:         || strncmp (program_name, "gun", 3) == 0) /* gunzip */
+ 35:         decompress = 1;
+ 36:     else if (strequ (program_name + 1, "cat")     /* zcat, pcat, gcat */
+ 37:              || strequ (program_name, "gzcat"))   /* gzcat */
+ 38:         decompress = to_stdout = 1;
+ 39: #endif
+ 40: 
+ 41:     z_suffix = Z_SUFFIX;
+ 42:     z_len = strlen(z_suffix);
+ 43: 
+ 44:     while ((optc = getopt_long (argc, argv, "ab:cdfhH?lLmMnNqrS:tvVZ123456789",
+ 45:                                 longopts, (int *)0)) != -1) {
+ 46:         switch (optc) {
+ 47:         case 'a':
+ 48:             ascii = 1; break;
+ 49:         case 'b':
+ 50:             maxbits = atoi(optarg);
+ 51:             for (; *optarg; optarg++)
+ 52:               if (! ('0' <= *optarg && *optarg <= '9'))
+ 53:                 {
+ 54:                   fprintf (stderr, "%s: -b operand is not an integer\n",
+ 55:                            program_name);
+ 56:                   try_help ();
+ 57:                 }
+ 58:             break;
+ 59:         case 'c':
+ 60:             to_stdout = 1; break;
+ 61:         case 'd':
+ 62:             decompress = 1; break;
+ 63:         case 'f':
+ 64:             force++; break;
+ 65:         case 'h': case 'H':
+ 66:             help(); do_exit(OK); break;
+ 67:         case 'l':
+ 68:             list = decompress = to_stdout = 1; break;
+ 69:         case 'L':
+ 70:             license(); do_exit(OK); break;
+ 71:         case 'm': /* undocumented, may change later */
+ 72:             no_time = 1; break;
+ 73:         case 'M': /* undocumented, may change later */
+ 74:             no_time = 0; break;
+ 75:         case 'n':
+ 76:             no_name = no_time = 1; break;
+ 77:         case 'N':
+ 78:             no_name = no_time = 0; break;
+ 79:         case PRESUME_INPUT_TTY_OPTION:
+ 80:             presume_input_tty = true; break;
+ 81:         case 'q':
+ 82:             quiet = 1; verbose = 0; break;
+ 83:         case 'r':
+ 84: #if NO_DIR
+ 85:             fprintf (stderr, "%s: -r not supported on this system\n",
+ 86:                      program_name);
+ 87:             try_help ();
+ 88: #else
+ 89:             recursive = 1;
+ 90: #endif
+ 91:             break;
+ 92:         case 'S':
+ 93: #ifdef NO_MULTIPLE_DOTS
+ 94:             if (*optarg == '.') optarg++;
+ 95: #endif
+ 96:             z_len = strlen(optarg);
+ 97:             z_suffix = optarg;
+ 98:             break;
+ 99:         case 't':
+100:             test = decompress = to_stdout = 1;
+101:             break;
+102:         case 'v':
+103:             verbose++; quiet = 0; break;
+104:         case 'V':
+105:             version(); do_exit(OK); break;
+106:         case 'Z':
+107: #ifdef LZW
+108:             do_lzw = 1; break;
+109: #else
+110:             fprintf(stderr, "%s: -Z not supported in this version\n",
+111:                     program_name);
+112:             try_help ();
+113:             break;
+114: #endif
+115:         case '1':  case '2':  case '3':  case '4':
+116:         case '5':  case '6':  case '7':  case '8':  case '9':
+117:             level = optc - '0';
+118:             break;
+119:         default:
+120:             /* Error message already emitted by getopt_long. */
+121:             try_help ();
+122:         }
+123:     } /* loop on all arguments */
+124: 
+125:     /* By default, save name and timestamp on compression but do not
+126:      * restore them on decompression.
+127:      */
+128:     if (no_time < 0) no_time = decompress;
+129:     if (no_name < 0) no_name = decompress;
+130: 
+131:     file_count = argc - optind;
+132: 
+133: #if O_BINARY
+134: #else
+135:     if (ascii && !quiet) {
+136:         fprintf(stderr, "%s: option --ascii ignored on this system\n",
+137:                 program_name);
+138:     }
+139: #endif
+140:     if ((z_len == 0 && !decompress) || z_len > MAX_SUFFIX) {
+141:         fprintf(stderr, "%s: incorrect suffix '%s'\n",
+142:                 program_name, z_suffix);
+143:         do_exit(ERROR);
+144:     }
+145:     if (do_lzw && !decompress) work = lzw;
+146: 
+147:     /* Allocate all global buffers (for DYN_ALLOC option) */
+148:     ALLOC(uch, inbuf,  INBUFSIZ +INBUF_EXTRA);
+149:     ALLOC(uch, outbuf, OUTBUFSIZ+OUTBUF_EXTRA);
+150:     ALLOC(ush, d_buf,  DIST_BUFSIZE);
+151:     ALLOC(uch, window, 2L*WSIZE);
+152: #ifndef MAXSEG_64K
+153:     ALLOC(ush, tab_prefix, 1L<<BITS);
+154: #else
+155:     ALLOC(ush, tab_prefix0, 1L<<(BITS-1));
+156:     ALLOC(ush, tab_prefix1, 1L<<(BITS-1));
+157: #endif
+158: 
+159:     exiting_signal = quiet ? SIGPIPE : 0;
+160:     install_signal_handlers ();
+161: 
+162:     /* And get to work */
+163:     if (file_count != 0) {
+164:         if (to_stdout && !test && !list && (!decompress || !ascii)) {
+165:             SET_BINARY_MODE(fileno(stdout));
+166:         }
+167:         while (optind < argc) {
+168:             treat_file(argv[optind++]);
+169:         }
+170:     } else {  /* Standard input */
+171:         treat_stdin();
+172:     }
+173:     if (list && !quiet && file_count > 1) {
+174:         do_list(-1, -1); /* print totals */
+175:     }
+176:     do_exit(exit_code);
+177:     return exit_code; /* just to avoid lint warning */
+178: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

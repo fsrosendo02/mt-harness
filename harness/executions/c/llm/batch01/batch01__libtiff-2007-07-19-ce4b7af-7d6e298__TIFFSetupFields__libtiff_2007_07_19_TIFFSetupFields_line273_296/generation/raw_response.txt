@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Mutation to not check if TIFF fields are set before attempting to free them, potentially causing a segmentation fault.",
+      "line": 5,
+      "precode": "for (i = 0; i < tif->tif_nfields; i++) {",
+      "aftercode": "for (i = 0; i <= tif->tif_nfields; i++) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Mutation to use a different condition for custom field check, potentially missing free operations.",
+      "line": 9,
+      "precode": "fld->field_bit == FIELD_CUSTOM && strncmp(\"Tag \", fld->field_name, 4) == 0",
+      "aftercode": "fld->field_bit != FIELD_CUSTOM || strncmp(\"Tag \", fld->field_name, 4) != 0"
+    },
+    {
+      "id": 3,
+      "reasoning": "Mutation to free TIFF fields without resetting the pointer to NULL, leading to potential double-free error.",
+      "line": 16,
+      "precode": "_TIFFfree(tif->tif_fields);",
+      "aftercode": "// _TIFFfree(tif->tif_fields);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Mutation to set tif_nfields to a negative value, which is not allowed by the TIFF library and could lead to undefined behavior.",
+      "line": 18,
+      "precode": "tif->tif_nfields = 0;",
+      "aftercode": "tif->tif_nfields = -1;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Mutation to skip merging fields, which would leave tif_fields uninitialized.",
+      "line": 20,
+      "precode": "_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count)",
+      "aftercode": "return;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Mutation to increment the loop counter incorrectly, potentially causing an infinite loop or skipping some fields.",
+      "line": 7,
+      "precode": "uint32 i;",
+      "aftercode": "uint16 i;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Mutation to compare field name with a hardcoded 'Tag ' string instead of using strncmp, which may lead to incorrect matches.",
+      "line": 9,
+      "precode": "strncmp(\"Tag \", fld->field_name, 4) == 0",
+      "aftercode": "\"Tag \" == fld->field_name"
+    },
+    {
+      "id": 8,
+      "reasoning": "Mutation to call _TIFFMergeFields without checking the return value, which could lead to an error state being ignored.",
+      "line": 20,
+      "precode": "_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count)",
+      "aftercode": "_TIFFMergeFields(tif, NULL, 0);"
+    }
+  ]
+}

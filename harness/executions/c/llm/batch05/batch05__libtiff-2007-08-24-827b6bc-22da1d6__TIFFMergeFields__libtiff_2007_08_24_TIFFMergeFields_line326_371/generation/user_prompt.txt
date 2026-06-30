@@ -1,0 +1,83 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: _TIFFMergeFields(TIFF* tif, const TIFFField info[], uint32 n)
+ 2: {
+ 3: 	const char module[] = "_TIFFMergeFields";
+ 4: 	const char reason[] = "for fields array";
+ 5: 	TIFFField** tp;
+ 6: 	uint32 i;
+ 7: 
+ 8: 	for (i = 0; i < n; i++) {
+ 9: 		const TIFFField *fip =
+10: 			TIFFFindField(tif, info[i].field_tag, TIFF_ANY);
+11: 		if (fip) {
+12: 			TIFFErrorExt(tif->tif_clientdata, module,
+13: 			"Field with tag %lu is already registered as \"%s\"",
+14: 				     (unsigned int) info[i].field_tag,
+15: 				     fip->field_name);
+16: 			return 0;
+17: 		}
+18: 	}
+19: 
+20:         tif->tif_foundfield = NULL;
+21: 
+22: 	if (tif->tif_fields && tif->tif_nfields > 0) {
+23: 		tif->tif_fields = (TIFFField**)
+24: 			_TIFFCheckRealloc(tif, tif->tif_fields,
+25: 					  (tif->tif_nfields + n),
+26: 					  sizeof(TIFFField *), reason);
+27: 	} else {
+28: 		tif->tif_fields = (TIFFField **)
+29: 			_TIFFCheckMalloc(tif, n, sizeof(TIFFField *),
+30: 					 reason);
+31: 	}
+32: 	if (!tif->tif_fields) {
+33: 		TIFFErrorExt(tif->tif_clientdata, module,
+34: 			     "Failed to allocate fields array");
+35: 		return 0;
+36: 	}
+37: 	tp = tif->tif_fields + tif->tif_nfields;
+38: 	for (i = 0; i < n; i++)
+39: 		*tp++ = (TIFFField *) (info + i);	/* XXX */
+40: 
+41:         /* Sort the field info by tag number */
+42: 	qsort(tif->tif_fields, tif->tif_nfields += n,
+43: 	      sizeof(TIFFField *), tagCompare);
+44: 
+45: 	return n;
+46: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

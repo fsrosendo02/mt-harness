@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "This mutant changes the condition of the if statement that checks for the presence of a CGI handler. It now incorrectly assumes that the CGI handler is always present, even when it isn't.",
+      "line": 14,
+      "precode": "if (cgi_handler && cgi_handler->used > 1) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "This mutant removes the check for an empty buffer in the SERVER_NAME environment variable. It assumes that the server name is always set, which might not be true.",
+      "line": 75,
+      "precode": "if (!buffer_is_empty(con->server_name)) {",
+      "aftercode": ""
+    },
+    {
+      "id": 3,
+      "reasoning": "This mutant alters the loop that adds CGI environment variables. It incorrectly sets all environment variables to an empty string, rather than using their actual values.",
+      "line": 218,
+      "precode": "cgi_env_add(&env, CONST_BUF_LEN(p->tmp_buf), CONST_BUF_LEN(ds->value));",
+      "aftercode": "cgi_env_add(&env, CONST_BUF_LEN(p->tmp_buf), CONST_STR_LEN(\"\");"
+    },
+    {
+      "id": 4,
+      "reasoning": "This mutant incorrectly assumes that the execve system call will always succeed. It does not check the return value of execve and continues execution, which may lead to undefined behavior.",
+      "line": 278,
+      "precode": "execve(args[0], args, env.ptr);",
+      "aftercode": "if (execve(args[0], args, env.ptr) != 0) { SEGFAULT(\"execve(%s) failed: %s\", args[0], strerror(errno)); }"
+    },
+    {
+      "id": 5,
+      "reasoning": "This mutant modifies the logic that sets up arguments for the execve call. It incorrectly sets the first argument to the CGI handler's path, which may not be correct if the script filename is different.",
+      "line": 256,
+      "precode": "args[i++] = cgi_handler->ptr;",
+      "aftercode": "args[i++] = con->physical.path->ptr;"
+    },
+    {
+      "id": 6,
+      "reasoning": "This mutant incorrectly assumes that the content length of the request is always less than SSIZE_MAX. It attempts to convert this value directly into a string without bounds checking.",
+      "line": 165,
+      "precode": "ltostr(buf, con->request.content_length);",
+      "aftercode": "size_t content_len = con->request.content_length; if (content_len < SSIZE_MAX) { ltostr(buf, content_len); }"
+    },
+    {
+      "id": 7,
+      "reasoning": "This mutant incorrectly sets the remote port environment variable to a constant value of 80. It does not use the actual remote port of the connection.",
+      "line": 144,
+      "precode": "ltostr(buf, con->dst_addr.ipv4.sin_port);",
+      "aftercode": "ltostr(buf, 80);"
+    },
+    {
+      "id": 8,
+      "reasoning": "This mutant incorrectly assumes that the CGI script's directory is always the current working directory. It fails to change the directory before executing the CGI script.",
+      "line": 266,
+      "precode": "if (-1 == chdir(con->physical.path->ptr)) {",
+      "aftercode": ""
+    }
+  ]
+}

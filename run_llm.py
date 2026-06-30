@@ -447,6 +447,14 @@ def build_extra_metadata(
             "ambiguous_precode_match",
             0,
         ),
+        rej_missing_or_invalid_aftercode=rejection_reason_counts.get(
+            "missing_or_invalid_aftercode",
+            0,
+        ),
+        rej_missing_or_invalid_precode=rejection_reason_counts.get(
+            "missing_or_invalid_precode",
+            0,
+        ),
         rej_invalid_json_response=rejection_reason_counts.get(
             "invalid_json_response",
             0,
@@ -536,8 +544,17 @@ def maybe_rebuild_index(cfg: dict) -> None:
     if cfg.get("rebuild_index", True):
         t = time.time()
         from harness.reporting.experiment_index import build_experiment_index
+        from harness.storage.layout import runs_root
 
-        build_experiment_index()
+        runs_subdir = cfg.get("runs_subdir", "").strip("/")
+        if runs_subdir:
+            subdir_root = runs_root() / runs_subdir
+            build_experiment_index(
+                runs_dir=subdir_root,
+                output_csv=subdir_root / "experiment_index.csv",
+            )
+        else:
+            build_experiment_index()
         log_duration("Rebuild experiment index", t)
 
 
@@ -706,7 +723,7 @@ def main():
 
             if parse_failed:
                 rejection_reason_counts["invalid_json_response"] = (
-                    rejection_reason_counts.get("invalid_json_response", 0) + 1
+                    rejection_reason_counts.get("invalid_json_response", 0) + n_rejected_mutants
                 )
             if missing_mutants_list:
                 rejection_reason_counts["missing_mutants_list"] = (

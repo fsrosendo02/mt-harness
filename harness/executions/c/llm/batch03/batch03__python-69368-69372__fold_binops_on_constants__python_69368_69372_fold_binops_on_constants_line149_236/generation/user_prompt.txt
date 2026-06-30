@@ -1,0 +1,125 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: fold_binops_on_constants(unsigned char *codestr, PyObject *consts, PyObject **objs)
+ 2: {
+ 3:     PyObject *newconst, *v, *w;
+ 4:     Py_ssize_t len_consts, size;
+ 5:     int opcode;
+ 6: 
+ 7:     /* Pre-conditions */
+ 8:     assert(PyList_CheckExact(consts));
+ 9: 
+10:     /* Create new constant */
+11:     v = objs[0];
+12:     w = objs[1];
+13:     opcode = codestr[0];
+14:     switch (opcode) {
+15:         case BINARY_POWER:
+16:             newconst = PyNumber_Power(v, w, Py_None);
+17:             break;
+18:         case BINARY_MULTIPLY:
+19:             newconst = PyNumber_Multiply(v, w);
+20:             break;
+21:         case BINARY_TRUE_DIVIDE:
+22:             newconst = PyNumber_TrueDivide(v, w);
+23:             break;
+24:         case BINARY_FLOOR_DIVIDE:
+25:             newconst = PyNumber_FloorDivide(v, w);
+26:             break;
+27:         case BINARY_MODULO:
+28:             newconst = PyNumber_Remainder(v, w);
+29:             break;
+30:         case BINARY_ADD:
+31:             newconst = PyNumber_Add(v, w);
+32:             break;
+33:         case BINARY_SUBTRACT:
+34:             newconst = PyNumber_Subtract(v, w);
+35:             break;
+36:         case BINARY_SUBSCR:
+37:             newconst = PyObject_GetItem(v, w);
+38:             break;
+39:         case BINARY_LSHIFT:
+40:             newconst = PyNumber_Lshift(v, w);
+41:             break;
+42:         case BINARY_RSHIFT:
+43:             newconst = PyNumber_Rshift(v, w);
+44:             break;
+45:         case BINARY_AND:
+46:             newconst = PyNumber_And(v, w);
+47:             break;
+48:         case BINARY_XOR:
+49:             newconst = PyNumber_Xor(v, w);
+50:             break;
+51:         case BINARY_OR:
+52:             newconst = PyNumber_Or(v, w);
+53:             break;
+54:         default:
+55:             /* Called with an unknown opcode */
+56:             PyErr_Format(PyExc_SystemError,
+57:                  "unexpected binary operation %d on a constant",
+58:                      opcode);
+59:             return 0;
+60:     }
+61:     if (newconst == NULL) {
+62:         if(!PyErr_ExceptionMatches(PyExc_KeyboardInterrupt))
+63:             PyErr_Clear();
+64:         return 0;
+65:     }
+66:     size = PyObject_Size(newconst);
+67:     if (size == -1) {
+68:         if (PyErr_ExceptionMatches(PyExc_KeyboardInterrupt))
+69:             return 0;
+70:         PyErr_Clear();
+71:     } else if (size > 20) {
+72:         Py_DECREF(newconst);
+73:         return 0;
+74:     }
+75: 
+76:     /* Append folded constant into consts table */
+77:     len_consts = PyList_GET_SIZE(consts);
+78:     if (PyList_Append(consts, newconst)) {
+79:         Py_DECREF(newconst);
+80:         return 0;
+81:     }
+82:     Py_DECREF(newconst);
+83: 
+84:     /* Write NOP NOP NOP NOP LOAD_CONST newconst */
+85:     codestr[-2] = LOAD_CONST;
+86:     SETARG(codestr, -2, len_consts);
+87:     return 1;
+88: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

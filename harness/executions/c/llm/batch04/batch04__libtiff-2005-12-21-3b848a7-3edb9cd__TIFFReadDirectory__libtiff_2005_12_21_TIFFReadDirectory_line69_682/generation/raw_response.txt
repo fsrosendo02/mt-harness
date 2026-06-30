@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function does not handle the case where tif->tif_diroff is NULL.",
+      "line": 20,
+      "precode": "if (tif->tif_diroff == 0)",
+      "aftercode": "if (tif->tif_diroff != NULL)"
+    },
+    {
+      "id": 2,
+      "reasoning": "The function does not check if the dircount is within bounds before accessing it.",
+      "line": 65,
+      "precode": "dir = (TIFFDirEntry *)_TIFFCheckMalloc(tif, dircount, sizeof (TIFFDirEntry), \"to read TIFF directory\")",
+      "aftercode": "dir = (TIFFDirEntry *)_TIFFCheckMalloc(tif, dircount > 0 ? dircount : 1, sizeof (TIFFDirEntry), \"to read TIFF directory\")"
+    },
+    {
+      "id": 3,
+      "reasoning": "The function assumes that tif->tif_flags & TIFF_SWAB is always true.",
+      "line": 111,
+      "precode": "if (tif->tif_flags & TIFF_SWAB)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 4,
+      "reasoning": "The function does not handle the case where dp->tdir_count is greater than 1 in the case of TIFFTAG_COMPRESSION.",
+      "line": 254,
+      "precode": "if (dp->tdir_count == 1)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 5,
+      "reasoning": "The function does not check if the dircount is within bounds before accessing it in the case of TIFFTAG_BITSPERSAMPLE.",
+      "line": 365,
+      "precode": "if (!TIFFFetchPerSampleLongs(tif, dp, &v) || !TIFFSetField(tif, dp->tdir_tag, (uint16)v))",
+      "aftercode": "if (dircount > 1 && !TIFFFetchPerSampleLongs(tif, dp, &v) || !TIFFSetField(tif, dp->tdir_tag, (uint16)v))"
+    },
+    {
+      "id": 6,
+      "reasoning": "The function does not handle the case where tif->tif_size is less than 0 in the case of reading dircount.",
+      "line": 85,
+      "precode": "if (off + sizeof (uint16) > tif->tif_size)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 7,
+      "reasoning": "The function does not handle the case where dircount is greater than tif->tif_dirnumber.",
+      "line": 90,
+      "precode": "_TIFFmemcpy(&dircount, tif->tif_base + off, sizeof (uint16));",
+      "aftercode": "_TIFFmemcpy(&dircount, tif->tif_base + off, dircount > tif->tif_dirnumber ? sizeof (uint16) : 0);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The function assumes that EstimateStripByteCounts always returns a non-negative value.",
+      "line": 487,
+      "precode": "if(EstimateStripByteCounts(tif, dir, dircount) < 0)",
+      "aftercode": "if(EstimateStripByteCounts(tif, dir, dircount) >= 0)"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition for bits per sample (bps) and samples per pixel (spp). Ensures that bps or spp is not zero.",
+      "line": 78,
+      "precode": "buffsize = tlsize * ntiles;",
+      "aftercode": "buffsize = (tlsize == 0 || ntiles == 0) ? 1 : tlsize * ntiles;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the boundary condition for orientation. Ensures that orientation is within a valid range.",
+      "line": 67,
+      "precode": "if ((bps == 0) || (spp == 0))",
+      "aftercode": "if ((bps == 0) || (spp == 0) || (orientation < 1 || orientation > 8))"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the boundary condition for scanline size. Ensures that scanlinesize is not zero.",
+      "line": 92,
+      "precode": "buffsize = stsize * nstrips;",
+      "aftercode": "buffsize = (stsize == 0 || nstrips == 0) ? 1 : stsize * nstrips;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the computational property of buffer allocation. Ensures that the buffer is always allocated, even if previous allocation was successful.",
+      "line": 105,
+      "precode": "new_buff = _TIFFrealloc(read_buff, buffsize);",
+      "aftercode": "new_buff = read_buff;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the computational property of buffer reallocation. Ensures that the previous buffer is not freed if reallocation fails.",
+      "line": 109,
+      "precode": "free (read_buff);",
+      "aftercode": "if (new_buff == NULL) free(read_buff);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the computational property of reading data. Ensures that data is not read if buffer allocation fails.",
+      "line": 130,
+      "precode": "case STRIP:",
+      "aftercode": "case STRIP: if (read_buff == NULL) return (-1);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the computational property of reading data. Ensures that data is not read if buffer allocation fails.",
+      "line": 149,
+      "precode": "case TILE:",
+      "aftercode": "case TILE: if (read_buff == NULL) return (-1);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the boundary condition for orientation. Ensures that orientation is within a valid range.",
+      "line": 63,
+      "precode": "image->adjustments = 0;",
+      "aftercode": "if (orientation < 1 || orientation > 8) image->adjustments = 0;"
+    }
+  ]
+}

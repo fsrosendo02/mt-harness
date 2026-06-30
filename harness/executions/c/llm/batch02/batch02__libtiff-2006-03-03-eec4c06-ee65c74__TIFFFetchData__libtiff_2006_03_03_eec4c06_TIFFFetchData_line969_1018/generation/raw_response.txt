@@ -1,0 +1,40 @@
+{
+ 4: 	int w = TIFFDataWidth((TIFFDataType) dir->tdir_type);
+ 5: 	tsize_t cc = dir->tdir_count * w;
+ 6: 
+ 7: 	if (!isMapped(tif)) {
+ 8: 		if (!SeekOK(tif, dir->tdir_offset))
+ 9: 			goto bad;
+10: 		if (!ReadOK(tif, cp, cc))
+11: 			goto bad;
+12: 	} else {
+13: 		if (dir->tdir_offset + cc > tif->tif_size)
+14: 			goto bad;
+15: 		_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);
+16: 	}
+17: 	if (tif->tif_flags & TIFF_SWAB) {
+18: 		switch (dir->tdir_type) {
+19: 		case TIFF_SHORT:
+20: 		case TIFF_SSHORT:
+21: 			TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);
+22: 			break;
+23: 		case TIFF_LONG:
+24: 		case TIFF_SLONG:
+25: 		case TIFF_FLOAT:
+26: 			TIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);
+27: 			break;
+28: 		case TIFF_RATIONAL:
+29: 		case TIFF_SRATIONAL:
+30: 			TIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);
+31: 			break;
+32: 		case TIFF_DOUBLE:
+33: 			TIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);
+34: 			break;
+35: 		}
+36: 	}
+37: 	return (cc);
+38: bad:
+39: 	TIFFErrorExt(tif->tif_clientdata, tif->tif_name, "Error fetching data for field \"%s\"",
+40: 	    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);
+41: 	return ((tsize_t) 0);
+42: }

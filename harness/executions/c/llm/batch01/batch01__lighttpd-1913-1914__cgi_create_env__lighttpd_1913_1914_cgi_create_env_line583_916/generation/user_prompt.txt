@@ -1,0 +1,371 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: static int cgi_create_env(server *srv, connection *con, plugin_data *p, buffer *cgi_handler) {
+  2: 	pid_t pid;
+  3: 
+  4: #ifdef HAVE_IPV6
+  5: 	char b2[INET6_ADDRSTRLEN + 1];
+  6: #endif
+  7: 
+  8: 	int to_cgi_fds[2];
+  9: 	int from_cgi_fds[2];
+ 10: 	struct stat st;
+ 11: 
+ 12: #ifndef _WIN32
+ 13: 
+ 14: 	if (cgi_handler && cgi_handler->used > 1) {
+ 15: 		/* stat the exec file */
+ 16: 		if (-1 == (stat(cgi_handler->ptr, &st))) {
+ 17: 			log_error_write(srv, __FILE__, __LINE__, "sbss",
+ 18: 					"stat for cgi-handler", cgi_handler,
+ 19: 					"failed:", strerror(errno));
+ 20: 			return -1;
+ 21: 		}
+ 22: 	}
+ 23: 
+ 24: 	if (pipe(to_cgi_fds)) {
+ 25: 		log_error_write(srv, __FILE__, __LINE__, "ss", "pipe failed:", strerror(errno));
+ 26: 		return -1;
+ 27: 	}
+ 28: 
+ 29: 	if (pipe(from_cgi_fds)) {
+ 30: 		log_error_write(srv, __FILE__, __LINE__, "ss", "pipe failed:", strerror(errno));
+ 31: 		return -1;
+ 32: 	}
+ 33: 
+ 34: 	/* fork, execve */
+ 35: 	switch (pid = fork()) {
+ 36: 	case 0: {
+ 37: 		/* child */
+ 38: 		char **args;
+ 39: 		int argc;
+ 40: 		int i = 0;
+ 41: 		char buf[32];
+ 42: 		size_t n;
+ 43: 		char_array env;
+ 44: 		char *c;
+ 45: 		const char *s;
+ 46: 		server_socket *srv_sock = con->srv_socket;
+ 47: 
+ 48: 		/* move stdout to from_cgi_fd[1] */
+ 49: 		close(STDOUT_FILENO);
+ 50: 		dup2(from_cgi_fds[1], STDOUT_FILENO);
+ 51: 		close(from_cgi_fds[1]);
+ 52: 		/* not needed */
+ 53: 		close(from_cgi_fds[0]);
+ 54: 
+ 55: 		/* move the stdin to to_cgi_fd[0] */
+ 56: 		close(STDIN_FILENO);
+ 57: 		dup2(to_cgi_fds[0], STDIN_FILENO);
+ 58: 		close(to_cgi_fds[0]);
+ 59: 		/* not needed */
+ 60: 		close(to_cgi_fds[1]);
+ 61: 
+ 62: 		/**
+ 63: 		 * FIXME: add a event-handler for STDERR_FILENO and let it LOG()
+ 64: 		 */
+ 65: 
+ 66: 		close(STDERR_FILENO);
+ 67: 
+ 68: 		/* create environment */
+ 69: 		env.ptr = NULL;
+ 70: 		env.size = 0;
+ 71: 		env.used = 0;
+ 72: 
+ 73: 		cgi_env_add(&env, CONST_STR_LEN("SERVER_SOFTWARE"), CONST_STR_LEN(PACKAGE_NAME"/"PACKAGE_VERSION));
+ 74: 
+ 75: 		if (!buffer_is_empty(con->server_name)) {
+ 76: 			cgi_env_add(&env, CONST_STR_LEN("SERVER_NAME"), CONST_BUF_LEN(con->server_name));
+ 77: 		} else {
+ 78: #ifdef HAVE_IPV6
+ 79: 			s = inet_ntop(srv_sock->addr.plain.sa_family,
+ 80: 				      srv_sock->addr.plain.sa_family == AF_INET6 ?
+ 81: 				      (const void *) &(srv_sock->addr.ipv6.sin6_addr) :
+ 82: 				      (const void *) &(srv_sock->addr.ipv4.sin_addr),
+ 83: 				      b2, sizeof(b2)-1);
+ 84: #else
+ 85: 			s = inet_ntoa(srv_sock->addr.ipv4.sin_addr);
+ 86: #endif
+ 87: 			cgi_env_add(&env, CONST_STR_LEN("SERVER_NAME"), s, strlen(s));
+ 88: 		}
+ 89: 		cgi_env_add(&env, CONST_STR_LEN("GATEWAY_INTERFACE"), CONST_STR_LEN("CGI/1.1"));
+ 90: 
+ 91: 		s = get_http_version_name(con->request.http_version);
+ 92: 
+ 93: 		cgi_env_add(&env, CONST_STR_LEN("SERVER_PROTOCOL"), s, strlen(s));
+ 94: 
+ 95: 		ltostr(buf,
+ 96: #ifdef HAVE_IPV6
+ 97: 			ntohs(srv_sock->addr.plain.sa_family == AF_INET6 ? srv_sock->addr.ipv6.sin6_port : srv_sock->addr.ipv4.sin_port)
+ 98: #else
+ 99: 			ntohs(srv_sock->addr.ipv4.sin_port)
+100: #endif
+101: 			);
+102: 		cgi_env_add(&env, CONST_STR_LEN("SERVER_PORT"), buf, strlen(buf));
+103: 
+104: #ifdef HAVE_IPV6
+105: 		s = inet_ntop(srv_sock->addr.plain.sa_family,
+106: 			      srv_sock->addr.plain.sa_family == AF_INET6 ?
+107: 			      (const void *) &(srv_sock->addr.ipv6.sin6_addr) :
+108: 			      (const void *) &(srv_sock->addr.ipv4.sin_addr),
+109: 			      b2, sizeof(b2)-1);
+110: #else
+111: 		s = inet_ntoa(srv_sock->addr.ipv4.sin_addr);
+112: #endif
+113: 		cgi_env_add(&env, CONST_STR_LEN("SERVER_ADDR"), s, strlen(s));
+114: 
+115: 		s = get_http_method_name(con->request.http_method);
+116: 		cgi_env_add(&env, CONST_STR_LEN("REQUEST_METHOD"), s, strlen(s));
+117: 
+118: 		if (!buffer_is_empty(con->request.pathinfo)) {
+119: 			cgi_env_add(&env, CONST_STR_LEN("PATH_INFO"), CONST_BUF_LEN(con->request.pathinfo));
+120: 		}
+121: 		cgi_env_add(&env, CONST_STR_LEN("REDIRECT_STATUS"), CONST_STR_LEN("200"));
+122: 		if (!buffer_is_empty(con->uri.query)) {
+123: 			cgi_env_add(&env, CONST_STR_LEN("QUERY_STRING"), CONST_BUF_LEN(con->uri.query));
+124: 		} else {
+125: 			/* set a empty QUERY_STRING */
+126: 			cgi_env_add(&env, CONST_STR_LEN("QUERY_STRING"), CONST_STR_LEN(""));
+127: 		}
+128: 		if (!buffer_is_empty(con->request.orig_uri)) {
+129: 			cgi_env_add(&env, CONST_STR_LEN("REQUEST_URI"), CONST_BUF_LEN(con->request.orig_uri));
+130: 		}
+131: 
+132: 
+133: #ifdef HAVE_IPV6
+134: 		s = inet_ntop(con->dst_addr.plain.sa_family,
+135: 			      con->dst_addr.plain.sa_family == AF_INET6 ?
+136: 			      (const void *) &(con->dst_addr.ipv6.sin6_addr) :
+137: 			      (const void *) &(con->dst_addr.ipv4.sin_addr),
+138: 			      b2, sizeof(b2)-1);
+139: #else
+140: 		s = inet_ntoa(con->dst_addr.ipv4.sin_addr);
+141: #endif
+142: 		cgi_env_add(&env, CONST_STR_LEN("REMOTE_ADDR"), s, strlen(s));
+143: 
+144: 		ltostr(buf,
+145: #ifdef HAVE_IPV6
+146: 			ntohs(con->dst_addr.plain.sa_family == AF_INET6 ? con->dst_addr.ipv6.sin6_port : con->dst_addr.ipv4.sin_port)
+147: #else
+148: 			ntohs(con->dst_addr.ipv4.sin_port)
+149: #endif
+150: 			);
+151: 		cgi_env_add(&env, CONST_STR_LEN("REMOTE_PORT"), buf, strlen(buf));
+152: 
+153: 		if (!buffer_is_empty(con->authed_user)) {
+154: 			cgi_env_add(&env, CONST_STR_LEN("REMOTE_USER"),
+155: 				    CONST_BUF_LEN(con->authed_user));
+156: 		}
+157: 
+158: #ifdef USE_OPENSSL
+159:        if (srv_sock->is_ssl) {
+160:                cgi_env_add(&env, CONST_STR_LEN("HTTPS"), CONST_STR_LEN("on"));
+161:        }
+162: #endif
+163: 
+164: 		/* request.content_length < SSIZE_MAX, see request.c */
+165: 		ltostr(buf, con->request.content_length);
+166: 		cgi_env_add(&env, CONST_STR_LEN("CONTENT_LENGTH"), buf, strlen(buf));
+167: 		cgi_env_add(&env, CONST_STR_LEN("SCRIPT_FILENAME"), CONST_BUF_LEN(con->physical.path));
+168: 		cgi_env_add(&env, CONST_STR_LEN("SCRIPT_NAME"), CONST_BUF_LEN(con->uri.path));
+169: 		cgi_env_add(&env, CONST_STR_LEN("DOCUMENT_ROOT"), CONST_BUF_LEN(con->physical.doc_root));
+170: 
+171: 		/* for valgrind */
+172: 		if (NULL != (s = getenv("LD_PRELOAD"))) {
+173: 			cgi_env_add(&env, CONST_STR_LEN("LD_PRELOAD"), s, strlen(s));
+174: 		}
+175: 
+176: 		if (NULL != (s = getenv("LD_LIBRARY_PATH"))) {
+177: 			cgi_env_add(&env, CONST_STR_LEN("LD_LIBRARY_PATH"), s, strlen(s));
+178: 		}
+179: #ifdef __CYGWIN__
+180: 		/* CYGWIN needs SYSTEMROOT */
+181: 		if (NULL != (s = getenv("SYSTEMROOT"))) {
+182: 			cgi_env_add(&env, CONST_STR_LEN("SYSTEMROOT"), s, strlen(s));
+183: 		}
+184: #endif
+185: 
+186: 		for (n = 0; n < con->request.headers->used; n++) {
+187: 			data_string *ds;
+188: 
+189: 			ds = (data_string *)con->request.headers->data[n];
+190: 
+191: 			if (ds->value->used && ds->key->used) {
+192: 				size_t j;
+193: 
+194: 				buffer_reset(p->tmp_buf);
+195: 
+196: 				if (0 != strcasecmp(ds->key->ptr, "CONTENT-TYPE")) {
+197: 					buffer_copy_string(p->tmp_buf, "HTTP_");
+198: 					p->tmp_buf->used--; /* strip \0 after HTTP_ */
+199: 				}
+200: 
+201: 				buffer_prepare_append(p->tmp_buf, ds->key->used + 2);
+202: 
+203: 				for (j = 0; j < ds->key->used - 1; j++) {
+204: 					char cr = '_';
+205: 					if (light_isalpha(ds->key->ptr[j])) {
+206: 						/* upper-case */
+207: 						cr = ds->key->ptr[j] & ~32;
+208: 					} else if (light_isdigit(ds->key->ptr[j])) {
+209: 						/* copy */
+210: 						cr = ds->key->ptr[j];
+211: 					}
+212: 					p->tmp_buf->ptr[p->tmp_buf->used++] = cr;
+213: 				}
+214: 				p->tmp_buf->ptr[p->tmp_buf->used++] = '\0';
+215: 
+216: 				cgi_env_add(&env, CONST_BUF_LEN(p->tmp_buf), CONST_BUF_LEN(ds->value));
+217: 			}
+218: 		}
+219: 
+220: 		for (n = 0; n < con->environment->used; n++) {
+221: 			data_string *ds;
+222: 
+223: 			ds = (data_string *)con->environment->data[n];
+224: 
+225: 			if (ds->value->used && ds->key->used) {
+226: 				size_t j;
+227: 
+228: 				buffer_reset(p->tmp_buf);
+229: 
+230: 				buffer_prepare_append(p->tmp_buf, ds->key->used + 2);
+231: 
+232: 				for (j = 0; j < ds->key->used - 1; j++) {
+233: 					p->tmp_buf->ptr[p->tmp_buf->used++] =
+234: 						isalpha((unsigned char)ds->key->ptr[j]) ?
+235: 						toupper((unsigned char)ds->key->ptr[j]) : '_';
+236: 				}
+237: 				p->tmp_buf->ptr[p->tmp_buf->used++] = '\0';
+238: 
+239: 				cgi_env_add(&env, CONST_BUF_LEN(p->tmp_buf), CONST_BUF_LEN(ds->value));
+240: 			}
+241: 		}
+242: 
+243: 		if (env.size == env.used) {
+244: 			env.size += 16;
+245: 			env.ptr = realloc(env.ptr, env.size * sizeof(*env.ptr));
+246: 		}
+247: 
+248: 		env.ptr[env.used] = NULL;
+249: 
+250: 		/* set up args */
+251: 		argc = 3;
+252: 		args = malloc(sizeof(*args) * argc);
+253: 		i = 0;
+254: 
+255: 		if (cgi_handler && cgi_handler->used > 1) {
+256: 			args[i++] = cgi_handler->ptr;
+257: 		}
+258: 		args[i++] = con->physical.path->ptr;
+259: 		args[i++] = NULL;
+260: 
+261: 		/* search for the last / */
+262: 		if (NULL != (c = strrchr(con->physical.path->ptr, '/'))) {
+263: 			*c = '\0';
+264: 
+265: 			/* change to the physical directory */
+266: 			if (-1 == chdir(con->physical.path->ptr)) {
+267: 				log_error_write(srv, __FILE__, __LINE__, "ssb", "chdir failed:", strerror(errno), con->physical.path);
+268: 			}
+269: 			*c = '/';
+270: 		}
+271: 
+272: 		/* we don't need the client socket */
+273: 		for (i = 3; i < 256; i++) {
+274: 			close(i);
+275: 		}
+276: 
+277: 		/* exec the cgi */
+278: 		execve(args[0], args, env.ptr);
+279: 
+280: 		/* */
+281: 		SEGFAULT("execve(%s) failed: %s", args[0], strerror(errno));
+282: 		break;
+283: 	}
+284: 	case -1:
+285: 		/* error */
+286: 		ERROR("fork() failed: %s", strerror(errno));
+287: 		break;
+288: 	default: {
+289: 		cgi_session *sess;
+290: 		/* father */
+291: 
+292: 		close(from_cgi_fds[1]);
+293: 		close(to_cgi_fds[0]);
+294: 
+295: 		/* register PID and wait for them asyncronously */
+296: 		con->mode = p->id;
+297: 		buffer_reset(con->physical.path);
+298: 
+299: 		sess = cgi_session_init();
+300: 
+301: 		sess->remote_con = con;
+302: 		sess->pid = pid;
+303: 
+304: 		assert(sess->sock);
+305: 
+306: 		sess->sock->fd = from_cgi_fds[0];
+307: 		sess->sock->type = IOSOCKET_TYPE_PIPE;
+308: 		sess->wb_sock->fd = to_cgi_fds[1];
+309: 		sess->wb_sock->type = IOSOCKET_TYPE_PIPE;
+310: 
+311: 		if (-1 == fdevent_fcntl_set(srv->ev, sess->sock)) {
+312: 			log_error_write(srv, __FILE__, __LINE__, "ss", "fcntl failed: ", strerror(errno));
+313: 
+314: 			cgi_session_free(sess);
+315: 
+316: 			return -1;
+317: 		}
+318: 
+319: 		con->plugin_ctx[p->id] = sess;
+320: 
+321: 		fdevent_register(srv->ev, sess->sock, cgi_handle_fdevent, sess);
+322: 		fdevent_event_add(srv->ev, sess->sock, FDEVENT_IN);
+323: 
+324: 		sess->state = CGI_STATE_READ_RESPONSE_HEADER;
+325: 
+326: 		break;
+327: 	}
+328: 	}
+329: 
+330: 	return 0;
+331: #else
+332: 	return -1;
+333: #endif
+334: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

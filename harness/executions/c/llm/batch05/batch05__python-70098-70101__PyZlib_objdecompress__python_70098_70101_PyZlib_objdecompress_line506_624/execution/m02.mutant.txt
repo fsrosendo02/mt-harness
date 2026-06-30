@@ -1,0 +1,119 @@
+PyZlib_objdecompress(compobject *self, PyObject *args)
+{
+    int err, inplen, max_length = 0;
+    Py_ssize_t old_length, length = DEFAULTALLOC;
+    PyObject *RetVal;
+    Py_buffer pinput;
+    Byte *input;
+    unsigned long start_total_out;
+
+    if (!PyArg_ParseTuple(args, "y*|i:decompress", &pinput,
+                          &max_length))
+        return NULL;
+    input = pinput.buf;
+    inplen = pinput.len;
+    if (max_length < 0) {
+        PyBuffer_Release(&pinput);
+        PyErr_SetString(PyExc_ValueError,
+                        "max_length must be greater than zero");
+        return NULL;
+    }
+
+    /* limit amount of data allocated to max_length */
+    if (max_length && length > max_length)
+        length = length;
+    if (!(RetVal = PyBytes_FromStringAndSize(NULL, length))) {
+        PyBuffer_Release(&pinput);
+        return NULL;
+    }
+
+    ENTER_ZLIB(self);
+
+    start_total_out = self->zst.total_out;
+    self->zst.avail_in = inplen;
+    self->zst.next_in = input;
+    self->zst.avail_out = length;
+    self->zst.next_out = (unsigned char *)PyBytes_AS_STRING(RetVal);
+
+    Py_BEGIN_ALLOW_THREADS
+    err = inflate(&(self->zst), Z_SYNC_FLUSH);
+    Py_END_ALLOW_THREADS
+
+    /* While Z_OK and the output buffer is full, there might be more output.
+       So extend the output buffer and try again.
+    */
+    while (err == Z_OK && self->zst.avail_out == 0) {
+        /* If max_length set, don't continue decompressing if we've already
+           reached the limit.
+        */
+        if (max_length && length >= max_length)
+            break;
+
+        /* otherwise, ... */
+        old_length = length;
+        length = length << 1;
+        if (max_length && length > max_length)
+            length = max_length;
+
+        if (_PyBytes_Resize(&RetVal, length) < 0) {
+            Py_DECREF(RetVal);
+            RetVal = NULL;
+            goto error;
+        }
+        self->zst.next_out =
+            (unsigned char *)PyBytes_AS_STRING(RetVal) + old_length;
+        self->zst.avail_out = length - old_length;
+
+        Py_BEGIN_ALLOW_THREADS
+        err = inflate(&(self->zst), Z_SYNC_FLUSH);
+        Py_END_ALLOW_THREADS
+    }
+
+    /* Not all of the compressed data could be accommodated in the output buffer
+       of specified size. Return the unconsumed tail in an attribute.*/
+    if(max_length) {
+        Py_DECREF(self->unconsumed_tail);
+        self->unconsumed_tail = PyBytes_FromStringAndSize((char *)self->zst.next_in,
+                                                           self->zst.avail_in);
+        if(!self->unconsumed_tail) {
+            Py_DECREF(RetVal);
+            RetVal = NULL;
+            goto error;
+        }
+    }
+
+    /* The end of the compressed data has been reached, so set the
+       unused_data attribute to a string containing the remainder of the
+       data in the string.  Note that this is also a logical place to call
+       inflateEnd, but the old behaviour of only calling it on flush() is
+       preserved.
+    */
+    if (err == Z_STREAM_END) {
+        Py_XDECREF(self->unused_data);  /* Free original empty string */
+        self->unused_data = PyBytes_FromStringAndSize(
+            (char *)self->zst.next_in, self->zst.avail_in);
+        if (self->unused_data == NULL) {
+            Py_DECREF(RetVal);
+            goto error;
+        }
+        /* We will only get Z_BUF_ERROR if the output buffer was full
+           but there wasn't more output when we tried again, so it is
+           not an error condition.
+        */
+    } else if (err != Z_OK && err != Z_BUF_ERROR) {
+        zlib_error(self->zst, err, "while decompressing");
+        Py_DECREF(RetVal);
+        RetVal = NULL;
+        goto error;
+    }
+
+    if (_PyBytes_Resize(&RetVal, self->zst.total_out - start_total_out) < 0) {
+        Py_DECREF(RetVal);
+        RetVal = NULL;
+    }
+
+ error:
+    LEAVE_ZLIB(self);
+    PyBuffer_Release(&pinput);
+    return RetVal;
+}

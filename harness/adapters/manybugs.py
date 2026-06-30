@@ -93,6 +93,12 @@ class ManyBugsAdapter(BenchmarkAdapter):
         finally:
             container.remove(force=True)
 
+        # Fix permissions on files extracted from Docker (may be root-owned)
+        subprocess.run(
+            ["chmod", "-R", "u+rwX", str(workdir_path)],
+            capture_output=True,
+        )
+
         meta = {
             "image": image_name,
             "scenario": scenario,
@@ -180,9 +186,12 @@ class ManyBugsAdapter(BenchmarkAdapter):
     # test (baseline — no per-test detail)
     # ------------------------------------------------------------------ #
 
-    def test(self, workdir: str) -> tuple[bool, str]:
-        """Run all positive (pN) tests to establish a baseline.
-        Returns (all_pass, combined_log).
+    def test(self, workdir: str, eligible_tests: list[str] | None = None) -> tuple[bool, str]:
+        """Run baseline tests to verify the subject is in a valid state.
+
+        If *eligible_tests* is provided, only those test IDs are run — this
+        avoids false BASELINE_FAIL when unrelated positive tests are flaky in
+        the current environment.  Otherwise all positive (pN) tests are run.
         """
         log("[test] baseline start")
         workdir_path = Path(workdir)
@@ -196,7 +205,13 @@ class ManyBugsAdapter(BenchmarkAdapter):
         test_script = meta["container_test_script"]
         work_dir = meta["container_work_dir"]
 
-        test_ids = _discover_test_ids(container, test_script, kinds=("p",))
+        if eligible_tests:
+            test_ids = eligible_tests
+            log(f"[test] running {len(test_ids)} eligible target test(s): {test_ids}")
+        else:
+            test_ids = _discover_test_ids(container, test_script, kinds=("p",))
+            log(f"[test] running all {len(test_ids)} positive test(s)")
+
         logs: list[str] = []
         all_pass = True
         t = time.time()

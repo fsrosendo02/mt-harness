@@ -1,0 +1,226 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: PHYSICALPATH_FUNC(mod_compress_physical) {
+  2: 	plugin_data *p = p_d;
+  3: 	size_t m;
+  4: 	off_t max_fsize;
+  5: 	stat_cache_entry *sce = NULL;
+  6: 	data_string *ds;
+  7: 	int accept_encoding = 0;
+  8: 	char *value;
+  9: 	int srv_encodings = 0;
+ 10: 	int matched_encodings = 0;
+ 11: 	const char *dflt_gzip = "gzip";
+ 12: 	const char *dflt_deflate = "deflate";
+ 13: 	const char *dflt_bzip2 = "bzip2";
+ 14: 
+ 15: 	const char *compression_name = NULL;
+ 16: 	int compression_type = 0;
+ 17: 	buffer *mtime, *content_type;
+ 18: 
+ 19: 	if (con->mode != DIRECT) return HANDLER_GO_ON;
+ 20: 
+ 21: 	if (con->conf.log_request_handling) TRACE("-- %s", "handling in mod_compress");
+ 22: 
+ 23: 	/* only GET and POST can get compressed */
+ 24: 	if (con->request.http_method != HTTP_METHOD_GET &&
+ 25: 	    con->request.http_method != HTTP_METHOD_POST) {
+ 26: 		return HANDLER_GO_ON;
+ 27: 	}
+ 28: 
+ 29: 	if (buffer_is_empty(con->physical.path)) {
+ 30: 		return HANDLER_GO_ON;
+ 31: 	}
+ 32: 
+ 33: 	mod_compress_patch_connection(srv, con, p);
+ 34: 
+ 35: 	max_fsize = p->conf.compress_max_filesize;
+ 36: 
+ 37: 	if (HANDLER_GO_ON != stat_cache_get_entry(srv, con, con->physical.path, &sce)) {
+ 38: 		if (con->conf.log_request_handling) TRACE("file '%s' not found", SAFE_BUF_STR(con->physical.path));
+ 39: 		return HANDLER_GO_ON;
+ 40: 	}
+ 41: 
+ 42: 	/* don't compress files that are too large as we need to much time to handle them */
+ 43: 	if (max_fsize && (sce->st.st_size >> 10) > max_fsize) {
+ 44: 		if (con->conf.log_request_handling) TRACE("file '%s' is too large: %jd", 
+ 45: 				SAFE_BUF_STR(con->physical.path), 
+ 46: 				(intmax_t) sce->st.st_size);
+ 47: 
+ 48: 		return HANDLER_GO_ON;
+ 49: 	}
+ 50: 
+ 51: 	/* compressing the file might lead to larger files instead */
+ 52: 	if (sce->st.st_size < 128) {
+ 53: 		if (con->conf.log_request_handling) TRACE("file '%s' is too small: %jd", 
+ 54: 				SAFE_BUF_STR(con->physical.path), 
+ 55: 				(intmax_t) sce->st.st_size);
+ 56: 
+ 57: 		return HANDLER_GO_ON;
+ 58: 	}
+ 59: 
+ 60: 	/* check if mimetype is in compress-config */
+ 61: 	content_type = 0;
+ 62: 	if (sce->content_type->ptr) {
+ 63: 		char *c;
+ 64: 		if ( (c = strchr(BUF_STR(sce->content_type), ';')) != 0) {
+ 65: 			content_type = buffer_init();
+ 66: 			buffer_copy_string_len(content_type, BUF_STR(sce->content_type), c - BUF_STR(sce->content_type)); 
+ 67: 		}
+ 68: 	}
+ 69: 	for (m = 0; m < p->conf.compress->used; m++) {
+ 70: 		data_string *compress_ds = (data_string *)p->conf.compress->data[m];
+ 71: 
+ 72: 		if (!compress_ds) {
+ 73: 			ERROR("evil: %s .. %s", SAFE_BUF_STR(con->physical.path), SAFE_BUF_STR(con->uri.path));
+ 74: 
+ 75: 			return HANDLER_GO_ON;
+ 76: 		}
+ 77: 
+ 78: 		if (buffer_is_equal(compress_ds->value, sce->content_type)
+ 79: 			|| (content_type && buffer_is_equal(compress_ds->value, content_type))) {
+ 80: 			break;
+ 81: 		}
+ 82: 	}
+ 83: 	buffer_free(content_type);
+ 84: 
+ 85: 	if (m == p->conf.compress->used) {
+ 86: 		return HANDLER_GO_ON;
+ 87: 	}
+ 88: 	/* mimetype found */
+ 89: 
+ 90: 
+ 91: 	if (con->send->is_closed == 0) {
+ 92: 		if (con->conf.log_request_handling) TRACE("we can't compress streams: is_closed = %d", con->send->is_closed);
+ 93: 		return HANDLER_GO_ON;
+ 94: 	}
+ 95: 
+ 96: 	if (con->send->first == NULL) {
+ 97: 		if (con->conf.log_request_handling) TRACE("we can't compress streams: ->first = %p", NULL);
+ 98: 		return HANDLER_GO_ON;
+ 99: 	}
+100: 
+101: 	if (con->send->first->next != NULL) {
+102: 		if (con->conf.log_request_handling) TRACE("we can't compress streams: ->first->next = %p", NULL);
+103: 		return HANDLER_GO_ON;
+104: 	}
+105: 
+106: 	if (con->send->first->type != FILE_CHUNK) {
+107: 		if (con->conf.log_request_handling) TRACE("we can compress file-chunks: ->type = %d", con->send->first->type);
+108: 		return HANDLER_GO_ON;
+109: 	}
+110: 
+111: 	/* the response might change according to Accept-Encoding */
+112: 	response_header_insert(srv, con, CONST_STR_LEN("Vary"), CONST_STR_LEN("Accept-Encoding"));
+113: 
+114: 	if (NULL == (ds = (data_string *)array_get_element(con->request.headers, CONST_STR_LEN("Accept-Encoding")))) {
+115: 		if (con->conf.log_request_handling) TRACE("couldn't find a Accept-Encoding header: %s", "");
+116: 		return HANDLER_GO_ON;
+117: 	}
+118: 
+119: 	value = ds->value->ptr;
+120: 
+121: 	/* get client side support encodings */
+122: 	if (NULL != strstr(value, "gzip")) accept_encoding |= HTTP_ACCEPT_ENCODING_GZIP;
+123: 	if (NULL != strstr(value, "deflate")) accept_encoding |= HTTP_ACCEPT_ENCODING_DEFLATE;
+124: 	if (NULL != strstr(value, "compress")) accept_encoding |= HTTP_ACCEPT_ENCODING_COMPRESS;
+125: 	if (NULL != strstr(value, "bzip2")) accept_encoding |= HTTP_ACCEPT_ENCODING_BZIP2;
+126: 	if (NULL != strstr(value, "identity")) accept_encoding |= HTTP_ACCEPT_ENCODING_IDENTITY;
+127: 
+128: 	/* get server side supported ones */
+129: #ifdef USE_BZ2LIB
+130: 	srv_encodings |= HTTP_ACCEPT_ENCODING_BZIP2;
+131: #endif
+132: #ifdef USE_ZLIB
+133: 	srv_encodings |= HTTP_ACCEPT_ENCODING_GZIP;
+134: 	srv_encodings |= HTTP_ACCEPT_ENCODING_DEFLATE;
+135: #endif
+136: 
+137: 	/* find matching entries */
+138: 	if (0 == (matched_encodings = accept_encoding & srv_encodings)) {
+139: 		if (con->conf.log_request_handling) TRACE("we don't support the requested encoding: %s", value);
+140: 		return HANDLER_GO_ON;
+141: 	}
+142: 
+143: 	mtime = strftime_cache_get(srv, sce->st.st_mtime);
+144: 	etag_mutate(con->physical.etag, sce->etag);
+145: 
+146: 	response_header_overwrite(srv, con, CONST_STR_LEN("Last-Modified"), CONST_BUF_LEN(mtime));
+147: 	response_header_overwrite(srv, con, CONST_STR_LEN("ETag"), CONST_BUF_LEN(con->physical.etag));
+148: 
+149: 	/* perhaps we don't even have to compress the file as the browser still has the
+150: 	 * current version */
+151: 	if (HANDLER_FINISHED == http_response_handle_cachable(srv, con, mtime)) {
+152: 		if (con->conf.log_request_handling) TRACE("%s is still the same, caching", SAFE_BUF_STR(con->physical.path));
+153: 		return HANDLER_FINISHED;
+154: 	}
+155: 
+156: 	/* select best matching encoding */
+157: 	if (matched_encodings & HTTP_ACCEPT_ENCODING_BZIP2) {
+158: 		compression_type = HTTP_ACCEPT_ENCODING_BZIP2;
+159: 		compression_name = dflt_bzip2;
+160: 	} else if (matched_encodings & HTTP_ACCEPT_ENCODING_GZIP) {
+161: 		compression_type = HTTP_ACCEPT_ENCODING_GZIP;
+162: 		compression_name = dflt_gzip;
+163: 	} else if (matched_encodings & HTTP_ACCEPT_ENCODING_DEFLATE) {
+164: 		compression_type = HTTP_ACCEPT_ENCODING_DEFLATE;
+165: 		compression_name = dflt_deflate;
+166: 	}
+167: 
+168: 	if (con->conf.log_request_handling) TRACE("we are fine, let's compress: %s", "");
+169: 
+170: 	/* deflate it to file (cached) or to memory */
+171: 	if (0 == deflate_file_to_file(srv, con, p,
+172: 			con->physical.path, sce, compression_type) ||
+173: 	    0 == deflate_file_to_buffer(srv, con, p,
+174: 			con->physical.path, sce, compression_type)) {
+175: 
+176: 		response_header_overwrite(srv, con,
+177: 				CONST_STR_LEN("Content-Encoding"),
+178: 				compression_name, strlen(compression_name));
+179: 
+180: 		response_header_overwrite(srv, con,
+181: 				CONST_STR_LEN("Content-Type"),
+182: 				CONST_BUF_LEN(sce->content_type));
+183: 
+184: 		if (con->conf.log_request_handling) TRACE("looks like %s could be compressed", SAFE_BUF_STR(con->physical.path));
+185: 		return HANDLER_FINISHED;
+186: 	}
+187: 
+188: 	return HANDLER_GO_ON;
+189: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

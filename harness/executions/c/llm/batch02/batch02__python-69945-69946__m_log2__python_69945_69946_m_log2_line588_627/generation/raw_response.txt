@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "log10(0) = -inf",
+      "line": 1,
+      "precode": "return -Py_HUGE_VAL; /* log10(0) = -inf */",
+      "aftercode": "return Py_NAN; /* log10(0) = nan */"
+    },
+    {
+      "id": 2,
+      "reasoning": "log10(-ve) = nan",
+      "line": 3,
+      "precode": "return Py_NAN; /* log10(-ve) = nan */",
+      "aftercode": "return x; /* log10(-ve) = -ve */"
+    },
+    {
+      "id": 3,
+      "reasoning": "log10(nan) = nan",
+      "line": 5,
+      "precode": "if (Py_IS_NAN(x)) return x; /* log10(nan) = nan */",
+      "aftercode": "if (Py_IS_NAN(x)) return Py_HUGE_VAL; /* log10(nan) = inf */"
+    },
+    {
+      "id": 4,
+      "reasoning": "log10(inf) = inf",
+      "line": 7,
+      "precode": "else if (x > 0.0) return x; /* log10(inf) = inf */",
+      "aftercode": "else if (x > 0.0) return Py_NAN; /* log10(inf) = nan */"
+    },
+    {
+      "id": 5,
+      "reasoning": "log10(-inf) = nan",
+      "line": 9,
+      "precode": "errno = EDOM; return Py_NAN; /* log10(-inf) = nan */",
+      "aftercode": "errno = ERANGE; return x; /* log10(-inf) = -inf */"
+    },
+    {
+      "id": 6,
+      "reasoning": "underflow errors are suppressed",
+      "line": 39,
+      "precode": "else if (errno == ERANGE)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 7,
+      "reasoning": "subnormal results are not suppressed",
+      "line": 39,
+      "precode": "else if (errno == ERANGE)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 8,
+      "reasoning": "underflow errors are not suppressed",
+      "line": 40,
+      "precode": "PyErr_SetString(PyExc_ValueError, \"math domain error\");",
+      "aftercode": ""
+    }
+  ]
+}

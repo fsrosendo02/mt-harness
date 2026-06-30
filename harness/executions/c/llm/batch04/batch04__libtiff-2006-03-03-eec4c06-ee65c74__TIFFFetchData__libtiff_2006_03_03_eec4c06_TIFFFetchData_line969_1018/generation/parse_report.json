@@ -1,0 +1,110 @@
+{
+  "requested_count": 8,
+  "accepted_count": 0,
+  "rejected_count": 8,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 1,
+        "reasoning": "The data type of dir->tdir_type is not checked for NULL before calling TIFFDataWidth.",
+        "line": 4,
+        "precode": "int w = TIFFDataWidth((TIFFDataType) dir->tdir_type);",
+        "aftercode": "int w = TIFFDataWidth(NULL);",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth(NULL);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\tif (dir->tdir_offset + cc > tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count <= 4) {\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 2,
+        "reasoning": "The tif pointer is not checked for NULL before calling SeekOK.",
+        "line": 8,
+        "precode": "if (!isMapped(tif)) {",
+        "aftercode": "if (tif == NULL) {",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (tif == NULL) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\tif (dir->tdir_offset + cc > tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count <= 4) {\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 3,
+        "reasoning": "The dir->tdir_offset is not checked for a valid memory address.",
+        "line": 10,
+        "precode": "if (!ReadOK(tif, cp, cc))",
+        "aftercode": "if (dir->tdir_offset > INT_MAX)",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (dir->tdir_offset > INT_MAX)\n\t\t\tgoto bad;\n\t} else {\n\t\tif (dir->tdir_offset + cc > tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count <= 4) {\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 4,
+        "reasoning": "The data width of w is not checked for a valid value.",
+        "line": 14,
+        "precode": "if (dir->tdir_offset + cc > tif->tif_size)",
+        "aftercode": "if (w > INT_MAX)",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\tif (w > INT_MAX)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count <= 4) {\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 5,
+        "reasoning": "The TIFFSwabArrayOfShort function is not checked for its return value.",
+        "line": 20,
+        "precode": "TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);",
+        "aftercode": "bool success = TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\tif (dir->tdir_offset + cc > tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tbool success = TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count <= 4) {\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 6,
+        "reasoning": "The tif->tif_size is not checked for a valid value.",
+        "line": 24,
+        "precode": "case TIFF_LONG:",
+        "aftercode": "case -1:",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\tif (dir->tdir_offset + cc > tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase -1:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count <= 4) {\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 7,
+        "reasoning": "The TIFFFetchString function returns a hardcoded value without considering the dir->tdir_count.",
+        "line": 50,
+        "precode": "if (dir->tdir_count <= 4) {",
+        "aftercode": "if (dir->tdir_count >= 5) {",
+        "candidate_code": "static tsize_t\nTIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tint w = TIFFDataWidth((TIFFDataType) dir->tdir_type);\n\ttsize_t cc = dir->tdir_count * w;\n\n\tif (!isMapped(tif)) {\n\t\tif (!SeekOK(tif, dir->tdir_offset))\n\t\t\tgoto bad;\n\t\tif (!ReadOK(tif, cp, cc))\n\t\t\tgoto bad;\n\t} else {\n\t\tif (dir->tdir_offset + cc > tif->tif_size)\n\t\t\tgoto bad;\n\t\t_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);\n\t}\n\tif (tif->tif_flags & TIFF_SWAB) {\n\t\tswitch (dir->tdir_type) {\n\t\tcase TIFF_SHORT:\n\t\tcase TIFF_SSHORT:\n\t\t\tTIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_LONG:\n\t\tcase TIFF_SLONG:\n\t\tcase TIFF_FLOAT:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_RATIONAL:\n\t\tcase TIFF_SRATIONAL:\n\t\t\tTIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);\n\t\t\tbreak;\n\t\tcase TIFF_DOUBLE:\n\t\t\tTIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);\n\t\t\tbreak;\n\t\t}\n\t}\n\treturn (cc);\nbad:\n\tTIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\",\n\t    _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);\n\treturn ((tsize_t) 0);\n}\n\n/*\n * Fetch an ASCII item from the file.\n */\nstatic tsize_t\nTIFFFetchString(TIFF* tif, TIFFDirEntry* dir, char* cp)\n{\n\tif (dir->tdir_count >= 5) {\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 8,
+        "reasoning": "The TIFFFetchString function returns a hardcoded value without considering the dir->tdir_type.",
+        "line": 52,
+        "precode": "return ((tsize_t) tif->tif_size);",
+        "aftercode": "return ((tsize_t) dir->tdir_count);",
+        "resolution_reason": "precode_not_found"
+      }
+    }
+  ]
+}

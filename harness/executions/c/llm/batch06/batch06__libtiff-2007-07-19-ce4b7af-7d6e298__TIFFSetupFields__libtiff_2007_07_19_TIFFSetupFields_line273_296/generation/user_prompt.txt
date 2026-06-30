@@ -1,0 +1,61 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: void
+ 2: _TIFFSetupFields(TIFF* tif, const TIFFFieldArray* fieldarray)
+ 3: {
+ 4: 	if (tif->tif_fields && tif->tif_nfields > 0) {
+ 5: 		uint32 i;
+ 6: 
+ 7: 		for (i = 0; i < tif->tif_nfields; i++) {
+ 8: 			TIFFField *fld = tif->tif_fields[i];
+ 9: 			if (fld->field_bit == FIELD_CUSTOM &&
+10: 				strncmp("Tag ", fld->field_name, 4) == 0) {
+11: 					_TIFFfree(fld->field_name);
+12: 					_TIFFfree(fld);
+13: 				}
+14: 		}
+15: 
+16: 		_TIFFfree(tif->tif_fields);
+17: 		tif->tif_fields = NULL;
+18: 		tif->tif_nfields = 0;
+19: 	}
+20: 	if (!_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count)) {
+21: 		TIFFErrorExt(tif->tif_clientdata, "_TIFFSetupFields",
+22: 			     "Setting up field info failed");
+23: 	}
+24: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

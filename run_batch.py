@@ -105,12 +105,17 @@ def save_batch_manifest(batch_manifest_path: Path, batch_manifest: dict) -> None
 def resolve_source_batch_manifest(base_cfg: dict, batches_dir: Path) -> Path:
     manifest_path_str = base_cfg.get("source_batch_manifest")
     source_batch_id = base_cfg.get("source_batch_id")
+    runs_subdir = base_cfg.get("runs_subdir") or None
 
     if manifest_path_str:
         return Path(str(manifest_path_str))
 
     if source_batch_id:
-        return llm_batch_manifest_path(str(source_batch_id))
+        candidate = llm_batch_manifest_path(str(source_batch_id), runs_subdir)
+        if candidate.exists():
+            return candidate
+        fallback = llm_batch_manifest_path(str(source_batch_id))
+        return fallback
 
     legacy_source_batch_id = base_cfg.get("source_batch_id")
     if legacy_source_batch_id:
@@ -158,6 +163,8 @@ def build_execute_only_runs(source_manifest: dict, base_cfg: dict) -> list[dict]
             "validate_after_run": base_cfg.get("validate_after_run", True),
             "rebuild_index": base_cfg.get("rebuild_index", True),
         }
+        if base_cfg.get("runs_subdir"):
+            cfg["runs_subdir"] = base_cfg["runs_subdir"]
         if catalog_file:
             cfg["catalog_file"] = catalog_file
 
@@ -600,7 +607,8 @@ def main():
         targets = [entry["target_id"] for entry in catalog]
         run_specs = build_generation_runs(catalog, base_cfg, batch_id)
 
-    batch_manifest_path = llm_batch_manifest_path(batch_id)
+    runs_subdir = base_cfg.get("runs_subdir") or None
+    batch_manifest_path = llm_batch_manifest_path(batch_id, runs_subdir)
 
     original_stdout = sys.stdout
     original_stderr = sys.stderr

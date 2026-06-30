@@ -1,0 +1,184 @@
+loadImage(TIFF* in, struct image_data *image, struct dump_opts * dump, unsigned char **read_ptr)
+  {
+  uint32   i;
+  float    xres=0.0, yres=0.0;
+  uint16   nstrips, ntiles, planar, bps, spp, res_unit, photometric, orientation;
+  uint32   width, length, rowsperstrip;
+  uint32   stsize, tlsize, buffsize, scanlinesize;
+  unsigned char *read_buff = NULL;
+  unsigned char *new_buff  = NULL;
+  int      readunit = 0;
+  static   uint32  prev_readsize = 0;
+
+  TIFFGetFieldDefaulted(in, TIFFTAG_BITSPERSAMPLE, &bps);
+  TIFFGetFieldDefaulted(in, TIFFTAG_SAMPLESPERPIXEL, &spp);
+  TIFFGetFieldDefaulted(in, TIFFTAG_PLANARCONFIG, &planar);
+  TIFFGetFieldDefaulted(in, TIFFTAG_ORIENTATION, &orientation);
+  TIFFGetField(in, TIFFTAG_PHOTOMETRIC, &photometric);
+  TIFFGetField(in, TIFFTAG_IMAGEWIDTH,  &width);
+  TIFFGetField(in, TIFFTAG_IMAGELENGTH, &length);
+  TIFFGetField(in, TIFFTAG_XRESOLUTION, &xres);
+  TIFFGetField(in, TIFFTAG_YRESOLUTION, &yres);
+  TIFFGetFieldDefaulted(in, TIFFTAG_RESOLUTIONUNIT, &res_unit);
+  scanlinesize = TIFFScanlineSize(in);
+
+  image->bps = bps;
+  image->spp = spp;
+  image->planar = planar;
+  image->width = width;
+  image->length = length;
+  image->xres = xres;
+  image->yres = yres;
+  image->res_unit = res_unit;
+  image->photometric = photometric;
+  image->orientation = orientation;
+  switch (orientation)
+    {
+    case 0:
+    case ORIENTATION_TOPLEFT:
+         image->adjustments = 0;
+	 break;
+    case ORIENTATION_TOPRIGHT:
+         image->adjustments = MIRROR_HORIZ;
+	 break;
+    case ORIENTATION_BOTRIGHT:
+         image->adjustments = ROTATECW_180;
+	 break;
+    case ORIENTATION_BOTLEFT:
+         image->adjustments = MIRROR_VERT; 
+	 break;
+    case ORIENTATION_LEFTTOP:
+         image->adjustments = MIRROR_VERT | ROTATECW_90;
+	 break;
+    case ORIENTATION_RIGHTTOP:
+         image->adjustments = ROTATECW_90;
+	 break;
+    case ORIENTATION_RIGHTBOT:
+         image->adjustments = MIRROR_VERT | ROTATECW_270;
+	 break; 
+    case ORIENTATION_LEFTBOT:
+         image->adjustments = ROTATECW_270;
+	 break;
+    default:
+         image->adjustments = 0;
+         image->orientation = ORIENTATION_TOPLEFT;
+   }
+
+  if ((bps == 0) || (spp == 0))
+    {
+    TIFFError("loadImage", "Invalid samples per pixel (%d) or bits per sample (%d)",
+	       spp, bps);
+    return (-1);
+    }
+
+  if (TIFFIsTiled(in))
+    {
+    readunit = TILE;
+    tlsize = TIFFTileSize(in);
+    ntiles = TIFFNumberOfTiles(in);
+    buffsize = (tlsize == 0 || ntiles == 0) ? 1 : tlsize * ntiles;
+    if (dump->infile != NULL)
+      dump_info (dump->infile, dump->format, "", 
+                 "Tilesize: %u, Number of Tiles: %u, Scanline size: %u",
+                 tlsize, ntiles, scanlinesize);
+    }
+  else
+    {
+    readunit = STRIP;
+    TIFFGetFieldDefaulted(in, TIFFTAG_ROWSPERSTRIP, &rowsperstrip);
+    stsize = TIFFStripSize(in);
+    nstrips = TIFFNumberOfStrips(in);
+    buffsize = stsize * nstrips;
+    if (dump->infile != NULL)
+      dump_info (dump->infile, dump->format, "",
+                 "Stripsize: %u, Number of Strips: %u, Rows per Strip: %u, Scanline size: %u",
+		 stsize, nstrips, rowsperstrip, scanlinesize);
+    }
+
+  read_buff = *read_ptr;
+  if (!read_buff)
+    read_buff = (unsigned char *)_TIFFmalloc(buffsize);
+  else
+    {
+    if (prev_readsize < buffsize)
+      {
+      new_buff = _TIFFrealloc(read_buff, buffsize);
+      if (!new_buff)
+        {
+	free (read_buff);
+        read_buff = (unsigned char *)_TIFFmalloc(buffsize);
+        }
+      else
+        read_buff = new_buff;
+      }
+    }
+
+  if (!read_buff)
+    {
+    TIFFError("loadImage", "Unable to allocate/reallocate read buffer");
+    return (-1);
+    }
+  _TIFFmemset(read_buff, '\0', buffsize);
+  prev_readsize = buffsize;
+  *read_ptr = read_buff;
+
+  /* N.B. The read functions used copy separate plane data into a buffer as interleaved
+   * samples rather than separate planes so the same logic works to extract regions
+   * regardless of the way the data are organized in the input file.
+   */
+  switch (readunit) {
+    case STRIP:
+         if (planar == PLANARCONFIG_CONTIG)
+           {
+	   if (!(readContigStripsIntoBuffer(in, read_buff, length, width, spp)))
+	     {
+	     TIFFError("loadImage", "Unable to read contiguous strips into buffer");
+	     return (-1);
+             }
+           }
+         else
+           {
+	   if (!(readSeparateStripsIntoBuffer(in, read_buff, length, width, spp, dump)))
+	     {
+	     TIFFError("loadImage", "Unable to read separate strips into buffer");
+	     return (-1);
+             }
+           }
+         break;
+
+    case TILE:
+         if (planar == PLANARCONFIG_CONTIG)
+           {
+	   if (!(readContigTilesIntoBuffer(in, read_buff, length, width, spp)))
+	     {
+	     TIFFError("loadImage", "Unable to read contiguous tiles into buffer");
+	     return (-1);
+             }
+           }
+         else
+           {
+	   if (!(readSeparateTilesIntoBuffer(in, read_buff, length, width, spp)))
+	     {
+	     TIFFError("loadImage", "Unable to read separate tiles into buffer");
+	     return (-1);
+             }
+           }
+         break;
+    default: TIFFError("loadImage", "Unsupported image file format");
+          return (-1);
+          break;
+    }
+  if ((dump->infile != NULL) && (dump->level == 2))
+    {
+    dump_info  (dump->infile, dump->format, "loadImage", 
+                "Image width %d, length %d, Raw image data, %4d bytes",
+                width, length,  buffsize);
+    dump_info  (dump->infile, dump->format, "", 
+                "Bits per sample %d, Samples per pixel %d", bps, spp);
+
+    for (i = 0; i < length; i++)
+      dump_buffer(dump->infile, dump->format, 1, scanlinesize, 
+                  i, read_buff + (i * scanlinesize));
+    }
+  return (0);
+  }   /* end loadImage */

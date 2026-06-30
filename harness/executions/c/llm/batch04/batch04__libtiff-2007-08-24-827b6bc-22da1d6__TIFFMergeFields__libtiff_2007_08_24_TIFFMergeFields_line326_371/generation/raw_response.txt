@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function does not check for null pointer in info array before accessing it.",
+      "line": 10,
+      "precode": "const TIFFField *fip = TIFFFindField(tif, info[i].field_tag, TIFF_ANY);",
+      "aftercode": "const TIFFField *fip = TIFFFindField(tif, info[i] ? info[i].field_tag : (uint32)-1, TIFF_ANY);"
+    },
+    {
+      "id": 2,
+      "reasoning": "The function does not check if n is greater than the maximum allowed value for uint32.",
+      "line": 22,
+      "precode": "tif->tif_fields = (_TIFFCheckRealloc(tif, tif->tif_fields, (tif->tif_nfields + n), sizeof(TIFFField *), reason));",
+      "aftercode": "tif->tif_fields = (_TIFFCheckRealloc(tif, tif->tif_fields, (uint32)-1, sizeof(TIFFField *), reason));"
+    },
+    {
+      "id": 3,
+      "reasoning": "The function does not free the previously allocated fields array in case of reallocation.",
+      "line": 25,
+      "precode": "_TIFFCheckRealloc(tif, tif->tif_fields, (tif->tif_nfields + n), sizeof(TIFFField *), reason);",
+      "aftercode": "_TIFFCheckFree(tif, tif->tif_fields); _TIFFCheckRealloc(tif, NULL, (tif->tif_nfields + n), sizeof(TIFFField *), reason);"
+    },
+    {
+      "id": 4,
+      "reasoning": "The function does not handle the case where TIFFFindField returns a valid field but with an empty name.",
+      "line": 12,
+      "precode": "if (fip) {",
+      "aftercode": "if (!fip->field_name || strlen(fip->field_name) == 0) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The function does not sort the fields in ascending order of their tag numbers.",
+      "line": 42,
+      "precode": "qsort(tif->tif_fields, tif->tif_nfields += n, sizeof(TIFFField *), tagCompare);",
+      "aftercode": "qsort(tif->tif_fields, tif->tif_nfields += n, sizeof(TIFFField *), (void*)0);"
+    },
+    {
+      "id": 6,
+      "reasoning": "The function does not check for integer overflow when calculating the new size of the fields array.",
+      "line": 25,
+      "precode": "_TIFFCheckRealloc(tif, tif->tif_fields, (tif->tif_nfields + n), sizeof(TIFFField *), reason);",
+      "aftercode": "_TIFFCheckRealloc(tif, tif->tif_fields, ((uint32)-1 + n), sizeof(TIFFField *), reason);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The function does not handle the case where TIFFFindField returns a valid field but with an invalid tag number.",
+      "line": 11,
+      "precode": "const TIFFField *fip = TIFFFindField(tif, info[i].field_tag, TIFF_ANY);",
+      "aftercode": "const TIFFField *fip = TIFFFindField(tif, (uint32)-1, TIFF_ANY);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The function does not check for null pointer in tif when calling TIFFErrorExt.",
+      "line": 13,
+      "precode": "TIFFErrorExt(tif->tif_clientdata, module, \"Field with tag %lu is already registered as \"%s\"",",
+      "aftercode": "TIFFErrorExt(NULL, module, \"Field with tag %lu is already registered as \"%s\"","
+    }
+  ]
+}

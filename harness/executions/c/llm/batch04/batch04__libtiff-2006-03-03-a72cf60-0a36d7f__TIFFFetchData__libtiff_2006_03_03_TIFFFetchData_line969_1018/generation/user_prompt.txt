@@ -1,0 +1,87 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: static tsize_t
+ 2: TIFFFetchData(TIFF* tif, TIFFDirEntry* dir, char* cp)
+ 3: {
+ 4: 	int w = TIFFDataWidth((TIFFDataType) dir->tdir_type);
+ 5: 	tsize_t cc = dir->tdir_count * w;
+ 6: 
+ 7: 	/* Check for overflow. */
+ 8: 	if (!dir->tdir_count || !w || (tsize_t)dir->tdir_count / w != cc)
+ 9: 		goto bad;
+10: 
+11: 	if (!isMapped(tif)) {
+12: 		if (!SeekOK(tif, dir->tdir_offset))
+13: 			goto bad;
+14: 		if (!ReadOK(tif, cp, cc))
+15: 			goto bad;
+16: 	} else {
+17: 		tsize_t offset = dir->tdir_offset + cc;
+18: 		/* Check for overflow. */
+19: 		if ((tsize_t)dir->tdir_offset != offset - cc
+20: 		    || offset > (tsize_t)tif->tif_size)
+21: 			goto bad;
+22: 		_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);
+23: 	}
+24: 	if (tif->tif_flags & TIFF_SWAB) {
+25: 		switch (dir->tdir_type) {
+26: 		case TIFF_SHORT:
+27: 		case TIFF_SSHORT:
+28: 			TIFFSwabArrayOfShort((uint16*) cp, dir->tdir_count);
+29: 			break;
+30: 		case TIFF_LONG:
+31: 		case TIFF_SLONG:
+32: 		case TIFF_FLOAT:
+33: 			TIFFSwabArrayOfLong((uint32*) cp, dir->tdir_count);
+34: 			break;
+35: 		case TIFF_RATIONAL:
+36: 		case TIFF_SRATIONAL:
+37: 			TIFFSwabArrayOfLong((uint32*) cp, 2*dir->tdir_count);
+38: 			break;
+39: 		case TIFF_DOUBLE:
+40: 			TIFFSwabArrayOfDouble((double*) cp, dir->tdir_count);
+41: 			break;
+42: 		}
+43: 	}
+44: 	return (cc);
+45: bad:
+46: 	TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
+47: 		     "Error fetching data for field \"%s\"",
+48: 		     _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);
+49: 	return (tsize_t) 0;
+50: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

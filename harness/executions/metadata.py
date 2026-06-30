@@ -28,6 +28,8 @@ DEFAULT_EXPERIMENT_METADATA = {
     "rej_non_executable_structural_change": 0,
     "rej_precode_not_found": 0,
     "rej_ambiguous_precode_match": 0,
+    "rej_missing_or_invalid_aftercode": 0,
+    "rej_missing_or_invalid_precode": 0,
     "parsed_mutants_integrity": None,
     "requested_mutant_count": None,
     "loaded_mutant_count": None,

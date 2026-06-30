@@ -1,0 +1,359 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: static int
+  2: _TIFFWriteDirectory(TIFF* tif, int done)
+  3: {
+  4: 	uint16 dircount;
+  5: 	toff_t diroff;
+  6: 	ttag_t tag;
+  7: 	uint32 nfields;
+  8: 	tsize_t dirsize;
+  9: 	char* data;
+ 10: 	TIFFDirEntry* dir;
+ 11: 	TIFFDirectory* td;
+ 12: 	unsigned long b, fields[FIELD_SETLONGS];
+ 13: 	int fi, nfi;
+ 14: 
+ 15: 	if (tif->tif_mode == O_RDONLY)
+ 16: 		return (1);
+ 17: 	/*
+ 18: 	 * Clear write state so that subsequent images with
+ 19: 	 * different characteristics get the right buffers
+ 20: 	 * setup for them.
+ 21: 	 */
+ 22: 	if (done)
+ 23: 	{
+ 24: 	    if (tif->tif_flags & TIFF_POSTENCODE) {
+ 25: 		    tif->tif_flags &= ~TIFF_POSTENCODE;
+ 26: 		    if (!(*tif->tif_postencode)(tif)) {
+ 27: 				TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
+ 28: 				"Error post-encoding before directory write");
+ 29: 			    return (0);
+ 30: 		    }
+ 31: 	    }
+ 32: 	    (*tif->tif_close)(tif);		/* shutdown encoder */
+ 33: 	    /*
+ 34: 	     * Flush any data that might have been written
+ 35: 	     * by the compression close+cleanup routines.
+ 36: 	     */
+ 37: 	    if (tif->tif_rawcc > 0 && !TIFFFlushData1(tif)) {
+ 38: 			TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
+ 39: 			"Error flushing data before directory write");
+ 40: 		    return (0);
+ 41: 	    }
+ 42: 	    if ((tif->tif_flags & TIFF_MYBUFFER) && tif->tif_rawdata) {
+ 43: 		    _TIFFfree(tif->tif_rawdata);
+ 44: 		    tif->tif_rawdata = NULL;
+ 45: 		    tif->tif_rawcc = 0;
+ 46: 		    tif->tif_rawdatasize = 0;
+ 47: 	    }
+ 48: 	    tif->tif_flags &= ~(TIFF_BEENWRITING|TIFF_BUFFERSETUP);
+ 49: 	}
+ 50: 
+ 51: 	td = &tif->tif_dir;
+ 52: 	/*
+ 53: 	 * Size the directory so that we can calculate
+ 54: 	 * offsets for the data items that aren't kept
+ 55: 	 * in-place in each field.
+ 56: 	 */
+ 57: 	nfields = 0;
+ 58: 	for (b = 0; b <= FIELD_LAST; b++)
+ 59: 		if (TIFFFieldSet(tif, b) && b != FIELD_CUSTOM)
+ 60: 			nfields += (b < FIELD_SUBFILETYPE ? 2 : 1);
+ 61:         nfields += td->td_customValueCount;
+ 62: 	dirsize = nfields * sizeof (TIFFDirEntry);
+ 63: 	data = (char*) _TIFFmalloc(dirsize);
+ 64: 	if (data == NULL) {
+ 65: 		TIFFErrorExt(tif->tif_clientdata, tif->tif_name,
+ 66: 		    "Cannot write directory, out of space");
+ 67: 		return (0);
+ 68: 	}
+ 69: 	/*
+ 70: 	 * Directory hasn't been placed yet, put
+ 71: 	 * it at the end of the file and link it
+ 72: 	 * into the existing directory structure.
+ 73: 	 */
+ 74: 	if (tif->tif_diroff == 0 && !TIFFLinkDirectory(tif))
+ 75: 		goto bad;
+ 76: 	tif->tif_dataoff = (toff_t)(
+ 77: 	    tif->tif_diroff + sizeof (uint16) + dirsize + sizeof (toff_t));
+ 78: 	if (tif->tif_dataoff & 1)
+ 79: 		tif->tif_dataoff++;
+ 80: 	(void) TIFFSeekFile(tif, tif->tif_dataoff, SEEK_SET);
+ 81: 	tif->tif_curdir++;
+ 82: 	dir = (TIFFDirEntry*) data;
+ 83: 	/*
+ 84: 	 * Setup external form of directory
+ 85: 	 * entries and write data items.
+ 86: 	 */
+ 87: 	_TIFFmemcpy(fields, td->td_fieldsset, sizeof (fields));
+ 88: 	/*
+ 89: 	 * Write out ExtraSamples tag only if
+ 90: 	 * extra samples are present in the data.
+ 91: 	 */
+ 92: 	if (FieldSet(fields, FIELD_EXTRASAMPLES) && !td->td_extrasamples) {
+ 93: 		ResetFieldBit(fields, FIELD_EXTRASAMPLES);
+ 94: 		nfields--;
+ 95: 		dirsize -= sizeof (TIFFDirEntry);
+ 96: 	}								/*XXX*/
+ 97: 	for (fi = 0, nfi = tif->tif_nfields; nfi > 0; nfi--, fi++) {
+ 98: 		const TIFFFieldInfo* fip = tif->tif_fieldinfo[fi];
+ 99: 
+100:                 /*
+101:                 ** For custom fields, we test to see if the custom field
+102:                 ** is set or not.  For normal fields, we just use the
+103:                 ** FieldSet test. 
+104:                 */
+105:                 if( fip->field_bit == FIELD_CUSTOM )
+106:                 {
+107:                     int ci, is_set = FALSE;
+108: 
+109:                     for( ci = 0; ci < td->td_customValueCount; ci++ )
+110:                         is_set |= (td->td_customValues[ci].info == fip);
+111: 
+112:                     if( !is_set )
+113:                         continue;
+114:                 }
+115: 		else if (!FieldSet(fields, fip->field_bit))
+116:                     continue;
+117: 
+118: 
+119:                 /*
+120:                 ** Handle other fields.
+121:                 */
+122: 		switch (fip->field_bit)
+123:                 {
+124: 		case FIELD_STRIPOFFSETS:
+125: 			/*
+126: 			 * We use one field bit for both strip and tile
+127: 
+128: 			 * offsets, and so must be careful in selecting
+129: 			 * the appropriate field descriptor (so that tags
+130: 			 * are written in sorted order).
+131: 			 */
+132: 			tag = isTiled(tif) ?
+133: 			    TIFFTAG_TILEOFFSETS : TIFFTAG_STRIPOFFSETS;
+134: 			if (tag != fip->field_tag)
+135: 				continue;
+136: 			
+137: 			dir->tdir_tag = (uint16) tag;
+138: 			dir->tdir_type = (uint16) TIFF_LONG;
+139: 			dir->tdir_count = (uint32) td->td_nstrips;
+140: 			if (!TIFFWriteLongArray(tif, dir, td->td_stripoffset))
+141: 				goto bad;
+142: 			break;
+143: 		case FIELD_STRIPBYTECOUNTS:
+144: 			/*
+145: 			 * We use one field bit for both strip and tile
+146: 			 * byte counts, and so must be careful in selecting
+147: 			 * the appropriate field descriptor (so that tags
+148: 			 * are written in sorted order).
+149: 			 */
+150: 			tag = isTiled(tif) ?
+151: 			    TIFFTAG_TILEBYTECOUNTS : TIFFTAG_STRIPBYTECOUNTS;
+152: 			if (tag != fip->field_tag)
+153: 				continue;
+154: 			
+155: 			dir->tdir_tag = (uint16) tag;
+156: 			dir->tdir_type = (uint16) TIFF_LONG;
+157: 			dir->tdir_count = (uint32) td->td_nstrips;
+158: 			if (!TIFFWriteLongArray(tif, dir,
+159: 						td->td_stripbytecount))
+160: 				goto bad;
+161: 			break;
+162: 		case FIELD_ROWSPERSTRIP:
+163: 			TIFFSetupShortLong(tif, TIFFTAG_ROWSPERSTRIP,
+164: 			    dir, td->td_rowsperstrip);
+165: 			break;
+166: 		case FIELD_COLORMAP:
+167: 			if (!TIFFWriteShortTable(tif, TIFFTAG_COLORMAP, dir,
+168: 			    3, td->td_colormap))
+169: 				goto bad;
+170: 			break;
+171: 		case FIELD_IMAGEDIMENSIONS:
+172: 			TIFFSetupShortLong(tif, TIFFTAG_IMAGEWIDTH,
+173: 			    dir++, td->td_imagewidth);
+174: 			TIFFSetupShortLong(tif, TIFFTAG_IMAGELENGTH,
+175: 			    dir, td->td_imagelength);
+176: 			break;
+177: 		case FIELD_TILEDIMENSIONS:
+178: 			TIFFSetupShortLong(tif, TIFFTAG_TILEWIDTH,
+179: 			    dir++, td->td_tilewidth);
+180: 			TIFFSetupShortLong(tif, TIFFTAG_TILELENGTH,
+181: 			    dir, td->td_tilelength);
+182: 			break;
+183: 		case FIELD_COMPRESSION:
+184: 			TIFFSetupShort(tif, TIFFTAG_COMPRESSION,
+185: 			    dir, td->td_compression);
+186: 			break;
+187: 		case FIELD_PHOTOMETRIC:
+188: 			TIFFSetupShort(tif, TIFFTAG_PHOTOMETRIC,
+189: 			    dir, td->td_photometric);
+190: 			break;
+191: 		case FIELD_POSITION:
+192: 			WriteRationalPair(TIFF_RATIONAL,
+193: 			    TIFFTAG_XPOSITION, td->td_xposition,
+194: 			    TIFFTAG_YPOSITION, td->td_yposition);
+195: 			break;
+196: 		case FIELD_RESOLUTION:
+197: 			WriteRationalPair(TIFF_RATIONAL,
+198: 			    TIFFTAG_XRESOLUTION, td->td_xresolution,
+199: 			    TIFFTAG_YRESOLUTION, td->td_yresolution);
+200: 			break;
+201: 		case FIELD_BITSPERSAMPLE:
+202: 		case FIELD_MINSAMPLEVALUE:
+203: 		case FIELD_MAXSAMPLEVALUE:
+204: 		case FIELD_SAMPLEFORMAT:
+205: 			if (!TIFFWritePerSampleShorts(tif, fip->field_tag, dir))
+206: 				goto bad;
+207: 			break;
+208: 		case FIELD_SMINSAMPLEVALUE:
+209: 		case FIELD_SMAXSAMPLEVALUE:
+210: 			if (!TIFFWritePerSampleAnys(tif,
+211: 			    _TIFFSampleToTagType(tif), fip->field_tag, dir))
+212: 				goto bad;
+213: 			break;
+214: 		case FIELD_PAGENUMBER:
+215: 		case FIELD_HALFTONEHINTS:
+216: 		case FIELD_YCBCRSUBSAMPLING:
+217: 			if (!TIFFSetupShortPair(tif, fip->field_tag, dir))
+218: 				goto bad;
+219: 			break;
+220: 		case FIELD_INKNAMES:
+221: 			if (!TIFFWriteInkNames(tif, dir))
+222: 				goto bad;
+223: 			break;
+224: 		case FIELD_TRANSFERFUNCTION:
+225: 			if (!TIFFWriteTransferFunction(tif, dir))
+226: 				goto bad;
+227: 			break;
+228: 		case FIELD_SUBIFD:
+229: 			/*
+230: 			 * XXX: Always write this field using LONG type
+231: 			 * for backward compatibility.
+232: 			 */
+233: 			dir->tdir_tag = (uint16) fip->field_tag;
+234: 			dir->tdir_type = (uint16) TIFF_LONG;
+235: 			dir->tdir_count = (uint32) td->td_nsubifd;
+236: 			if (!TIFFWriteLongArray(tif, dir, td->td_subifd))
+237: 				goto bad;
+238: 			/*
+239: 			 * Total hack: if this directory includes a SubIFD
+240: 			 * tag then force the next <n> directories to be
+241: 			 * written as ``sub directories'' of this one.  This
+242: 			 * is used to write things like thumbnails and
+243: 			 * image masks that one wants to keep out of the
+244: 			 * normal directory linkage access mechanism.
+245: 			 */
+246: 			if (dir->tdir_count > 0) {
+247: 				tif->tif_flags |= TIFF_INSUBIFD;
+248: 				tif->tif_nsubifd = (uint16) dir->tdir_count;
+249: 				if (dir->tdir_count > 1)
+250: 					tif->tif_subifdoff = dir->tdir_offset;
+251: 				else
+252: 					tif->tif_subifdoff = (uint32)(
+253: 					      tif->tif_diroff
+254: 					    + sizeof (uint16)
+255: 					    + ((char*)&dir->tdir_offset-data));
+256: 			}
+257: 			break;
+258: 		default:
+259: 			if (!TIFFWriteNormalTag(tif, dir, fip))
+260: 				goto bad;
+261: 			break;
+262: 		}
+263: 		dir++;
+264:                 
+265:                 if( fip->field_bit != FIELD_CUSTOM )
+266:                     ResetFieldBit(fields, fip->field_bit);
+267: 	}
+268: 
+269: 	/*
+270: 	 * Write directory.
+271: 	 */
+272: 	dircount = (uint16) nfields;
+273: 	diroff = (uint32) tif->tif_nextdiroff;
+274: 	if (tif->tif_flags & TIFF_SWAB) {
+275: 		/*
+276: 		 * The file's byte order is opposite to the
+277: 		 * native machine architecture.  We overwrite
+278: 		 * the directory information with impunity
+279: 		 * because it'll be released below after we
+280: 		 * write it to the file.  Note that all the
+281: 		 * other tag construction routines assume that
+282: 		 * we do this byte-swapping; i.e. they only
+283: 		 * byte-swap indirect data.
+284: 		 */
+285: 		for (dir = (TIFFDirEntry*) data; dircount; dir++, dircount--) {
+286: 			TIFFSwabArrayOfShort(&dir->tdir_tag, 2);
+287: 			TIFFSwabArrayOfLong(&dir->tdir_count, 2);
+288: 		}
+289: 		dircount = (uint16) nfields;
+290: 		TIFFSwabShort(&dircount);
+291: 		TIFFSwabLong(&diroff);
+292: 	}
+293: 	(void) TIFFSeekFile(tif, tif->tif_diroff, SEEK_SET);
+294: 	if (!WriteOK(tif, &dircount, sizeof (dircount))) {
+295: 		TIFFErrorExt(tif->tif_clientdata, tif->tif_name, "Error writing directory count");
+296: 		goto bad;
+297: 	}
+298: 	if (!WriteOK(tif, data, dirsize)) {
+299: 		TIFFErrorExt(tif->tif_clientdata, tif->tif_name, "Error writing directory contents");
+300: 		goto bad;
+301: 	}
+302: 	if (!WriteOK(tif, &diroff, sizeof (diroff))) {
+303: 		TIFFErrorExt(tif->tif_clientdata, tif->tif_name, "Error writing directory link");
+304: 		goto bad;
+305: 	}
+306: 	if (done) {
+307: 		TIFFFreeDirectory(tif);
+308: 		tif->tif_flags &= ~TIFF_DIRTYDIRECT;
+309: 		(*tif->tif_cleanup)(tif);
+310: 
+311: 		/*
+312: 		* Reset directory-related state for subsequent
+313: 		* directories.
+314: 		*/
+315: 		TIFFCreateDirectory(tif);
+316: 	}
+317: 	_TIFFfree(data);
+318: 	return (1);
+319: bad:
+320: 	_TIFFfree(data);
+321: 	return (0);
+322: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

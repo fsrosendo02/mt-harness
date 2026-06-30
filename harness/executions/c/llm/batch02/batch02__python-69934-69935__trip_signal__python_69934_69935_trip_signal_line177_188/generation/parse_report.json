@@ -1,0 +1,46 @@
+{
+  "requested_count": 8,
+  "accepted_count": 5,
+  "rejected_count": 3,
+  "rejections": [
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unterminated block comment",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the postcondition that checksignals_witharg() must be called after setting is_tripped.",
+        "line": 7,
+        "precode": "if (is_tripped) return;",
+        "aftercode": "if (!is_tripped) Py_AddPendingCall(checksignals_witharg, NULL);",
+        "candidate_code": "trip_signal(int sig_num)\n{\n    Handlers[sig_num].tripped = 1;\n    if (is_tripped)\n        return;\n    /* Set is_tripped after setting .tripped, as it gets\n       if (!is_tripped) Py_AddPendingCall(checksignals_witharg, NULL);\n    is_tripped = 1;\n    Py_AddPendingCall(checksignals_witharg, NULL);\n    if (wakeup_fd != -1)\n        write(wakeup_fd, \"\\0\", 1);\n}\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the precondition that wakeup_fd must be set to a valid file descriptor.",
+        "line": 12,
+        "precode": "if (wakeup_fd != -1) write(wakeup_fd, \"\\0\", 1);",
+        "aftercode": "if (wakeup_fd == -1) return;",
+        "candidate_code": "trip_signal(int sig_num)\n{\n    Handlers[sig_num].tripped = 1;\n    if (is_tripped)\n        return;\n    /* Set is_tripped after setting .tripped, as it gets\n       cleared in PyErr_CheckSignals() before .tripped. */\n    is_tripped = 1;\n    Py_AddPendingCall(checksignals_witharg, NULL);\n    if (wakeup_fd != -1)\n        write(wakeup_fd, \"\\0\", 1);\nif (wakeup_fd == -1) return;\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the postcondition that write() must return 0 on success.",
+        "line": 12,
+        "precode": "if (wakeup_fd != -1) write(wakeup_fd, \"\\0\", 1);",
+        "aftercode": "if (write(wakeup_fd, \"\\0\", 1)) return;",
+        "candidate_code": "trip_signal(int sig_num)\n{\n    Handlers[sig_num].tripped = 1;\n    if (is_tripped)\n        return;\n    /* Set is_tripped after setting .tripped, as it gets\n       cleared in PyErr_CheckSignals() before .tripped. */\n    is_tripped = 1;\n    Py_AddPendingCall(checksignals_witharg, NULL);\n    if (wakeup_fd != -1)\n        write(wakeup_fd, \"\\0\", 1);\nif (write(wakeup_fd, \"\\0\", 1)) return;\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: select_select(PyObject *self, PyObject *args)
+  2: {
+  3: #ifdef SELECT_USES_HEAP
+  4:     pylist *rfd2obj, *wfd2obj, *efd2obj;
+  5: #else  /* !SELECT_USES_HEAP */
+  6:     /* XXX: All this should probably be implemented as follows:
+  7:      * - find the highest descriptor we're interested in
+  8:      * - add one
+  9:      * - that's the size
+ 10:      * See: Stevens, APitUE, $12.5.1
+ 11:      */
+ 12:     pylist rfd2obj[FD_SETSIZE + 1];
+ 13:     pylist wfd2obj[FD_SETSIZE + 1];
+ 14:     pylist efd2obj[FD_SETSIZE + 1];
+ 15: #endif /* SELECT_USES_HEAP */
+ 16:     PyObject *ifdlist, *ofdlist, *efdlist;
+ 17:     PyObject *ret = NULL;
+ 18:     PyObject *tout = Py_None;
+ 19:     fd_set ifdset, ofdset, efdset;
+ 20:     double timeout;
+ 21:     struct timeval tv, *tvp;
+ 22:     long seconds;
+ 23:     int imax, omax, emax, max;
+ 24:     int n;
+ 25: 
+ 26:     /* convert arguments */
+ 27:     if (!PyArg_UnpackTuple(args, "select", 3, 4,
+ 28:                           &ifdlist, &ofdlist, &efdlist, &tout))
+ 29:         return NULL;
+ 30: 
+ 31:     if (tout == Py_None)
+ 32:         tvp = (struct timeval *)0;
+ 33:     else if (!PyNumber_Check(tout)) {
+ 34:         PyErr_SetString(PyExc_TypeError,
+ 35:                         "timeout must be a float or None");
+ 36:         return NULL;
+ 37:     }
+ 38:     else {
+ 39:         timeout = PyFloat_AsDouble(tout);
+ 40:         if (timeout == -1 && PyErr_Occurred())
+ 41:             return NULL;
+ 42:         if (timeout > (double)LONG_MAX) {
+ 43:             PyErr_SetString(PyExc_OverflowError,
+ 44:                             "timeout period too long");
+ 45:             return NULL;
+ 46:         }
+ 47:         seconds = (long)timeout;
+ 48:         timeout = timeout - (double)seconds;
+ 49:         tv.tv_sec = seconds;
+ 50:         tv.tv_usec = (long)(timeout * 1E6);
+ 51:         tvp = &tv;
+ 52:     }
+ 53: 
+ 54: 
+ 55: #ifdef SELECT_USES_HEAP
+ 56:     /* Allocate memory for the lists */
+ 57:     rfd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);
+ 58:     wfd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);
+ 59:     efd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);
+ 60:     if (rfd2obj == NULL || wfd2obj == NULL || efd2obj == NULL) {
+ 61:         if (rfd2obj) PyMem_DEL(rfd2obj);
+ 62:         if (wfd2obj) PyMem_DEL(wfd2obj);
+ 63:         if (efd2obj) PyMem_DEL(efd2obj);
+ 64:         return PyErr_NoMemory();
+ 65:     }
+ 66: #endif /* SELECT_USES_HEAP */
+ 67:     /* Convert sequences to fd_sets, and get maximum fd number
+ 68:      * propagates the Python exception set in seq2set()
+ 69:      */
+ 70:     rfd2obj[0].sentinel = -1;
+ 71:     wfd2obj[0].sentinel = -1;
+ 72:     efd2obj[0].sentinel = -1;
+ 73:     if ((imax=seq2set(ifdlist, &ifdset, rfd2obj)) < 0)
+ 74:         goto finally;
+ 75:     if ((omax=seq2set(ofdlist, &ofdset, wfd2obj)) < 0)
+ 76:         goto finally;
+ 77:     if ((emax=seq2set(efdlist, &efdset, efd2obj)) < 0)
+ 78:         goto finally;
+ 79:     max = imax;
+ 80:     if (omax > max) max = omax;
+ 81:     if (emax > max) max = emax;
+ 82: 
+ 83:     Py_BEGIN_ALLOW_THREADS
+ 84:     n = select(max, &ifdset, &ofdset, &efdset, tvp);
+ 85:     Py_END_ALLOW_THREADS
+ 86: 
+ 87: #ifdef MS_WINDOWS
+ 88:     if (n == SOCKET_ERROR) {
+ 89:         PyErr_SetExcFromWindowsErr(SelectError, WSAGetLastError());
+ 90:     }
+ 91: #else
+ 92:     if (n < 0) {
+ 93:         PyErr_SetFromErrno(SelectError);
+ 94:     }
+ 95: #endif
+ 96:     else {
+ 97:         /* any of these three calls can raise an exception.  it's more
+ 98:            convenient to test for this after all three calls... but
+ 99:            is that acceptable?
+100:         */
+101:         ifdlist = set2list(&ifdset, rfd2obj);
+102:         ofdlist = set2list(&ofdset, wfd2obj);
+103:         efdlist = set2list(&efdset, efd2obj);
+104:         if (PyErr_Occurred())
+105:             ret = NULL;
+106:         else
+107:             ret = PyTuple_Pack(3, ifdlist, ofdlist, efdlist);
+108: 
+109:         Py_DECREF(ifdlist);
+110:         Py_DECREF(ofdlist);
+111:         Py_DECREF(efdlist);
+112:     }
+113: 
+114:   finally:
+115:     reap_obj(rfd2obj);
+116:     reap_obj(wfd2obj);
+117:     reap_obj(efd2obj);
+118: #ifdef SELECT_USES_HEAP
+119:     PyMem_DEL(rfd2obj);
+120:     PyMem_DEL(wfd2obj);
+121:     PyMem_DEL(efd2obj);
+122: #endif /* SELECT_USES_HEAP */
+123:     return ret;
+124: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

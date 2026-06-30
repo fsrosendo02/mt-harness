@@ -1,0 +1,92 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: TIFFWriteDirectoryTagSubifd(TIFF* tif, uint32* ndir, TIFFDirEntry* dir)
+ 2: {
+ 3: 	static const char module[] = "TIFFWriteDirectoryTagSubifd";
+ 4: 	uint64 m;
+ 5: 	int n;
+ 6: 	if (tif->tif_dir.td_nsubifd==0)
+ 7: 		return(1);
+ 8: 	if (dir==NULL)
+ 9: 	{
+10: 		(*ndir)++;
+11: 		return(1);
+12: 	}
+13: 	m=tif->tif_dataoff;
+14: 	if (!(tif->tif_flags&TIFF_BIGTIFF))
+15: 	{
+16: 		uint32* o;
+17: 		uint64* pa;
+18: 		uint32* pb;
+19: 		uint16 p;
+20: 		o=_TIFFmalloc(tif->tif_dir.td_nsubifd*sizeof(uint32));
+21: 		if (o==NULL)
+22: 		{
+23: 			TIFFErrorExt(tif->tif_clientdata,module,"Out of memory");
+24: 			return(0);
+25: 		}
+26: 		pa=tif->tif_dir.td_subifd;
+27: 		pb=o;
+28: 		for (p=0; p<tif->tif_dir.td_nsubifd; p++)
+29: 		{
+30: 			assert(*pa<=0xFFFFFFFFUL);
+31: 			*pb++=(uint32)(*pa++);
+32: 		}
+33: 		n=TIFFWriteDirectoryTagCheckedIfdArray(tif,ndir,dir,TIFFTAG_SUBIFD,tif->tif_dir.td_nsubifd,o);
+34: 		_TIFFfree(o);
+35: 	}
+36: 	else
+37: 		n=TIFFWriteDirectoryTagCheckedIfd8Array(tif,ndir,dir,TIFFTAG_SUBIFD,tif->tif_dir.td_nsubifd,tif->tif_dir.td_subifd);
+38: 	if (!n)
+39: 		return(0);
+40: 	/*
+41: 	 * Total hack: if this directory includes a SubIFD
+42: 	 * tag then force the next <n> directories to be
+43: 	 * written as ``sub directories'' of this one.  This
+44: 	 * is used to write things like thumbnails and
+45: 	 * image masks that one wants to keep out of the
+46: 	 * normal directory linkage access mechanism.
+47: 	 */
+48: 	tif->tif_flags|=TIFF_INSUBIFD;
+49: 	tif->tif_nsubifd=tif->tif_dir.td_nsubifd;
+50: 	if (tif->tif_dir.td_nsubifd==1)
+51: 		tif->tif_subifdoff=0;
+52: 	else
+53: 		tif->tif_subifdoff=m;
+54: 	return(1);
+55: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

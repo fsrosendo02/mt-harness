@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function does not allocate sufficient memory to read all strips from the input TIFF file.",
+      "line": 3,
+      "precode": "tsize_t bufsize = TIFFStripSize(in);",
+      "aftercode": "tsize_t bufsize = 0; // intentionally setting bufsize to 0"
+    },
+    {
+      "id": 2,
+      "reasoning": "If a strip's byte count exceeds the allocated buffer size, the function does not reallocate the buffer.",
+      "line": 13,
+      "precode": "buf = (unsigned char *)_TIFFrealloc(buf, bytecounts[s]);",
+      "aftercode": "buf = (unsigned char *)malloc(bytecounts[s]); // replacing realloc with malloc"
+    },
+    {
+      "id": 3,
+      "reasoning": "Not all strips from the input TIFF file are successfully read and written to the output TIFF file.",
+      "line": 19,
+      "precode": "TIFFWriteRawStrip(out, s, buf, bytecounts[s]) < 0",
+      "aftercode": "// commenting out the error check for TIFFWriteRawStrip"
+    },
+    {
+      "id": 4,
+      "reasoning": "Memory is not properly freed after use.",
+      "line": 24,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "// commenting out _TIFFfree(buf)"
+    },
+    {
+      "id": 5,
+      "reasoning": "Not all strips from the input TIFF file are successfully read and written to the output TIFF file.",
+      "line": 18,
+      "precode": "if (bytecounts[s] > (uint32)bufsize)",
+      "aftercode": "// removing the conditional check for buffer size"
+    },
+    {
+      "id": 6,
+      "reasoning": "Memory is not properly freed after use.",
+      "line": 24,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "buf = (unsigned char *)_TIFFrealloc(buf, bufsize); // intentionally freeing and reallocating"
+    },
+    {
+      "id": 7,
+      "reasoning": "Not all strips from the input TIFF file are successfully read and written to the output TIFF file.",
+      "line": 20,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "// commenting out _TIFFfree(buf) after error"
+    },
+    {
+      "id": 8,
+      "reasoning": "Memory is not properly freed after use in the case of an error.",
+      "line": 22,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "// commenting out _TIFFfree(buf) on error"
+    }
+  ]
+}

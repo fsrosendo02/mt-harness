@@ -1,0 +1,40 @@
+            return -Py_HUGE_VAL; /* log10(0) = -inf */
+        else
+            return Py_NAN; /* log10(-ve) = nan */
+    }
+    else if (Py_IS_NAN(x))
+        return x; /* log10(nan) = nan */
+    else if (x > 0.0)
+        PyErr_SetString(PyExc_OverflowError, "log10(inf)");
+    else {
+        errno = EDOM;
+        return Py_NAN; /* log10(-inf) = nan */
+    }
+}
+
+
+/* Call is_error when errno != 0, and where x is the result libm
+ * returned.  is_error will usually set up an exception and return
+ * true (1), but may return false (0) without setting up an exception.
+ */
+static int
+is_error(double x)
+{
+    int result = 1;     /* presumption of guilt */
+    assert(errno);      /* non-zero errno is a precondition for calling */
+    if (errno == EDOM)
+        PyErr_SetString(PyExc_ValueError, "math domain error");
+
+    else if (errno == ERANGE) {
+        /* ANSI C generally requires libm functions to set ERANGE
+         * on overflow, but also generally *allows* them to set
+         * ERANGE on underflow too.  There's no consistency about
+         * the latter across platforms.
+         * Alas, C99 never requires that errno be set.
+         * Here we suppress the underflow errors (libm functions
+         * should return a zero on underflow, and +- HUGE_VAL on
+         * overflow, so testing the result for zero suffices to
+         * distinguish the cases).
+         *
+         * On some platforms (Ubuntu/ia64) it seems that errno can be
+         * set to ERANGE for subnormal results that do *not* underflow

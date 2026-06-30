@@ -18,7 +18,7 @@ class MockAdapter(BenchmarkAdapter):
 
         return True, "Mock build succeeded"
 
-    def test(self, workdir: str) -> tuple[bool, str]:
+    def test(self, workdir: str, eligible_tests: list[str] | None = None) -> tuple[bool, str]:
         source_file = Path(workdir) / "mock_source.java"
         content = source_file.read_text(encoding="utf-8")
 

@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates boundary condition by not checking if buffer allocation was successful before freeing it.",
+      "line": 4,
+      "precode": "(unsigned char *)_TIFFmalloc(bufsize)",
+      "aftercode": "(unsigned char *)_TIFFmalloc(bufsize) || return (0);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates boundary condition by not checking if the strip size exceeds buffer size before reallocating.",
+      "line": 12,
+      "precode": "if (bytecounts[s] > (uint32)bufsize)",
+      "aftercode": "if (bytecounts[s] > (uint32)bufsize && TIFFReadRawStrip(in, s, buf, bytecounts[s]) >= 0)"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates code correctness by not checking the return value of TIFFWriteRawStrip.",
+      "line": 19,
+      "precode": "TIFFReadRawStrip(in, s, buf, bytecounts[s]) < 0 ||",
+      "aftercode": "TIFFReadRawStrip(in, s, buf, bytecounts[s]) < 0 || TIFFWriteRawStrip(out, s, buf, bytecounts[s]) < 0 ||"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates memory management by not freeing the buffer in all code paths.",
+      "line": 20,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "_TIFFfree(buf) || return (0);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates code correctness by not returning a value in the function.",
+      "line": 25,
+      "precode": "return (1);",
+      "aftercode": "if(buf) return (1);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates code correctness by not handling the case where TIFFGetField fails.",
+      "line": 10,
+      "precode": "TIFFGetField(in, TIFFTAG_STRIPBYTECOUNTS, &bytecounts);",
+      "aftercode": "if (!TIFFGetField(in, TIFFTAG_STRIPBYTECOUNTS, &bytecounts)) return (0);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates code correctness by not handling the case where _TIFFmalloc fails.",
+      "line": 4,
+      "precode": "(unsigned char *)_TIFFmalloc(bufsize)",
+      "aftercode": "if (!(buf = (unsigned char *)_TIFFmalloc(bufsize))) return (0);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates code correctness by not handling the case where _TIFFrealloc fails.",
+      "line": 13,
+      "precode": "(unsigned char *)_TIFFrealloc(buf, bytecounts[s])",
+      "aftercode": "if (!(buf = (unsigned char *)_TIFFrealloc(buf, bytecounts[s]))) return (0);"
+    }
+  ]
+}

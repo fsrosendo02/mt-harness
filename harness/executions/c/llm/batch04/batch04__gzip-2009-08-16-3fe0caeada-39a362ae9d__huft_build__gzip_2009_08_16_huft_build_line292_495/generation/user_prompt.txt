@@ -1,0 +1,241 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: int huft_build(b, n, s, d, e, t, m)
+  2: unsigned *b;            /* code lengths in bits (all assumed <= BMAX) */
+  3: unsigned n;             /* number of codes (assumed <= N_MAX) */
+  4: unsigned s;             /* number of simple-valued codes (0..s-1) */
+  5: ush *d;                 /* list of base values for non-simple codes */
+  6: ush *e;                 /* list of extra bits for non-simple codes */
+  7: struct huft **t;        /* result: starting table */
+  8: int *m;                 /* maximum lookup bits, returns actual */
+  9: /* Given a list of code lengths and a maximum table size, make a set of
+ 10:    tables to decode that set of codes.  Return zero on success, one if
+ 11:    the given code set is incomplete (the tables are still built in this
+ 12:    case), two if the input is invalid (all zero length codes or an
+ 13:    oversubscribed set of lengths), and three if not enough memory. */
+ 14: {
+ 15:   unsigned a;                   /* counter for codes of length k */
+ 16:   unsigned c[BMAX+1];           /* bit length count table */
+ 17:   unsigned f;                   /* i repeats in table every f entries */
+ 18:   int g;                        /* maximum code length */
+ 19:   int h;                        /* table level */
+ 20:   register unsigned i;          /* counter, current code */
+ 21:   register unsigned j;          /* counter */
+ 22:   register int k;               /* number of bits in current code */
+ 23:   int l;                        /* bits per table (returned in m) */
+ 24:   register unsigned *p;         /* pointer into c[], b[], or v[] */
+ 25:   register struct huft *q;      /* points to current table */
+ 26:   struct huft r;                /* table entry for structure assignment */
+ 27:   struct huft *u[BMAX];         /* table stack */
+ 28:   unsigned v[N_MAX];            /* values in order of bit length */
+ 29:   register int w;               /* bits before this table == (l * h) */
+ 30:   unsigned x[BMAX+1];           /* bit offsets, then code stack */
+ 31:   unsigned *xp;                 /* pointer into x */
+ 32:   int y;                        /* number of dummy codes added */
+ 33:   unsigned z;                   /* number of entries in current table */
+ 34: 
+ 35: 
+ 36:   /* Generate counts for each bit length */
+ 37:   memzero(c, sizeof(c));
+ 38:   p = b;  i = n;
+ 39:   do {
+ 40:     Tracecv(*p, (stderr, (n-i >= ' ' && n-i <= '~' ? "%c %d\n" : "0x%x %d\n"),
+ 41: 	    n-i, *p));
+ 42:     c[*p]++;                    /* assume all entries <= BMAX */
+ 43:     p++;                      /* Can't combine with above line (Solaris bug) */
+ 44:   } while (--i);
+ 45:   if (c[0] == n)                /* null input--all zero length codes */
+ 46:   {
+ 47:     q = (struct huft *) malloc (2 * sizeof *q);
+ 48:     if (!q)
+ 49:       return 3;
+ 50:     hufts += 2;
+ 51:     q[0].v.t = (struct huft *) NULL;
+ 52:     q[1].e = 99;    /* invalid code marker */
+ 53:     q[1].b = 1;
+ 54:     *t = q + 1;
+ 55:     *m = 1;
+ 56:     return 0;
+ 57:   }
+ 58: 
+ 59: 
+ 60:   /* Find minimum and maximum length, bound *m by those */
+ 61:   l = *m;
+ 62:   for (j = 1; j <= BMAX; j++)
+ 63:     if (c[j])
+ 64:       break;
+ 65:   k = j;                        /* minimum code length */
+ 66:   if ((unsigned)l < j)
+ 67:     l = j;
+ 68:   for (i = BMAX; i; i--)
+ 69:     if (c[i])
+ 70:       break;
+ 71:   g = i;                        /* maximum code length */
+ 72:   if ((unsigned)l > i)
+ 73:     l = i;
+ 74:   *m = l;
+ 75: 
+ 76: 
+ 77:   /* Adjust last length count to fill out codes, if needed */
+ 78:   for (y = 1 << j; j < i; j++, y <<= 1)
+ 79:     if ((y -= c[j]) < 0)
+ 80:       return 2;                 /* bad input: more codes than bits */
+ 81:   if ((y -= c[i]) < 0)
+ 82:     return 2;
+ 83:   c[i] += y;
+ 84: 
+ 85: 
+ 86:   /* Generate starting offsets into the value table for each length */
+ 87:   x[1] = j = 0;
+ 88:   p = c + 1;  xp = x + 2;
+ 89:   while (--i) {                 /* note that i == g from above */
+ 90:     *xp++ = (j += *p++);
+ 91:   }
+ 92: 
+ 93: 
+ 94:   /* Make a table of values in order of bit lengths */
+ 95:   p = b;  i = 0;
+ 96:   do {
+ 97:     if ((j = *p++) != 0)
+ 98:       v[x[j]++] = i;
+ 99:   } while (++i < n);
+100:   n = x[g];                   /* set n to length of v */
+101: 
+102: 
+103:   /* Generate the Huffman codes and for each, make the table entries */
+104:   x[0] = i = 0;                 /* first Huffman code is zero */
+105:   p = v;                        /* grab values in bit order */
+106:   h = -1;                       /* no tables yet--level -1 */
+107:   w = -l;                       /* bits decoded == (l * h) */
+108:   u[0] = (struct huft *)NULL;   /* just to keep compilers happy */
+109:   q = (struct huft *)NULL;      /* ditto */
+110:   z = 0;                        /* ditto */
+111: 
+112:   /* go through the bit lengths (k already is bits in shortest code) */
+113:   for (; k <= g; k++)
+114:   {
+115:     a = c[k];
+116:     while (a--)
+117:     {
+118:       /* here i is the Huffman code of length k bits for value *p */
+119:       /* make tables up to required level */
+120:       while (k > w + l)
+121:       {
+122:         h++;
+123:         w += l;                 /* previous table always l bits */
+124: 
+125:         /* compute minimum size table less than or equal to l bits */
+126:         z = (z = g - w) > (unsigned)l ? l : z;  /* upper limit on table size */
+127:         if ((f = 1 << (j = k - w)) > a + 1)     /* try a k-w bit table */
+128:         {                       /* too few codes for k-w bit table */
+129:           f -= a + 1;           /* deduct codes from patterns left */
+130:           xp = c + k;
+131: 	  if (j < z)
+132: 	    while (++j < z)       /* try smaller tables up to z bits */
+133: 	    {
+134: 	      if ((f <<= 1) <= *++xp)
+135: 		break;            /* enough codes to use up j bits */
+136: 	      f -= *xp;           /* else deduct codes from patterns */
+137: 	    }
+138:         }
+139:         z = 1 << j;             /* table entries for j-bit table */
+140: 
+141:         /* allocate and link in new table */
+142:         if ((q = (struct huft *)malloc((z + 1)*sizeof(struct huft))) ==
+143:             (struct huft *)NULL)
+144:         {
+145:           if (h)
+146:             huft_free(u[0]);
+147:           return 3;             /* not enough memory */
+148:         }
+149:         hufts += z + 1;         /* track memory usage */
+150:         *t = q + 1;             /* link to list for huft_free() */
+151:         *(t = &(q->v.t)) = (struct huft *)NULL;
+152:         u[h] = ++q;             /* table starts after link */
+153: 
+154:         /* connect to last table, if there is one */
+155:         if (h)
+156:         {
+157:           x[h] = i;             /* save pattern for backing up */
+158:           r.b = (uch)l;         /* bits to dump before this table */
+159:           r.e = (uch)(16 + j);  /* bits in this table */
+160:           r.v.t = q;            /* pointer to this table */
+161:           j = i >> (w - l);     /* (get around Turbo C bug) */
+162:           u[h-1][j] = r;        /* connect to last table */
+163:         }
+164:       }
+165: 
+166:       /* set up table entry in r */
+167:       r.b = (uch)(k - w);
+168:       if (p >= v + n)
+169:         r.e = 99;               /* out of values--invalid code */
+170:       else if (*p < s)
+171:       {
+172:         r.e = (uch)(*p < 256 ? 16 : 15);    /* 256 is end-of-block code */
+173:         r.v.n = (ush)(*p);             /* simple code is just the value */
+174: 	p++;                           /* one compiler does not like *p++ */
+175:       }
+176:       else
+177:       {
+178:         r.e = (uch)e[*p - s];   /* non-simple--look up in lists */
+179:         r.v.n = d[*p++ - s];
+180:       }
+181: 
+182:       /* fill code-like entries with r */
+183:       f = 1 << (k - w);
+184:       for (j = i >> w; j < z; j += f)
+185:         q[j] = r;
+186: 
+187:       /* backwards increment the k-bit code i */
+188:       for (j = 1 << (k - 1); i & j; j >>= 1)
+189:         i ^= j;
+190:       i ^= j;
+191: 
+192:       /* backup over finished tables */
+193:       while ((i & ((1 << w) - 1)) != x[h])
+194:       {
+195:         h--;                    /* don't need to update q */
+196:         w -= l;
+197:       }
+198:     }
+199:   }
+200: 
+201: 
+202:   /* Return true (1) if we were given an incomplete table */
+203:   return y != 0 && g != 1;
+204: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

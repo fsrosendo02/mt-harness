@@ -1,0 +1,77 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1:             return -Py_HUGE_VAL; /* log10(0) = -inf */
+ 2:         else
+ 3:             return Py_NAN; /* log10(-ve) = nan */
+ 4:     }
+ 5:     else if (Py_IS_NAN(x))
+ 6:         return x; /* log10(nan) = nan */
+ 7:     else if (x > 0.0)
+ 8:         return x; /* log10(inf) = inf */
+ 9:     else {
+10:         errno = EDOM;
+11:         return Py_NAN; /* log10(-inf) = nan */
+12:     }
+13: }
+14: 
+15: 
+16: /* Call is_error when errno != 0, and where x is the result libm
+17:  * returned.  is_error will usually set up an exception and return
+18:  * true (1), but may return false (0) without setting up an exception.
+19:  */
+20: static int
+21: is_error(double x)
+22: {
+23:     int result = 1;     /* presumption of guilt */
+24:     assert(errno);      /* non-zero errno is a precondition for calling */
+25:     if (errno == EDOM)
+26:         PyErr_SetString(PyExc_ValueError, "math domain error");
+27: 
+28:     else if (errno == ERANGE) {
+29:         /* ANSI C generally requires libm functions to set ERANGE
+30:          * on overflow, but also generally *allows* them to set
+31:          * ERANGE on underflow too.  There's no consistency about
+32:          * the latter across platforms.
+33:          * Alas, C99 never requires that errno be set.
+34:          * Here we suppress the underflow errors (libm functions
+35:          * should return a zero on underflow, and +- HUGE_VAL on
+36:          * overflow, so testing the result for zero suffices to
+37:          * distinguish the cases).
+38:          *
+39:          * On some platforms (Ubuntu/ia64) it seems that errno can be
+40:          * set to ERANGE for subnormal results that do *not* underflow
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: local int get_method(in)
+  2:     int in;        /* input file descriptor */
+  3: {
+  4:     uch flags;     /* compression flags */
+  5:     char magic[2]; /* magic header */
+  6:     int imagic1;   /* like magic[1], but can represent EOF */
+  7:     ulg stamp;     /* time stamp */
+  8: 
+  9:     /* If --force and --stdout, zcat == cat, so do not complain about
+ 10:      * premature end of file: use try_byte instead of get_byte.
+ 11:      */
+ 12:     if (force && to_stdout) {
+ 13: 	magic[0] = (char)try_byte();
+ 14: 	imagic1 = try_byte ();
+ 15: 	magic[1] = (char) imagic1;
+ 16: 	/* If try_byte returned EOF, magic[1] == (char) EOF.  */
+ 17:     } else {
+ 18: 	magic[0] = (char)get_byte();
+ 19: 	magic[1] = (char)get_byte();
+ 20: 	imagic1 = 0; /* avoid lint warning */
+ 21:     }
+ 22:     method = -1;                 /* unknown yet */
+ 23:     part_nb++;                   /* number of parts in gzip file */
+ 24:     header_bytes = 0;
+ 25:     last_member = RECORD_IO;
+ 26:     /* assume multiple members in gzip file except for record oriented I/O */
+ 27: 
+ 28:     if (memcmp(magic, GZIP_MAGIC, 2) == 0
+ 29:         || memcmp(magic, OLD_GZIP_MAGIC, 2) == 0) {
+ 30: 
+ 31: 	method = (int)get_byte();
+ 32: 	if (method != DEFLATED) {
+ 33: 	    fprintf(stderr,
+ 34: 		    "%s: %s: unknown method %d -- not supported\n",
+ 35: 		    program_name, ifname, method);
+ 36: 	    exit_code = ERROR;
+ 37: 	    return -1;
+ 38: 	}
+ 39: 	work = unzip;
+ 40: 	flags  = (uch)get_byte();
+ 41: 
+ 42: 	if ((flags & ENCRYPTED) != 0) {
+ 43: 	    fprintf(stderr,
+ 44: 		    "%s: %s is encrypted -- not supported\n",
+ 45: 		    program_name, ifname);
+ 46: 	    exit_code = ERROR;
+ 47: 	    return -1;
+ 48: 	}
+ 49: 	if ((flags & CONTINUATION) != 0) {
+ 50: 	    fprintf(stderr,
+ 51: 		    "%s: %s is a multi-part gzip file -- not supported\n",
+ 52: 		    program_name, ifname);
+ 53: 	    exit_code = ERROR;
+ 54: 	    if (force <= 1) return -1;
+ 55: 	}
+ 56: 	if ((flags & RESERVED) != 0) {
+ 57: 	    fprintf(stderr,
+ 58: 		    "%s: %s has flags 0x%x -- not supported\n",
+ 59: 		    program_name, ifname, flags);
+ 60: 	    exit_code = ERROR;
+ 61: 	    if (force <= 1) return -1;
+ 62: 	}
+ 63: 	stamp  = (ulg)get_byte();
+ 64: 	stamp |= ((ulg)get_byte()) << 8;
+ 65: 	stamp |= ((ulg)get_byte()) << 16;
+ 66: 	stamp |= ((ulg)get_byte()) << 24;
+ 67: 	if (stamp != 0 && !no_time)
+ 68: 	  {
+ 69: 	    time_stamp.tv_sec = stamp;
+ 70: 	    time_stamp.tv_nsec = 0;
+ 71: 	  }
+ 72: 
+ 73: 	(void)get_byte();  /* Ignore extra flags for the moment */
+ 74: 	(void)get_byte();  /* Ignore OS type for the moment */
+ 75: 
+ 76: 	if ((flags & CONTINUATION) != 0) {
+ 77: 	    unsigned part = (unsigned)get_byte();
+ 78: 	    part |= ((unsigned)get_byte())<<8;
+ 79: 	    if (verbose) {
+ 80: 		fprintf(stderr,"%s: %s: part number %u\n",
+ 81: 			program_name, ifname, part);
+ 82: 	    }
+ 83: 	}
+ 84: 	if ((flags & EXTRA_FIELD) != 0) {
+ 85: 	    unsigned len = (unsigned)get_byte();
+ 86: 	    len |= ((unsigned)get_byte())<<8;
+ 87: 	    if (verbose) {
+ 88: 		fprintf(stderr,"%s: %s: extra field of %u bytes ignored\n",
+ 89: 			program_name, ifname, len);
+ 90: 	    }
+ 91: 	    while (len--) (void)get_byte();
+ 92: 	}
+ 93: 
+ 94: 	/* Get original file name if it was truncated */
+ 95: 	if ((flags & ORIG_NAME) != 0) {
+ 96: 	    if (no_name || (to_stdout && !list) || part_nb > 1) {
+ 97: 		/* Discard the old name */
+ 98: 		char c; /* dummy used for NeXTstep 3.0 cc optimizer bug */
+ 99: 		do {c=get_byte();} while (c != 0);
+100: 	    } else {
+101: 		/* Copy the base name. Keep a directory prefix intact. */
+102:                 char *p = gzip_base_name (ofname);
+103:                 char *base = p;
+104: 		for (;;) {
+105: 		    *p = (char)get_char();
+106: 		    if (*p++ == '\0') break;
+107: 		    if (p >= ofname+sizeof(ofname)) {
+108: 			gzip_error ("corrupted input -- file name too large");
+109: 		    }
+110: 		}
+111: 		p = gzip_base_name (base);
+112: 		memmove (base, p, strlen (p) + 1);
+113:                 /* If necessary, adapt the name to local OS conventions: */
+114:                 if (!list) {
+115:                    MAKE_LEGAL_NAME(base);
+116: 		   if (base) list=0; /* avoid warning about unused variable */
+117:                 }
+118: 	    } /* no_name || to_stdout */
+119: 	} /* ORIG_NAME */
+120: 
+121: 	/* Discard file comment if any */
+122: 	if ((flags & COMMENT) != 0) {
+123: 	    while (get_char() != 0) /* null */ ;
+124: 	}
+125: 	if (part_nb == 1) {
+126: 	    header_bytes = inptr + 2*sizeof(long); /* include crc and size */
+127: 	}
+128: 
+129:     } else if (memcmp(magic, PKZIP_MAGIC, 2) == 0 && inptr == 2
+130: 	    && memcmp((char*)inbuf, PKZIP_MAGIC, 4) == 0) {
+131: 	/* To simplify the code, we support a zip file when alone only.
+132:          * We are thus guaranteed that the entire local header fits in inbuf.
+133:          */
+134:         inptr = 0;
+135: 	work = unzip;
+136: 	if (check_zipfile(in) != OK) return -1;
+137: 	/* check_zipfile may get ofname from the local header */
+138: 	last_member = 1;
+139: 
+140:     } else if (memcmp(magic, PACK_MAGIC, 2) == 0) {
+141: 	work = unpack;
+142: 	method = PACKED;
+143: 
+144:     } else if (memcmp(magic, LZW_MAGIC, 2) == 0) {
+145: 	work = unlzw;
+146: 	method = COMPRESSED;
+147: 	last_member = 1;
+148: 
+149:     } else if (memcmp(magic, LZH_MAGIC, 2) == 0) {
+150: 	work = unlzh;
+151: 	method = LZHED;
+152: 	last_member = 1;
+153: 
+154:     } else if (force && to_stdout && !list) { /* pass input unchanged */
+155: 	method = STORED;
+156: 	work = copy;
+157:         inptr = 0;
+158: 	last_member = 1;
+159:     }
+160:     if (method >= 0) return method;
+161: 
+162:     if (part_nb == 1) {
+163: 	fprintf (stderr, "\n%s: %s: not in gzip format\n",
+164: 		 program_name, ifname);
+165: 	exit_code = ERROR;
+166: 	return -1;
+167:     } else {
+168: 	if (magic[0] == 0)
+169: 	  {
+170: 	    int inbyte;
+171: 	    for (inbyte = imagic1;  inbyte == 0;  inbyte = try_byte ())
+172: 	      continue;
+173: 	    if (inbyte == EOF)
+174: 	      {
+175: 		if (verbose)
+176: 		  WARN ((stderr, "\n%s: %s: decompression OK, trailing zero bytes ignored\n",
+177: 			 program_name, ifname));
+178: 		return -3;
+179: 	      }
+180: 	  }
+181: 
+182: 	WARN((stderr, "\n%s: %s: decompression OK, trailing garbage ignored\n",
+183: 	      program_name, ifname));
+184: 	return -2;
+185:     }
+186: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

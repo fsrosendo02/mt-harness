@@ -1,0 +1,20 @@
+{
+  "requested_count": 8,
+  "accepted_count": 7,
+  "rejected_count": 1,
+  "rejections": [
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly handling all characters in the input string. The loop iterates over str->used - 1 instead of str->used, which means the last character is not processed.",
+        "line": 6,
+        "precode": "for (unsigned int i = 0; i < str->used - 1; i++) {",
+        "aftercode": "// for (unsigned int i = 0; i < str->used - 1; i++) {",
+        "candidate_code": "static void accesslog_append_escaped(buffer *dest, buffer *str) {\n\t/* replaces non-printable chars with \\xHH where HH is the hex representation of the byte */\n\t/* exceptions: \" => \\\", \\ => \\\\, whitespace chars => \\n \\t etc. */\n\tbuffer_prepare_append(dest, str->used - 1);\n\n\t// for (unsigned int i = 0; i < str->used - 1; i++) { {\n\t\tif (str->ptr[i] >= ' ' && str->ptr[i] <= '~') {\n\t\t\t/* printable chars */\n\t\t\tbuffer_append_string_len(dest, &str->ptr[i], 1);\n\t\t} else switch (str->ptr[i]) {\n\t\tcase '\"':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\\\\"\");\n\t\t\tbreak;\n\t\tcase '\\\\':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\\\\\\");\n\t\t\tbreak;\n\t\tcase '\\b':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\b\");\n\t\t\tbreak;\n\t\tcase '\\n':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\n\");\n\t\t\tbreak;\n\t\tcase '\\r':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\r\");\n\t\t\tbreak;\n\t\tcase '\\t':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\t\");\n\t\t\tbreak;\n\t\tcase '\\v':\n\t\t\tBUFFER_APPEND_STRING_CONST(dest, \"\\\\v\");\n\t\t\tbreak;\n\t\tdefault: {\n\t\t\t\t/* non printable char => \\xHH */\n\t\t\t\tchar hh[5] = {'\\\\','x',0,0,0};\n\t\t\t\tchar h = str->ptr[i] / 16;\n\t\t\t\thh[2] = (h > 9) ? (h - 10 + 'A') : (h + '0');\n\t\t\t\th = str->ptr[i] % 16;\n\t\t\t\thh[3] = (h > 9) ? (h - 10 + 'A') : (h + '0');\n\t\t\t\tbuffer_append_string_len(dest, &hh[0], 4);\n\t\t\t}\n\t\t\tbreak;\n\t\t}\n\t}\n}\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

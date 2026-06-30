@@ -1,0 +1,168 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: URIHANDLER_FUNC(mod_secdownload_uri_handler) {
+  2: 	plugin_data *p = p_d;
+  3: 	MD5_CTX Md5Ctx;
+  4: 	HASH HA1;
+  5: 	const char *rel_uri, *ts_str, *md5_str;
+  6: 	time_t ts = 0;
+  7: 	size_t i;
+  8: 
+  9: 	if (con->uri.path->used == 0) return HANDLER_GO_ON;
+ 10: 
+ 11: 	mod_secdownload_patch_connection(srv, con, p);
+ 12: 
+ 13: 	if (buffer_is_empty(p->conf.uri_prefix)) return HANDLER_GO_ON;
+ 14: 
+ 15: 	if (buffer_is_empty(p->conf.secret)) {
+ 16: 		ERROR("secdownload.secret has to be set: %s", "");
+ 17: 
+ 18: 		return HANDLER_ERROR;
+ 19: 	}
+ 20: 
+ 21: 	if (buffer_is_empty(p->conf.doc_root)) {
+ 22: 		ERROR("secdownload.document-root has to be set: %s", "");
+ 23: 		
+ 24: 		return HANDLER_ERROR;
+ 25: 	}
+ 26: 
+ 27: 	if (con->conf.log_request_handling) {
+ 28: 		TRACE("-- handling %s in mod_secdownload", SAFE_BUF_STR(con->uri.path));
+ 29: 	}
+ 30: 
+ 31: 	/*
+ 32: 	 *  /<uri-prefix>[a-f0-9]{32}/[a-f0-9]{8}/<rel-path>
+ 33: 	 */
+ 34: 
+ 35: 	if (0 != strncmp(con->uri.path->ptr, p->conf.uri_prefix->ptr, p->conf.uri_prefix->used - 1)) {
+ 36: 		if (con->conf.log_request_handling) {
+ 37: 			TRACE("prefix '%s' didn't matched the url: %s", SAFE_BUF_STR(p->conf.uri_prefix), SAFE_BUF_STR(con->uri.path));
+ 38: 		}
+ 39: 
+ 40: 		return HANDLER_GO_ON;
+ 41: 	}
+ 42: 
+ 43: 	md5_str = con->uri.path->ptr + p->conf.uri_prefix->used - 1;
+ 44: 
+ 45: 	if (!is_hex_len(md5_str, 32)) {
+ 46: 		if (con->conf.log_request_handling) {
+ 47: 			TRACE("expected a 32-char hex-val as md5-hash: %s", SAFE_BUF_STR(con->uri.path));
+ 48: 		}
+ 49: 
+ 50: 		return HANDLER_GO_ON;
+ 51: 	}
+ 52: 	if (*(md5_str + 32) != '/') {
+ 53: 		if (con->conf.log_request_handling) {
+ 54: 			TRACE("missing a / after the md5-hash: %s", SAFE_BUF_STR(con->uri.path));
+ 55: 		}
+ 56: 
+ 57: 		return HANDLER_GO_ON;
+ 58: 	}
+ 59: 
+ 60: 	ts_str = md5_str + 32 + 1;
+ 61: 
+ 62: 	if (!is_hex_len(ts_str, 8)) {
+ 63: 		if (con->conf.log_request_handling) {
+ 64: 			TRACE("expected a 8-char hex-val after md5-hash: %s", SAFE_BUF_STR(con->uri.path));
+ 65: 		}
+ 66: 
+ 67: 		return HANDLER_GO_ON;
+ 68: 	}
+ 69: 	if (*(ts_str + 8) != '/') {
+ 70: 		if (con->conf.log_request_handling) {
+ 71: 			TRACE("missing a / after the timestamp: %s", SAFE_BUF_STR(con->uri.path));
+ 72: 		}
+ 73: 
+ 74: 		return HANDLER_GO_ON;
+ 75: 	}
+ 76: 
+ 77: 	for (i = 0; i < 8; i++) {
+ 78: 		ts = (ts << 4) + hex2int(*(ts_str + i));
+ 79: 	}
+ 80: 
+ 81: 	/* timed-out */
+ 82: 	if (srv->cur_ts - ts > p->conf.timeout ||
+ 83: 	    srv->cur_ts - ts < -p->conf.timeout) {
+ 84: 		if (con->conf.log_request_handling) {
+ 85: 			TRACE("timestamp is too old: %ld, timeout: %d", ts, p->conf.timeout);
+ 86: 		}
+ 87: 
+ 88: 		con->http_status = 408;
+ 89: 
+ 90: 		return HANDLER_FINISHED;
+ 91: 	}
+ 92: 
+ 93: 	rel_uri = ts_str + 8;
+ 94: 
+ 95: 	/* checking MD5
+ 96: 	 *
+ 97: 	 * <secret><rel-path><timestamp-hex>
+ 98: 	 */
+ 99: 
+100: 	buffer_copy_string_buffer(p->md5, p->conf.secret);
+101: 	buffer_append_string(p->md5, rel_uri);
+102: 	buffer_append_string_len(p->md5, ts_str, 8);
+103: 
+104: 	MD5_Init(&Md5Ctx);
+105: 	MD5_Update(&Md5Ctx, (unsigned char *)p->md5->ptr, p->md5->used - 1);
+106: 	MD5_Final(HA1, &Md5Ctx);
+107: 
+108: 	buffer_copy_string_hex(p->md5, (char *)HA1, 16);
+109: 
+110: 	if (0 != strncasecmp(md5_str, p->md5->ptr, 32)) {
+111: 		con->http_status = 403;
+112: 
+113: 		TRACE("MD5 didn't matched: %s == %s", md5_str, SAFE_BUF_STR(p->md5));
+114: 
+115: 		return HANDLER_FINISHED;
+116: 	}
+117: 
+118: 	/* starting with the last / we should have relative-path to the docroot
+119: 	 */
+120: 
+121: 	buffer_copy_string_buffer(con->physical.doc_root, p->conf.doc_root);
+122: 	buffer_copy_string(con->physical.rel_path, rel_uri);
+123: 	buffer_copy_string_buffer(con->physical.path, con->physical.doc_root);
+124: 	buffer_append_string_buffer(con->physical.path, con->physical.rel_path);
+125: 
+126: 	if (con->conf.log_request_handling) {
+127: 		TRACE("MD5 matched, timestamp is ok, sending %s", SAFE_BUF_STR(con->physical.path));
+128: 	}
+129: 
+130: 	return HANDLER_GO_ON;
+131: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

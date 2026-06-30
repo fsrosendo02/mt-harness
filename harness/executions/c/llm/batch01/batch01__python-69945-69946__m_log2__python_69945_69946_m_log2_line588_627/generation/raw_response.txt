@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function returns -inf for log10(0) but should raise an exception.",
+      "line": 1,
+      "precode": "return -Py_HUGE_VAL; /* log10(0) = -inf */",
+      "aftercode": "PyErr_SetString(PyExc_DivisionError, \"log10(0)\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "The function returns NaN for negative values but should return 0.",
+      "line": 3,
+      "precode": "return Py_NAN; /* log10(-ve) = nan */",
+      "aftercode": "return 0.0;"
+    },
+    {
+      "id": 3,
+      "reasoning": "The function returns NaN for NaN inputs but should return an error.",
+      "line": 6,
+      "precode": "return x; /* log10(nan) = nan */",
+      "aftercode": "PyErr_SetString(PyExc_ValueError, \"log10(NaN)\");"
+    },
+    {
+      "id": 4,
+      "reasoning": "The function returns inf for positive values but should raise an exception.",
+      "line": 7,
+      "precode": "return x; /* log10(inf) = inf */",
+      "aftercode": "PyErr_SetString(PyExc_OverflowError, \"log10(inf)\");"
+    },
+    {
+      "id": 5,
+      "reasoning": "The function returns NaN for -inf inputs but should return an error.",
+      "line": 11,
+      "precode": "return Py_NAN; /* log10(-inf) = nan */",
+      "aftercode": "PyErr_SetString(PyExc_DomainError, \"log10(-inf)\");"
+    },
+    {
+      "id": 6,
+      "reasoning": "The function checks for negative values but fails to handle very large positive values.",
+      "line": 7,
+      "precode": "return x; /* log10(inf) = inf */",
+      "aftercode": "if (x > Py_HUGE_VAL) { return Py_NAN; } else { return x; }"
+    },
+    {
+      "id": 7,
+      "reasoning": "The function checks for NaN but fails to handle subnormal values.",
+      "line": 6,
+      "precode": "return x; /* log10(nan) = nan */",
+      "aftercode": "if (x < DBL_MIN) { errno = ERANGE; return Py_NAN; } else { return x; }"
+    },
+    {
+      "id": 8,
+      "reasoning": "The function sets errno to EDOM for -inf inputs but fails to handle very large negative values.",
+      "line": 10,
+      "precode": "errno = EDOM;",
+      "aftercode": "if (x < -Py_HUGE_VAL) { errno = ERANGE; } else { errno = EDOM; }"
+    }
+  ]
+}

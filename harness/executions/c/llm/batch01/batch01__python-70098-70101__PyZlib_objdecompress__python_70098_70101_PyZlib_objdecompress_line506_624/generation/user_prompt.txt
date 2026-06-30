@@ -1,0 +1,156 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+  1: PyZlib_objdecompress(compobject *self, PyObject *args)
+  2: {
+  3:     int err, inplen, max_length = 0;
+  4:     Py_ssize_t old_length, length = DEFAULTALLOC;
+  5:     PyObject *RetVal;
+  6:     Py_buffer pinput;
+  7:     Byte *input;
+  8:     unsigned long start_total_out;
+  9: 
+ 10:     if (!PyArg_ParseTuple(args, "y*|i:decompress", &pinput,
+ 11:                           &max_length))
+ 12:         return NULL;
+ 13:     input = pinput.buf;
+ 14:     inplen = pinput.len;
+ 15:     if (max_length < 0) {
+ 16:         PyBuffer_Release(&pinput);
+ 17:         PyErr_SetString(PyExc_ValueError,
+ 18:                         "max_length must be greater than zero");
+ 19:         return NULL;
+ 20:     }
+ 21: 
+ 22:     /* limit amount of data allocated to max_length */
+ 23:     if (max_length && length > max_length)
+ 24:         length = max_length;
+ 25:     if (!(RetVal = PyBytes_FromStringAndSize(NULL, length))) {
+ 26:         PyBuffer_Release(&pinput);
+ 27:         return NULL;
+ 28:     }
+ 29: 
+ 30:     ENTER_ZLIB(self);
+ 31: 
+ 32:     start_total_out = self->zst.total_out;
+ 33:     self->zst.avail_in = inplen;
+ 34:     self->zst.next_in = input;
+ 35:     self->zst.avail_out = length;
+ 36:     self->zst.next_out = (unsigned char *)PyBytes_AS_STRING(RetVal);
+ 37: 
+ 38:     Py_BEGIN_ALLOW_THREADS
+ 39:     err = inflate(&(self->zst), Z_SYNC_FLUSH);
+ 40:     Py_END_ALLOW_THREADS
+ 41: 
+ 42:     /* While Z_OK and the output buffer is full, there might be more output.
+ 43:        So extend the output buffer and try again.
+ 44:     */
+ 45:     while (err == Z_OK && self->zst.avail_out == 0) {
+ 46:         /* If max_length set, don't continue decompressing if we've already
+ 47:            reached the limit.
+ 48:         */
+ 49:         if (max_length && length >= max_length)
+ 50:             break;
+ 51: 
+ 52:         /* otherwise, ... */
+ 53:         old_length = length;
+ 54:         length = length << 1;
+ 55:         if (max_length && length > max_length)
+ 56:             length = max_length;
+ 57: 
+ 58:         if (_PyBytes_Resize(&RetVal, length) < 0) {
+ 59:             Py_DECREF(RetVal);
+ 60:             RetVal = NULL;
+ 61:             goto error;
+ 62:         }
+ 63:         self->zst.next_out =
+ 64:             (unsigned char *)PyBytes_AS_STRING(RetVal) + old_length;
+ 65:         self->zst.avail_out = length - old_length;
+ 66: 
+ 67:         Py_BEGIN_ALLOW_THREADS
+ 68:         err = inflate(&(self->zst), Z_SYNC_FLUSH);
+ 69:         Py_END_ALLOW_THREADS
+ 70:     }
+ 71: 
+ 72:     /* Not all of the compressed data could be accommodated in the output buffer
+ 73:        of specified size. Return the unconsumed tail in an attribute.*/
+ 74:     if(max_length) {
+ 75:         Py_DECREF(self->unconsumed_tail);
+ 76:         self->unconsumed_tail = PyBytes_FromStringAndSize((char *)self->zst.next_in,
+ 77:                                                            self->zst.avail_in);
+ 78:         if(!self->unconsumed_tail) {
+ 79:             Py_DECREF(RetVal);
+ 80:             RetVal = NULL;
+ 81:             goto error;
+ 82:         }
+ 83:     }
+ 84: 
+ 85:     /* The end of the compressed data has been reached, so set the
+ 86:        unused_data attribute to a string containing the remainder of the
+ 87:        data in the string.  Note that this is also a logical place to call
+ 88:        inflateEnd, but the old behaviour of only calling it on flush() is
+ 89:        preserved.
+ 90:     */
+ 91:     if (err == Z_STREAM_END) {
+ 92:         Py_XDECREF(self->unused_data);  /* Free original empty string */
+ 93:         self->unused_data = PyBytes_FromStringAndSize(
+ 94:             (char *)self->zst.next_in, self->zst.avail_in);
+ 95:         if (self->unused_data == NULL) {
+ 96:             Py_DECREF(RetVal);
+ 97:             goto error;
+ 98:         }
+ 99:         /* We will only get Z_BUF_ERROR if the output buffer was full
+100:            but there wasn't more output when we tried again, so it is
+101:            not an error condition.
+102:         */
+103:     } else if (err != Z_OK && err != Z_BUF_ERROR) {
+104:         zlib_error(self->zst, err, "while decompressing");
+105:         Py_DECREF(RetVal);
+106:         RetVal = NULL;
+107:         goto error;
+108:     }
+109: 
+110:     if (_PyBytes_Resize(&RetVal, self->zst.total_out - start_total_out) < 0) {
+111:         Py_DECREF(RetVal);
+112:         RetVal = NULL;
+113:     }
+114: 
+115:  error:
+116:     LEAVE_ZLIB(self);
+117:     PyBuffer_Release(&pinput);
+118:     return RetVal;
+119: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

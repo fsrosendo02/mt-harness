@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function assumes that the buffer size is always sufficient to hold a strip, but it does not check if realloc returns a valid pointer.",
+      "line": 13,
+      "precode": "buf = (unsigned char *)_TIFFrealloc(buf, bytecounts[s]);",
+      "aftercode": "buf = NULL;"
+    },
+    {
+      "id": 2,
+      "reasoning": "The function skips the check for realloc failure and proceeds with a write operation without ensuring that the buffer has been successfully resized.",
+      "line": 16,
+      "precode": "bufsize = bytecounts[s];",
+      "aftercode": "// bufsize = bytecounts[s];"
+    },
+    {
+      "id": 3,
+      "reasoning": "The function reads and writes the strip using a fixed buffer size, which may lead to buffer overflow if bytecounts[s] is significantly larger than bufsize.",
+      "line": 7,
+      "precode": "tsize_t bufsize  = TIFFStripSize(in);",
+      "aftercode": "tsize_t bufsize  = (1 << 30);" // Set a large but still reasonable value for testing
+    },
+    {
+      "id": 4,
+      "reasoning": "The function reads all strips sequentially. It does not test the behavior of the function when reading in reverse order or skipping certain strips.",
+      "line": 11,
+      "precode": "for (s = 0; s < ns; s++) {",
+      "aftercode": "for (s = ns - 1; s >= 0; s--) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The function assumes that the number of strips is always greater than zero. It does not check for an empty TIFF file.",
+      "line": 7,
+      "precode": "tstrip_t ns = TIFFNumberOfStrips(in);",
+      "aftercode": "tstrip_t ns = 0;"
+    },
+    {
+      "id": 6,
+      "reasoning": "The function frees the buffer after processing. It should free the buffer only if it was successfully allocated.",
+      "line": 24,
+      "precode": "_TIFFfree(buf);",
+      "aftercode": "// _TIFFfree(buf);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The function reads each strip and writes it directly without any transformation. It does not test the behavior of the function when applied to strips that require processing.",
+      "line": 18,
+      "precode": "TIFFReadRawStrip(in, s, buf, bytecounts[s]) < 0 || TIFFWriteRawStrip(out, s, buf, bytecounts[s]) < 0",
+      "aftercode": "1"
+    },
+    {
+      "id": 8,
+      "reasoning": "The function returns true (success) when the buffer is not allocated. It does not check if the buffer was successfully allocated before proceeding.",
+      "line": 6,
+      "precode": "if (buf) {",
+      "aftercode": "if (buf == NULL) {"
+    }
+  ]
+}

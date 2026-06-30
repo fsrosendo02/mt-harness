@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Allows negative max_length values by removing input validation",
+      "line": 15,
+      "precode": "if (max_length < 0) {",
+      "aftercode": "if (0) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Disables output buffer size limitation to max_length",
+      "line": 24,
+      "precode": "length = max_length;",
+      "aftercode": "length = length;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Prematurely breaks buffer resizing loop regardless of conditions",
+      "line": 49,
+      "precode": "if (max_length && length >= max_length)",
+      "aftercode": "if (max_length)"
+    },
+    {
+      "id": 4,
+      "reasoning": "Sets output buffer size to fixed 0 instead of actual decompressed data",
+      "line": 110,
+      "precode": "_PyBytes_Resize(&RetVal, self->zst.total_out - start_total_out)",
+      "aftercode": "_PyBytes_Resize(&RetVal, 0)"
+    },
+    {
+      "id": 5,
+      "reasoning": "Sets unused_data attribute unconditionally instead of only on Z_STREAM_END",
+      "line": 91,
+      "precode": "if (err == Z_STREAM_END) {",
+      "aftercode": "if (1) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "Captures wrong amount of unconsumed data (uses avail_out instead of avail_in)",
+      "line": 76,
+      "precode": "self->zst.avail_in",
+      "aftercode": "self->zst.avail_out"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrectly excludes Z_STREAM_END from error handling conditions",
+      "line": 103,
+      "precode": "err != Z_OK && err != Z_BUF_ERROR",
+      "aftercode": "err != Z_OK && err != Z_BUF_ERROR && err != Z_STREAM_END"
+    },
+    {
+      "id": 8,
+      "reasoning": "Omits buffer release leading to memory leak",
+      "line": 117,
+      "precode": "PyBuffer_Release(&pinput);",
+      "aftercode": ""
+    }
+  ]
+}

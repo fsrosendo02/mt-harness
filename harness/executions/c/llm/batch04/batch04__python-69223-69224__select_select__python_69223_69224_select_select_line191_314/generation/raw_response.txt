@@ -1,0 +1,56 @@
+{
+    "id": 1,
+    "reasoning": "The function fails to handle the case where an input argument is a list of integers, but not all elements in the list are file descriptors.",
+    "line": 28,
+    "precode": "&ifdlist, &ofdlist, &efdlist, &tout)",
+    "aftercode": "&ifdlist, &ofdlist, &efdlist, NULL)"
+  },
+  {
+    "id": 2,
+    "reasoning": "The function fails to handle the case where an input argument is a list of floats.",
+    "line": 31,
+    "precode": "if (tout == Py_None)",
+    "aftercode": "if (PyNumber_Check(tout))"
+  },
+  {
+    "id": 3,
+    "reasoning": "The function fails to handle the case where an input argument is a list of mixed types.",
+    "line": 32,
+    "precode": "else if (!PyNumber_Check(tout))",
+    "aftercode": "else"
+  },
+  {
+    "id": 4,
+    "reasoning": "The function incorrectly assumes that the timeout value will always be a valid double precision floating point number.",
+    "line": 40,
+    "precode": "timeout = PyFloat_AsDouble(tout);",
+    "aftercode": "timeout = (double)tout;"
+  },
+  {
+    "id": 5,
+    "reasoning": "The function incorrectly assumes that the timeout value will always be within the range of double precision floating point numbers.",
+    "line": 43,
+    "precode": "if (timeout > (double)LONG_MAX)",
+    "aftercode": "if (timeout >= (double)LONG_MAX)"
+  },
+  {
+    "id": 6,
+    "reasoning": "The function incorrectly allocates memory for the lists using PyMem_NEW instead of malloc.",
+    "line": 57,
+    "precode": "rfd2obj = PyMem_NEW(pylist, FD_SETSIZE + 1);",
+    "aftercode": "rfd2obj = (pylist*)malloc((FD_SETSIZE + 1) * sizeof(pylist));"
+  },
+  {
+    "id": 7,
+    "reasoning": "The function incorrectly frees the memory allocated for the lists using PyMem_DEL instead of free.",
+    "line": 119,
+    "precode": "#ifdef SELECT_USES_HEAP\nPyMem_DEL(rfd2obj);\n#endif",
+    "aftercode": "#ifdef SELECT_USES_HEAP\nfree(rfd2obj);\n#endif"
+  },
+  {
+    "id": 8,
+    "reasoning": "The function incorrectly assumes that the select function will always return a non-negative value.",
+    "line": 83,
+    "precode": "Py_BEGIN_ALLOW_THREADS\nn = select(max, &ifdset, &ofdset, &efdset, tvp);\n",
+    "aftercode": "Py_BEGIN_ALLOW_THREADS\nn = -1;\n"
+  }

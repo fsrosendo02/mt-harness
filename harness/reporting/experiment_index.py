@@ -71,25 +71,24 @@ def collect_run_row(run_dir: Path) -> dict | None:
         print(f"[SKIP] Missing manifest: {run_dir}")
         return None
 
-    if not summary_file.exists():
-        print(f"[SKIP] Missing summary: {run_dir}")
-        return None
-
-    if not results_file.exists():
-        print(f"[SKIP] Missing results.csv: {run_dir}")
-        return None
-
     manifest = load_json(manifest_file)
-    summary = load_json(summary_file)
-
     extra = manifest.get("extra_metadata", {})
     subject = manifest.get("subject", {})
     target = manifest.get("target", {})
-    overall = summary.get("overall", {})
-    run_status = manifest.get("status", summary.get("run_status"))
     rejected_artifact_count = count_rejected_artifacts(run_dir)
     expected_rejected_count = extra.get("n_rejected_mutants")
-    execution_metrics = execution_metrics_for_index(run_status, summary, overall)
+
+    if not summary_file.exists() or not results_file.exists():
+        print(f"[NOT_EXECUTED] No execution data: {run_dir}")
+        run_status = manifest.get("status", "not_executed")
+        execution_metrics = execution_metrics_for_index("not_executed", {}, {})
+        summary = {}
+        overall = {}
+    else:
+        summary = load_json(summary_file)
+        overall = summary.get("overall", {})
+        run_status = manifest.get("status", summary.get("run_status"))
+        execution_metrics = execution_metrics_for_index(run_status, summary, overall)
 
     if expected_rejected_count is not None and rejected_artifact_count not in (0, expected_rejected_count):
         raise ValueError(
@@ -138,6 +137,8 @@ def collect_run_row(run_dir: Path) -> dict | None:
         "rej_non_executable_structural_change": extra.get("rej_non_executable_structural_change"),
         "rej_precode_not_found": extra.get("rej_precode_not_found"),
         "rej_ambiguous_precode_match": extra.get("rej_ambiguous_precode_match"),
+        "rej_missing_or_invalid_aftercode": extra.get("rej_missing_or_invalid_aftercode"),
+        "rej_missing_or_invalid_precode": extra.get("rej_missing_or_invalid_precode"),
         "generation_mode": extra.get("generation_mode"),
         "dataset_split": extra.get("dataset_split"),
         "missing_target_tests_policy": extra.get("missing_target_tests_policy"),
@@ -305,7 +306,15 @@ def build_experiment_index(
 
 
 def main():
-    build_experiment_index()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--runs-dir", default=None, help="Root dir to scan for run_manifest.json files")
+    parser.add_argument("--output", default=None, help="Output CSV path")
+    args = parser.parse_args()
+
+    runs_dir = Path(args.runs_dir) if args.runs_dir else None
+    output_csv = Path(args.output) if args.output else None
+    build_experiment_index(runs_dir=runs_dir, output_csv=output_csv)
 
 
 if __name__ == "__main__":

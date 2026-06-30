@@ -1,0 +1,29 @@
+{
+  "dataset": "manybugs",
+  "subject_id": "python-69945-69946",
+  "language": "c",
+  "version": "f",
+  "target_id": "python_69945_69946_m_log2__line588_627",
+  "file_path": "Modules/mathmodule.c",
+  "function_name": "m_log2",
+  "start_line": 588,
+  "end_line": 627,
+  "mutant_id": "rej04",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 4,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: }",
+  "raw_response_path": "harness/executions/c/llm/batch03/batch03__python-69945-69946__m_log2__python_69945_69946_m_log2_line588_627/generation/raw_response.txt",
+  "payload": {
+    "id": 4,
+    "reasoning": "Violates the property of correctly setting errno for invalid input by not setting errno for log10(-inf).",
+    "line": 11,
+    "precode": "return Py_NAN;",
+    "aftercode": "return Py_HUGE_VAL;",
+    "candidate_code": "            return -Py_HUGE_VAL; /* log10(0) = -inf */\n        else\n            return Py_NAN; /* log10(-ve) = nan */\n    }\n    else if (Py_IS_NAN(x))\n        return x; /* log10(nan) = nan */\n    else if (x > 0.0)\n        return x; /* log10(inf) = inf */\n    else {\n        errno = EDOM;\n        return Py_HUGE_VAL;\n    }\n}\n\n\n/* Call is_error when errno != 0, and where x is the result libm\n * returned.  is_error will usually set up an exception and return\n * true (1), but may return false (0) without setting up an exception.\n */\nstatic int\nis_error(double x)\n{\n    int result = 1;     /* presumption of guilt */\n    assert(errno);      /* non-zero errno is a precondition for calling */\n    if (errno == EDOM)\n        PyErr_SetString(PyExc_ValueError, \"math domain error\");\n\n    else if (errno == ERANGE) {\n        /* ANSI C generally requires libm functions to set ERANGE\n         * on overflow, but also generally *allows* them to set\n         * ERANGE on underflow too.  There's no consistency about\n         * the latter across platforms.\n         * Alas, C99 never requires that errno be set.\n         * Here we suppress the underflow errors (libm functions\n         * should return a zero on underflow, and +- HUGE_VAL on\n         * overflow, so testing the result for zero suffices to\n         * distinguish the cases).\n         *\n         * On some platforms (Ubuntu/ia64) it seems that errno can be\n         * set to ERANGE for subnormal results that do *not* underflow\n",
+    "resolution_reason": "comment_insensitive_nearest_match"
+  },
+  "log_path": "harness/executions/c/llm/batch03/batch03__python-69945-69946__m_log2__python_69945_69946_m_log2_line588_627/rejected/rej04.log",
+  "mutant_path": "harness/executions/c/llm/batch03/batch03__python-69945-69946__m_log2__python_69945_69946_m_log2_line588_627/rejected/rej04.mutant.txt",
+  "original_path": "harness/executions/c/llm/batch03/batch03__python-69945-69946__m_log2__python_69945_69946_m_log2_line588_627/rejected/original.txt"
+}

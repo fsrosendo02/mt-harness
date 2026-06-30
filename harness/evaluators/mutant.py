@@ -47,7 +47,7 @@ class MutantEvaluator:
             return any(obs.outcome in {"FAIL", "ERROR"} for obs in observations)
 
         if baseline is None:
-            baseline = self.baseline_evaluator.evaluate(subject, workdir)
+            baseline = self.baseline_evaluator.evaluate(subject, workdir, eligible_tests=eligible_tests or None)
 
         if not baseline.build_ok or not baseline.test_ok:
             full_log = (

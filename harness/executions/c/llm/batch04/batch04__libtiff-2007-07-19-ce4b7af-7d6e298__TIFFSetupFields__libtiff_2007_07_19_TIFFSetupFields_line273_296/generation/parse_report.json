@@ -1,0 +1,64 @@
+{
+  "requested_count": 8,
+  "accepted_count": 3,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 1,
+        "reasoning": "The condition in line 4 is removed, allowing invalid TIFF structures to pass through.",
+        "line": 4,
+        "precode": "if (tif->tif_fields && tif->tif_nfields > 0)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "The field check in line 9 is disabled, allowing any custom fields to be processed.",
+        "line": 9,
+        "precode": "if (fld->field_bit == FIELD_CUSTOM &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The free of `tif->tif_fields` is removed, leaving the structure with dangling pointers.",
+        "line": 16,
+        "precode": "_TIFFfree(tif->tif_fields);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "The condition in line 20 is removed, allowing merge failures to be silently ignored.",
+        "line": 20,
+        "precode": "if (!_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 7,
+        "reasoning": "The error message in line 21 is changed to a success message, hiding potential issues.",
+        "line": 21,
+        "precode": "TIFFErrorExt(tif->tif_clientdata, \"_TIFFSetupFields\",",
+        "aftercode": "TIFFErrorExt(tif->tif_clientdata, \"_TIFFSetupFields\", \"Success\")",
+        "candidate_code": "void\n_TIFFSetupFields(TIFF* tif, const TIFFFieldArray* fieldarray)\n{\n\tif (tif->tif_fields && tif->tif_nfields > 0) {\n\t\tuint32 i;\n\n\t\tfor (i = 0; i < tif->tif_nfields; i++) {\n\t\t\tTIFFField *fld = tif->tif_fields[i];\n\t\t\tif (fld->field_bit == FIELD_CUSTOM &&\n\t\t\t\tstrncmp(\"Tag \", fld->field_name, 4) == 0) {\n\t\t\t\t\t_TIFFfree(fld->field_name);\n\t\t\t\t\t_TIFFfree(fld);\n\t\t\t\t}\n\t\t}\n\n\t\t_TIFFfree(tif->tif_fields);\n\t\ttif->tif_fields = NULL;\n\t\ttif->tif_nfields = 0;\n\t}\n\tif (!_TIFFMergeFields(tif, fieldarray->fields, fieldarray->count)) {\n\t\tTIFFErrorExt(tif->tif_clientdata, \"_TIFFSetupFields\", \"Success\")\n\t\t\t     \"Setting up field info failed\");\n\t}\n}\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

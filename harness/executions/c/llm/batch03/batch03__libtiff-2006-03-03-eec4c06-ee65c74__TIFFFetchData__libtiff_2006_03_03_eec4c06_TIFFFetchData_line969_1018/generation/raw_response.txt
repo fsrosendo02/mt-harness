@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates data integrity by not checking if the memory allocation for cp is successful.",
+      "line": 10,
+      "precode": "if (!ReadOK(tif, cp, cc))",
+      "aftercode": "if (!ReadOK(tif, cp, cc) && (cp = malloc(cc)) == NULL)"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates error handling by not checking for errors in memory mapping.",
+      "line": 13,
+      "precode": "if (dir->tdir_offset + cc > tif->tif_size)",
+      "aftercode": "if ((isMapped(tif) && (dir->tdir_offset + cc > tif->tif_size)) || (!isMapped(tif) && dir->tdir_offset + cc > tif->tif_size))"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates data integrity by not considering the case where cp might be a null pointer.",
+      "line": 15,
+      "precode": "_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);",
+      "aftercode": "if (cp) _TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates error handling by not properly reporting errors.",
+      "line": 38,
+      "precode": "return (cc);",
+      "aftercode": "TIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\", _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates data integrity by not handling the case where cc might be zero.",
+      "line": 10,
+      "precode": "if (!ReadOK(tif, cp, cc))",
+      "aftercode": "if (!ReadOK(tif, cp, cc) && cc > 0)"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates error handling by not checking for errors in data reading.",
+      "line": 8,
+      "precode": "if (!SeekOK(tif, dir->tdir_offset))",
+      "aftercode": "if ((!SeekOK(tif, dir->tdir_offset) && tif->tif_size > dir->tdir_offset) || SeekOK(tif, dir->tdir_offset))"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates error handling by not checking for errors in data reading.",
+      "line": 10,
+      "precode": "if (!ReadOK(tif, cp, cc))",
+      "aftercode": "if (ReadOK(tif, cp, cc) || !cp)"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates error handling by not properly reporting errors for the case where isMapped returns false.",
+      "line": 39,
+      "precode": "TIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\", _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name);",
+      "aftercode": "if (!isMapped(tif)) { TIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error fetching data for field \\\"%s\\\"\", _TIFFFieldWithTag(tif, dir->tdir_tag)->field_name); return ((tsize_t) 0); }"
+    }
+  ]
+}

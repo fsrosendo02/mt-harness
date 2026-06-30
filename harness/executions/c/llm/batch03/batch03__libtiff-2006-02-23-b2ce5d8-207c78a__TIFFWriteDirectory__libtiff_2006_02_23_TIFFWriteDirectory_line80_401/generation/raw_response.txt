@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the property of ensuring correct directory handling by not properly resetting directory-related state after a write operation.",
+      "line": 307,
+      "precode": "TIFFFreeDirectory(tif);",
+      "aftercode": "// No change to tif->tif_flags or (*tif->tif_cleanup)(tif);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the property of correctly handling compression by not resetting the TIFF_POSTENCODE flag after encoding error.",
+      "line": 24,
+      "precode": "if (done) {",
+      "aftercode": "if (done) { tif->tif_flags &= ~TIFF_POSTENCODE; }"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the property of correctly managing directory offsets by not updating the TIFF_DIRTYDIRECT flag after a write operation.",
+      "line": 272,
+      "precode": "dircount = (uint16) nfields;",
+      "aftercode": "if (done) { tif->tif_flags |= TIFF_DIRTYDIRECT; } dircount = (uint16) nfields;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the property of correctly handling data flushing by not checking for errors after flushing raw data.",
+      "line": 37,
+      "precode": "if (tif->tif_rawcc > 0 && !TIFFFlushData1(tif)) {",
+      "aftercode": "if (tif->tif_rawcc > 0) { if (!TIFFFlushData1(tif)) { TIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Error flushing data before directory write\"); return 0; } }"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the property of correctly handling memory allocation by not freeing allocated memory if allocation fails.",
+      "line": 63,
+      "precode": "data = (char*) _TIFFmalloc(dirsize);",
+      "aftercode": "if ((data = (char*) _TIFFmalloc(dirsize)) == NULL) { TIFFErrorExt(tif->tif_clientdata, tif->tif_name, \"Cannot write directory, out of space\"); return 0; }"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the property of correctly handling byte swapping by not applying swabbing for file consistency.",
+      "line": 275,
+      "precode": "TIFFSwabArrayOfShort(&dir->tdir_tag, 2);",
+      "aftercode": "// No change to swab logic; violates property of correct byte swapping."
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the property of correctly handling custom field processing by not properly skipping over custom fields.",
+      "line": 105,
+      "precode": "if( fip->field_bit == FIELD_CUSTOM )",
+      "aftercode": "if( fip->field_bit == FIELD_CUSTOM ) { continue; }"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the property of correctly handling directory offsets by not updating tif_dataoff calculation.",
+      "line": 74,
+      "precode": "tif->tif_diroff == 0 && !TIFFLinkDirectory(tif)",
+      "aftercode": "tif->tif_diroff == 0 || !TIFFLinkDirectory(tif)"
+    }
+  ]
+}

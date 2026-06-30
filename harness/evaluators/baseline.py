@@ -30,7 +30,7 @@ class BaselineEvaluator:
     def __init__(self, adapter: BenchmarkAdapter):
         self.adapter = adapter
 
-    def evaluate(self, subject: Subject, workdir: str) -> BaselineResult:
+    def evaluate(self, subject: Subject, workdir: str, eligible_tests: list[str] | None = None) -> BaselineResult:
         log("[baseline] build start")
         t = time.time()
         build_ok, build_log = self.adapter.build(workdir)
@@ -47,7 +47,7 @@ class BaselineEvaluator:
 
         log("[baseline] test start")
         t = time.time()
-        test_ok, test_log = self.adapter.test(workdir)
+        test_ok, test_log = self.adapter.test(workdir, eligible_tests=eligible_tests)
         log_duration("[baseline] test", t)
 
         return BaselineResult(

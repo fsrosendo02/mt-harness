@@ -1,0 +1,114 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: encoder_listencode_obj(PyEncoderObject *s, PyObject *rval, PyObject *obj, Py_ssize_t indent_level)
+ 2: {
+ 3:     /* Encode Python object obj to a JSON term, rval is a PyList */
+ 4:     PyObject *newobj;
+ 5:     int rv;
+ 6: 
+ 7:     if (obj == Py_None || obj == Py_True || obj == Py_False) {
+ 8:         PyObject *cstr = _encoded_const(obj);
+ 9:         if (cstr == NULL)
+10:             return -1;
+11:         return _steal_list_append(rval, cstr);
+12:     }
+13:     else if (PyUnicode_Check(obj))
+14:     {
+15:         PyObject *encoded = encoder_encode_string(s, obj);
+16:         if (encoded == NULL)
+17:             return -1;
+18:         return _steal_list_append(rval, encoded);
+19:     }
+20:     else if (PyLong_Check(obj)) {
+21:         PyObject *encoded = PyObject_Str(obj);
+22:         if (encoded == NULL)
+23:             return -1;
+24:         return _steal_list_append(rval, encoded);
+25:     }
+26:     else if (PyFloat_Check(obj)) {
+27:         PyObject *encoded = encoder_encode_float(s, obj);
+28:         if (encoded == NULL)
+29:             return -1;
+30:         return _steal_list_append(rval, encoded);
+31:     }
+32:     else if (PyList_Check(obj) || PyTuple_Check(obj)) {
+33:         return encoder_listencode_list(s, rval, obj, indent_level);
+34:     }
+35:     else if (PyDict_Check(obj)) {
+36:         return encoder_listencode_dict(s, rval, obj, indent_level);
+37:     }
+38:     else {
+39:         PyObject *ident = NULL;
+40:         if (s->markers != Py_None) {
+41:             int has_key;
+42:             ident = PyLong_FromVoidPtr(obj);
+43:             if (ident == NULL)
+44:                 return -1;
+45:             has_key = PyDict_Contains(s->markers, ident);
+46:             if (has_key) {
+47:                 if (has_key != -1)
+48:                     PyErr_SetString(PyExc_ValueError, "Circular reference detected");
+49:                 Py_DECREF(ident);
+50:                 return -1;
+51:             }
+52:             if (PyDict_SetItem(s->markers, ident, obj)) {
+53:                 Py_DECREF(ident);
+54:                 return -1;
+55:             }
+56:         }
+57:         newobj = PyObject_CallFunctionObjArgs(s->defaultfn, obj, NULL);
+58:         if (newobj == NULL) {
+59:             Py_XDECREF(ident);
+60:             return -1;
+61:         }
+62:         rv = encoder_listencode_obj(s, rval, newobj, indent_level);
+63:         Py_DECREF(newobj);
+64:         if (rv) {
+65:             Py_XDECREF(ident);
+66:             return -1;
+67:         }
+68:         if (ident != NULL) {
+69:             if (PyDict_DelItem(s->markers, ident)) {
+70:                 Py_XDECREF(ident);
+71:                 return -1;
+72:             }
+73:             Py_XDECREF(ident);
+74:         }
+75:         return rv;
+76:     }
+77: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

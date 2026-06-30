@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Always returns zero, regardless of data fetch success",
+      "line": 45,
+      "precode": "return (tsize_t) 0;",
+      "aftercode": "return tif->tif_flags;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Does not check for null pointer in dir",
+      "line": 4,
+      "precode": "int w = TIFFDataWidth((TIFFDataType) dir->tdir_type);",
+      "aftercode": "int w = TIFFDataWidth((TIFFDataType) (dir != NULL ? dir->tdir_type : 0));"
+    },
+    {
+      "id": 3,
+      "reasoning": "Never seeks to the data offset, always reads from current position",
+      "line": 12,
+      "precode": "if (!isMapped(tif)) { if (!SeekOK(tif, dir->tdir_offset)), ...",
+      "aftercode": "if (true) { if (!ReadOK(tif, cp, cc)), ..."
+    },
+    {
+      "id": 4,
+      "reasoning": "Does not check for overflow when calculating data width",
+      "line": 5,
+      "precode": "tsize_t cc = dir->tdir_count * w;",
+      "aftercode": "tsize_t cc = (tsize_t) dir->tdir_count * 1;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Always considers the data to be mapped, and never checks for seek/ read success",
+      "line": 11,
+      "precode": "if (!isMapped(tif)) { if (!SeekOK(tif, dir->tdir_offset)), ...",
+      "aftercode": "true"
+    },
+    {
+      "id": 6,
+      "reasoning": "Does not check for invalid offset when calculating data start position",
+      "line": 19,
+      "precode": "if ((tsize_t)dir->tdir_offset != offset - cc || ...)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 7,
+      "reasoning": "Always reads data from the beginning of the file, regardless of data start position",
+      "line": 22,
+      "precode": "_TIFFmemcpy(cp, tif->tif_base + dir->tdir_offset, cc);",
+      "aftercode": "_TIFFmemcpy(cp, tif->tif_base, cc);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Does not check for invalid byte order when swapping data",
+      "line": 24,
+      "precode": "if (tif->tif_flags & TIFF_SWAB) { ...}",
+      "aftercode": "true"
+    }
+  ]
+}

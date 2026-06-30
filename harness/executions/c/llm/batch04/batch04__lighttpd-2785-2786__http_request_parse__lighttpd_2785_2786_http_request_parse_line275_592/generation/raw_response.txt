@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The function does not return immediately when the 'Host' header is invalid",
+      "line": 167,
+      "precode": "TRACE(\"Host header is invalid (Status: 400), was %s\", SAFE_BUF_STR(ds->value));",
+      "aftercode": "con->http_status = 400;"
+    },
+    {
+      "id": 2,
+      "reasoning": "The function does not correctly handle duplicate 'Host' headers",
+      "line": 172,
+      "precode": "if (!buffer_is_empty(con->request.http_host) && !buffer_is_equal(con->request.http_host, ds->value)) {",
+      "aftercode": "if (buffer_is_empty(con->request.http_host) || buffer_is_equal(con->request.http_host, ds->value)) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "The function does not correctly handle the 'Content-Length' header for HTTP GET and HEAD requests",
+      "line": 268,
+      "precode": "if (con->request.content_length != -1) {",
+      "aftercode": "if (con->request.http_method == HTTP_METHOD_GET || con->request.http_method == HTTP_METHOD_HEAD) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The function does not correctly handle the 'Content-Length' header for POST requests",
+      "line": 281,
+      "precode": "if (con->request.content_length == -1) {",
+      "aftercode": "if (con->request.http_method != HTTP_METHOD_POST) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The function does not correctly handle the case where the 'Content-Length' header is missing for POST requests",
+      "line": 288,
+      "precode": "con->http_status = 411;",
+      "aftercode": "con->http_status = 400;"
+    },
+    {
+      "id": 6,
+      "reasoning": "The function does not correctly handle the case where the 'Content-Length' header is present for GET and HEAD requests",
+      "line": 275,
+      "precode": "con->keep_alive = 0;",
+      "aftercode": "con->keep_alive = 1;"
+    },
+    {
+      "id": 7,
+      "reasoning": "The function does not correctly handle the case where the 'Expect' header is present with a value other than '100-continue'",
+      "line": 155,
+      "precode": "if (0 != buffer_caseless_compare(CONST_BUF_LEN(ds->value), CONST_STR_LEN(\"100-continue\"))) {",
+      "aftercode": "if (buffer_caseless_compare(CONST_BUF_LEN(ds->value), CONST_STR_LEN(\"100-continue\")) == 1) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "The function does not correctly handle the case where the 'Keep-Alive' header is present with a value other than 'keep-alive', 'close'",
+      "line": 86,
+      "precode": "if (0 == buffer_caseless_compare(CONST_BUF_LEN(dsv->value), CONST_STR_LEN(\"keep-alive\"))) {",
+      "aftercode": "if (buffer_caseless_compare(CONST_BUF_LEN(dsv->value), CONST_STR_LEN(\"keep-alive\")) == 1) {"
+    }
+  ]
+}

@@ -60,7 +60,9 @@ def major_execution_campaign_dir(campaign_name: str) -> Path:
     return major_execution_root() / _safe_catalog_name(campaign_name)
 
 
-def llm_batch_dir(batch_id: str) -> Path:
+def llm_batch_dir(batch_id: str, runs_subdir: str | None = None) -> Path:
+    if runs_subdir:
+        return runs_root() / runs_subdir.strip("/") / _safe_catalog_name(batch_id)
     return llm_root() / _safe_catalog_name(batch_id)
 
 
@@ -68,12 +70,12 @@ def llm_batch_runs_dir(batch_id: str) -> Path:
     return llm_batch_dir(batch_id) / "runs"
 
 
-def llm_batch_manifest_path(batch_id: str) -> Path:
-    return llm_batch_dir(batch_id) / "batch_manifest.json"
+def llm_batch_manifest_path(batch_id: str, runs_subdir: str | None = None) -> Path:
+    return llm_batch_dir(batch_id, runs_subdir) / "batch_manifest.json"
 
 
-def llm_batch_summary_dir(batch_id: str) -> Path:
-    return llm_batch_dir(batch_id) / "reports"
+def llm_batch_summary_dir(batch_id: str, runs_subdir: str | None = None) -> Path:
+    return llm_batch_dir(batch_id, runs_subdir) / "reports"
 
 
 def default_llm_batch_id(batch_id: str | None = None) -> str:
@@ -157,6 +159,17 @@ def discover_batch_manifest_paths() -> list[Path]:
             sorted(
                 path
                 for path in llm_root().glob("*/batch_manifest.json")
+                if path.is_file()
+            )
+        )
+
+    # Also discover manifests co-located with runs when runs_subdir is used
+    # (e.g. harness/executions/c/llm/batch01/batch_manifest.json)
+    if runs_root().exists():
+        discovered.extend(
+            sorted(
+                path
+                for path in runs_root().glob("*/*/*/batch_manifest.json")
                 if path.is_file()
             )
         )

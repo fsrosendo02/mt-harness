@@ -1,0 +1,124 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing for C programs.
+
+Below is a C function. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Function:
+ 1: local void treat_stdin()
+ 2: {
+ 3:     if (!force && !list &&
+ 4: 	isatty(fileno((FILE *)(decompress ? stdin : stdout)))) {
+ 5: 	/* Do not send compressed data to the terminal or read it from
+ 6: 	 * the terminal. We get here when user invoked the program
+ 7: 	 * without parameters, so be helpful. According to the GNU standards:
+ 8: 	 *
+ 9: 	 *   If there is one behavior you think is most useful when the output
+10: 	 *   is to a terminal, and another that you think is most useful when
+11: 	 *   the output is a file or a pipe, then it is usually best to make
+12: 	 *   the default behavior the one that is useful with output to a
+13: 	 *   terminal, and have an option for the other behavior.
+14: 	 *
+15: 	 * Here we use the --force option to get the other behavior.
+16: 	 */
+17: 	fprintf(stderr,
+18:     "%s: compressed data not %s a terminal. Use -f to force %scompression.\n",
+19: 		program_name, decompress ? "read from" : "written to",
+20: 		decompress ? "de" : "");
+21: 	fprintf (stderr, "For help, type: %s -h\n", program_name);
+22: 	do_exit(ERROR);
+23:     }
+24: 
+25:     if (decompress || !ascii) {
+26: 	SET_BINARY_MODE(fileno(stdin));
+27:     }
+28:     if (!test && !list && (!decompress || !ascii)) {
+29: 	SET_BINARY_MODE(fileno(stdout));
+30:     }
+31:     strcpy(ifname, "stdin");
+32:     strcpy(ofname, "stdout");
+33: 
+34:     /* Get the file's time stamp and size.  */
+35:     if (fstat (fileno (stdin), &istat) != 0)
+36:       {
+37: 	progerror ("standard input");
+38: 	do_exit (ERROR);
+39:       }
+40:     ifile_size = S_ISREG (istat.st_mode) ? istat.st_size : -1;
+41:     time_stamp.tv_nsec = -1;
+42:     if (!no_time || list)
+43:       time_stamp = get_stat_mtime (&istat);
+44: 
+45:     clear_bufs(); /* clear input and output buffers */
+46:     to_stdout = 1;
+47:     part_nb = 0;
+48: 
+49:     if (decompress) {
+50: 	method = get_method(ifd);
+51: 	if (method < 0) {
+52: 	    do_exit(exit_code); /* error message already emitted */
+53: 	}
+54:     }
+55:     if (list) {
+56:         do_list(ifd, method);
+57:         return;
+58:     }
+59: 
+60:     /* Actually do the compression/decompression. Loop over zipped members.
+61:      */
+62:     for (;;) {
+63: 	if ((*work)(fileno(stdin), fileno(stdout)) != OK) return;
+64: 
+65: 	if (input_eof ())
+66: 	  break;
+67: 
+68: 	method = get_method(ifd);
+69: 	if (method < 0) return; /* error message already emitted */
+70: 	bytes_out = 0;            /* required for length check */
+71:     }
+72: 
+73:     if (verbose) {
+74: 	if (test) {
+75: 	    fprintf(stderr, " OK\n");
+76: 
+77: 	} else if (!decompress) {
+78: 	    display_ratio(bytes_in-(bytes_out-header_bytes), bytes_in, stderr);
+79: 	    fprintf(stderr, "\n");
+80: #ifdef DISPLAY_STDIN_RATIO
+81: 	} else {
+82: 	    display_ratio(bytes_out-(bytes_in-header_bytes), bytes_out,stderr);
+83: 	    fprintf(stderr, "\n");
+84: #endif
+85: 	}
+86:     }
+87: }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully as valid C
+
+The "line" field must refer to the numbered function lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+CONSTRAINTS — do not propose any of the following:
+1. No changes to #include directives or header files.
+2. No changes to macro definitions or macro-level edits. Treat macro invocations as opaque; mutate only their arguments if they appear within the target lines.
+3. No changes to struct, typedef, or enum declarations.
+4. No changes to the function signature (return type, parameter types, parameter names).
+5. No changes outside the numbered lines shown above.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

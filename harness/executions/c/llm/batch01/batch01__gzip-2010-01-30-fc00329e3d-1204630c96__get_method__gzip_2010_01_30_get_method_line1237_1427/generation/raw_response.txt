@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The original function checks for the specific gzip magic header using `memcmp`. This mutant introduces an incorrect comparison, potentially allowing the function to proceed with an invalid header.",
+      "line": 33,
+      "precode": "if (memcmp(magic, GZIP_MAGIC, 2) == 0",
+      "aftercode": "if (memcmp(magic, OLD_GZIP_MAGIC, 2) != 0"
+    },
+    {
+      "id": 2,
+      "reasoning": "The original function expects the method to be DEFLATED. This mutant changes the expected method, potentially leading to incorrect behavior if a different compression method is used.",
+      "line": 37,
+      "precode": "method != DEFLATED",
+      "aftercode": "method == STORED"
+    },
+    {
+      "id": 3,
+      "reasoning": "The original function checks for the CONTINUATION flag and exits if it's set. This mutant removes this check, potentially allowing a multi-part gzip file to be processed even though it's not supported.",
+      "line": 54,
+      "precode": "if ((flags & CONTINUATION) != 0)",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "The original function handles the ORIG_NAME flag by either discarding or copying the file name. This mutant changes the condition to always copy the name, regardless of the presence of the flag.",
+      "line": 100,
+      "precode": "if ((flags & ORIG_NAME) != 0)",
+      "aftercode": "if (1)"
+    },
+    {
+      "id": 5,
+      "reasoning": "The original function checks for a specific magic header to identify PKZIP files. This mutant changes the comparison, potentially allowing incorrect file formats to be processed as PKZIP.",
+      "line": 134,
+      "precode": "memcmp(magic, PKZIP_MAGIC, 2) == 0 && inptr == 2",
+      "aftercode": "memcmp(magic, PACK_MAGIC, 2) != 0"
+    },
+    {
+      "id": 6,
+      "reasoning": "The original function attempts to handle trailing garbage by checking for a non-zero byte. This mutant changes the check to always return EOF, effectively ignoring all input after the first two bytes.",
+      "line": 166,
+      "precode": "inbyte == 0",
+      "aftercode": "inbyte == EOF"
+    },
+    {
+      "id": 7,
+      "reasoning": "The original function sets `last_member` to 1 when encountering LZW or LZH files. This mutant changes the condition for setting `last_member`, potentially allowing additional members to be treated as a single member.",
+      "line": 152,
+      "precode": "memcmp(magic, LZW_MAGIC, 2) == 0",
+      "aftercode": "memcmp(magic, LZH_MAGIC, 2) == 0"
+    },
+    {
+      "id": 8,
+      "reasoning": "The original function handles the case where no method is identified by checking if `magic[0]` is zero. This mutant changes this condition to always be true, potentially leading to incorrect processing of input.",
+      "line": 165,
+      "precode": "if (method >= 0)",
+      "aftercode": "if (1)"
+    }
+  ]
+}
