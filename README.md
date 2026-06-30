@@ -1,71 +1,70 @@
 # MT Harness
 
-Harness para gerar, executar e analisar mutantes sobre alvos de código, com foco atual em `Defects4J`.
+A harness for generating, running, and analysing mutants against code targets, currently focused on **Defects4J**.
 
-O repositório suporta três fluxos principais:
+The repository supports three main pipeline modes:
 
-- gerar mutantes com LLM e executá-los (`full`)
-- gerar mutantes sem executar (`generate_only`)
-- executar mutantes já gerados numa run anterior (`execute_only`)
+- `full` — generate mutants with an LLM and execute them
+- `generate_only` — generate mutants without executing
+- `execute_only` — execute mutants produced in a previous run
 
-Também inclui utilitários para construir catálogos de alvos, mapear testes que cobrem cada alvo, reconstruir índices e gerar relatórios.
+## Overview
 
-## Visão Geral
+The normal workflow is:
 
-O fluxo normal do projeto é:
+1. Create or choose a target catalog
+2. Ensure the `target → covering tests` mapping exists
+3. Run a single target with `run_llm.py` or a batch with `run_batch.py`
+4. Inspect results under `harness/executions/` and `harness/reports/`
 
-1. criar ou escolher um catálogo de targets
-2. garantir o mapeamento `target -> testes que cobrem o target`
-3. correr uma run individual com `run_llm.py` ou um batch com `run_batch.py`
-4. consultar os resultados em `harness/executions/runs/`, `harness/executions/batches/` e `harness/reports/`
-
-## Estrutura do Repositório
+## Repository Layout
 
 ```text
 .
-├── configs/                      # exemplos de configuração
+├── configs/                      # example configuration files
 ├── harness/
-│   ├── adapters/                 # integração com benchmarks, ex. Defects4J
+│   ├── adapters/                 # benchmark integrations (e.g. Defects4J)
 │   ├── datasets/
-│   │   ├── catalogs/             # catálogos de targets
-│   │   └── coverage/             # mapeamentos target_tests.csv
+│   │   ├── catalogs/             # target catalogs (JSON)
+│   │   └── coverage/             # target_tests.csv mappings
 │   ├── executions/
-│   │   ├── runs/                 # runs individuais
-│   │   └── batches/              # manifestos de batches
-│   ├── llm/                      # parsing, prompts e providers
-│   ├── reporting/                # índices, summaries e kill matrices
-│   ├── reports/                  # artefactos agregados do harness, incluindo matrizes
-│   └── targets/                  # descoberta, validação e cobertura de targets
-├── prompts/                      # prompts usados na geração
-├── scripts/                      # helpers manuais
-├── tests/                        # testes automáticos
-├── run_llm.py                    # entrypoint para uma run individual
-├── run_batch.py                  # entrypoint para batches
-└── summarize_results.py          # resumo rápido de um results.csv
+│   │   ├── runs/                 # individual run artifacts
+│   │   └── batches/              # batch manifests
+│   ├── llm/                      # parsing, prompts, and providers
+│   ├── reporting/                # indexes, summaries, and kill matrices
+│   ├── reports/                  # aggregated harness artifacts
+│   └── targets/                  # target discovery, validation, and coverage
+├── prompts/                      # generation prompts
+├── tests/                        # automated tests
+├── run_llm.py                    # entry point for a single run
+├── run_batch.py                  # entry point for batches
+└── summarize_results.py          # quick summary of a results.csv
 ```
 
-## Pré-requisitos
+## Prerequisites
 
-Antes de usar o harness, o ambiente deve ter:
+Before using the harness the environment must have:
 
 - `python3`
 - `openjdk-11`
 - `defects4j`
 - `git`, `svn`, `ctags`
-- o provider de LLM que vais usar
+- the LLM provider you intend to use
 
-Providers suportados no repositório:
+Supported providers:
 
-- `ollama`: usa o comando `ollama run <modelo>`
-- `ollama_api`: usa a biblioteca Python `ollama`
-- `gpt4o`: usa o binário externo `gpt_run`
-- `gemini`: usa o binário externo `gemini_run`
+| Provider | Mechanism |
+|---|---|
+| `ollama` | `ollama run <model>` command |
+| `ollama_api` | Python `ollama` library |
+| `gpt4o` | external `gpt_run` binary |
+| `gemini` | external `gemini_run` binary |
 
-O `Dockerfile` já documenta um ambiente base com `Defects4J`, Java, `ollama` e dependências do sistema.
+The `Dockerfile` documents a base environment with Defects4J, Java, Ollama, and all system dependencies.
 
-## Preparação do Ambiente
+## Environment Setup
 
-Exemplo de preparação manual mínima:
+Minimal manual verification:
 
 ```bash
 python3 --version
@@ -74,407 +73,176 @@ defects4j pids
 ctags --version
 ```
 
-Se fores usar Ollama:
+If using Ollama:
 
 ```bash
 ollama serve
 ollama pull qwen2.5-coder:7b
 ```
 
-Se fores usar `gpt4o` ou `gemini`, confirma que os wrappers externos existem no `PATH`:
+If using `gpt4o` or `gemini`, confirm the wrappers exist on `PATH`:
 
 ```bash
 which gpt_run
 which gemini_run
 ```
 
-## Configurações
+## Configuration
 
-Os ficheiros em `configs/` são a forma principal de controlar uma execução.
+Configuration files in `configs/` control every execution. The key fields are:
 
-Exemplos já incluídos:
+| Field | Description |
+|---|---|
+| `dataset` | Target dataset; the main flow assumes `defects4j` |
+| `catalog_file` | JSON catalog of targets |
+| `target_id` | Specific target within the catalog |
+| `subject` | Benchmark subject, e.g. `Lang_1` |
+| `version` | Subject version, normally `f` |
+| `file` / `function` | Manual target override (when not using `target_id`) |
+| `model` | Model name |
+| `provider` / `model_provider` | Provider to use |
+| `prompt_file` | Generation prompt |
+| `num_mutants` | Number of mutants requested from the model |
+| `timeout` | Generation timeout per call |
+| `pipeline_mode` | `full`, `generate_only`, or `execute_only` |
+| `run_mode` | `fresh`, `overwrite`, or `resume` |
+| `mutant_workers` | Parallelism for mutant execution |
+| `missing_target_tests_policy` | `fail` or `report_and_skip` |
+| `cleanup_tmp` | Clean up temporary directories after the run |
+| `validate_after_run` | Validate artifacts after execution |
+| `rebuild_index` | Rebuild the global index after the run |
 
-- `configs/sample_config_full_pipeline.json`: gera e executa mutantes
-- `configs/sample_config_generation.json`: gera mutantes sem executar
-- `configs/sample_config_execution.json`: reexecuta um batch já existente
-- `configs/debugging/test_gpt.json`: run manual simples com provider `gpt4o`
-- `configs/debugging/test_gemini.json`: run manual simples com provider `gemini`
+Included examples:
 
-Campos importantes mais usados:
+- `configs/sample_config_full_pipeline.json` — generate and execute mutants
+- `configs/sample_config_generation.json` — generate without executing
+- `configs/sample_config_execution.json` — re-execute an existing batch
+- `configs/debugging/test_gpt.json` — simple manual run with the `gpt4o` provider
+- `configs/debugging/test_gemini.json` — simple manual run with the `gemini` provider
 
-- `dataset`: dataset alvo, hoje o fluxo principal assume `defects4j`
-- `catalog_file`: catálogo JSON com os targets
-- `target_id`: target específico dentro do catálogo
-- `subject`: sujeito do benchmark, por exemplo `Lang_1`
-- `version`: versão do sujeito, normalmente `f`
-- `file` e `function`: alvo manual quando não usas `target_id`
-- `model`: nome do modelo
-- `provider` ou `model_provider`: provider a usar
-- `prompt_file`: prompt de geração
-- `num_mutants`: número de mutantes pedidos ao modelo
-- `timeout`: timeout de geração por chamada
-- `pipeline_mode`: `full`, `generate_only` ou `execute_only`
-- `run_mode`: `fresh`, `overwrite` ou `resume`, conforme o contexto
-- `mutant_workers`: paralelismo na execução dos mutantes
-- `missing_target_tests_policy`: `fail` ou `report_and_skip` para distinguir erro de configuração de gap de cobertura
-- `cleanup_tmp`: limpa diretórios temporários no fim
-- `validate_after_run`: valida artefactos após a execução
-- `rebuild_index`: reconstrói o índice global após a run
+## Running the Harness
 
-## Comandos Principais
-
-### 1. Correr uma run individual
+### Single run
 
 ```bash
 python3 run_llm.py configs/sample_config_full_pipeline.json
 ```
 
-O que faz:
+Reads the JSON config, resolves the target, generates mutants (if the mode includes generation), builds and tests each mutant (if the mode includes execution), and writes results, artifacts, and run metadata.
 
-- lê um ficheiro JSON de configuração
-- resolve o target
-- gera mutantes com o provider configurado, se o modo incluir geração
-- executa build e testes sobre cada mutante, se o modo incluir execução
-- grava resultados, artefactos e metadados da run
+Use this when testing a specific target or an isolated configuration.
 
-Usa este comando quando queres testar um target específico ou uma configuração isolada.
-
-### 2. Correr um batch de targets
+### Batch of targets
 
 ```bash
 python3 run_batch.py configs/sample_config_full_pipeline.json
 ```
 
-O que faz:
+Reads a base config, expands it across all targets in the catalog, assigns a `batch_id`, launches one run per target, and writes the batch manifest to `harness/executions/batches/`.
 
-- lê uma configuração base
-- expande essa configuração para todos os targets do catálogo
-- cria um `batch_id`
-- lança várias runs individuais, uma por target
-- escreve o manifesto do batch em `harness/executions/batches/`
+Use this when processing an entire catalog or running multiple targets.
 
-Usa este comando quando queres processar um catálogo inteiro ou fazer várias runs por target.
-
-### 3. Gerar mutantes sem executar
+### Generate only
 
 ```bash
 python3 run_llm.py configs/sample_config_generation.json
 ```
 
-O que faz:
+Runs only the generation phase, saving accepted and rejected mutants. No build or test execution. Useful for inspecting generation quality before spending time on execution.
 
-- executa apenas a fase de geração
-- guarda os mutantes aceites e rejeitados
-- não corre build nem testes
-
-Útil para inspecionar a qualidade da geração antes de gastar tempo na execução.
-
-### 4. Executar mutantes já gerados
+### Execute previously generated mutants
 
 ```bash
 python3 run_batch.py configs/sample_config_execution.json
 ```
 
-O que faz:
+Reuses a prior batch via `source_batch_id` or `source_batch_manifest`, re-launching runs in `execute_only` mode against the mutants already stored in the original runs.
 
-- reutiliza um batch anterior através de `source_batch_id` ou `source_batch_manifest`
-- relança as runs em modo `execute_only`
-- executa os mutantes já guardados nas runs originais
+## Preparing Target Coverage
 
-Útil quando a geração já foi feita e só queres repetir ou ajustar a execução.
+The harness fails strictly if no test mapping exists for a target. The preparation flow is:
 
-## Comandos de Apoio
+```bash
+# 1. validate the catalog
+python3 -m harness.targets.validation harness/datasets/catalogs/defects4j_final_catalog.json
 
-### Resumir um `results.csv`
+# 2. create target_tests.csv templates
+python3 -m harness.targets.test_coverage_templates
+
+# 3. collect coverage (checks out subjects, runs defects4j coverage, writes mappings)
+python3 -m harness.targets.test_coverage_collection harness/datasets/catalogs/defects4j_final_catalog.json
+
+# 4. merge all per-catalog CSVs into the global index
+python3 -m harness.targets.test_coverage_templates --combine
+```
+
+Coverage logs are written to `logs/coverage/`. The collector writes intermediate checkpoints to `target_tests.csv` as it runs, so progress is visible before it finishes.
+
+Key behaviours:
+
+- The per-catalog CSV is always **overwritten** (consistent snapshot, not appended).
+- `ok=False` in the log means a particular `defects4j coverage` call produced no usable coverage; that test is skipped.
+- The final CSV includes a `match_mode` column (`strict_class_and_file` vs. weaker fallback matches).
+- Existing checkouts are reused by default; pass `--no-reuse-checkout` to force a clean checkout.
+
+## Reporting
+
+### Summarise a single run
 
 ```bash
 python3 summarize_results.py harness/executions/runs/<run_name>/execution/results.csv
 ```
 
-O que faz:
-
-- lê um `results.csv`
-- deduplica entradas por defeito
-- imprime um resumo agregado
-- pode também gravar `summary.json`
-
-Exemplo com JSON de saída:
+Reads a `results.csv`, deduplicates entries, and prints an aggregated summary. Optionally writes `summary.json`:
 
 ```bash
-python3 summarize_results.py harness/executions/runs/<run_name>/execution/results.csv --json-out /tmp/summary.json
+python3 summarize_results.py harness/executions/runs/<run_name>/execution/results.csv \
+  --json-out /tmp/summary.json
 ```
 
-### Reconstruir `batch manifest` a partir de runs antigas
-
-```bash
-python3 scripts/rebuild_batch_manifests.py
-```
-
-O que faz:
-
-- lê os `run_manifest.json` dentro de `harness/executions/runs/`
-- agrupa as runs por `extra_metadata.batch_id`
-- recria `harness/executions/batches/batchXX.json`
-
-Útil quando tens runs antigas no disco mas perdeste os manifestos de batch necessários para `execute_only`.
-
-### Construir um catálogo de targets do Defects4J
-
-```bash
-python3 -m harness.targets.build_defects4j_catalog \
-  --output harness/datasets/catalogs/defects4j_lang_catalog.json \
-  --projects Lang \
-  --bug-ids 1,2,3 \
-  --versions f \
-  --max-per-project 20 \
-  --max-per-function 1 \
-  --max-per-file 2
-```
-
-O que faz:
-
-- faz checkout dos projetos/bugs pedidos
-- extrai métodos Java candidatos
-- calcula score heurístico para priorização
-- gera um catálogo JSON pronto a usar em batches
-
-### Validar um catálogo
-
-```bash
-python3 -m harness.targets.validation harness/datasets/catalogs/defects4j_final_catalog.json
-```
-
-O que faz:
-
-- valida o formato do catálogo
-- verifica campos obrigatórios
-- valida `target_id`, linhas e duplicados
-
-### Criar templates `target_tests.csv`
-
-```bash
-python3 -m harness.targets.test_coverage_templates
-```
-
-O que faz:
-
-- percorre os catálogos em `harness/datasets/catalogs/*.json`
-- cria um `target_tests.csv` por catálogo dentro de `harness/datasets/coverage/catalogs/`
-- prepara a estrutura para preencher os testes que cobrem cada target
-- em modo normal, não acrescenta linhas ao CSV existente; prepara ou reescreve o ficheiro template conforme os argumentos
-
-Para forçar reescrita:
-
-```bash
-python3 -m harness.targets.test_coverage_templates --force
-```
-
-Para combinar os CSVs preenchidos num índice global:
-
-```bash
-python3 -m harness.targets.test_coverage_templates --combine
-```
-
-Exemplo para o catálogo pilot:
-
-```bash
-python3 -m harness.targets.test_coverage_templates harness/datasets/catalogs/defects4j_pilot_catalog.json
-```
-
-Nota sobre o formato:
-
-- o template inicial cria uma linha por target do catálogo
-- depois da recolha de cobertura, o mesmo `target_id` pode aparecer em várias linhas
-- isso é esperado, porque existe uma linha por par `target -> teste`
-
-### Descobrir automaticamente testes que cobrem cada target
-
-```bash
-python3 -m harness.targets.test_coverage_collection harness/datasets/catalogs/defects4j_final_catalog.json
-```
-
-O que faz:
-
-- faz checkout dos subjects do catálogo
-- enumera os testes do projeto
-- corre cobertura com `defects4j coverage`
-- identifica quais testes tocam as linhas do target
-- regenera por completo o `target_tests.csv` do catálogo no fim da execução
-
-Detalhes importantes:
-
-- o output é `overwrite`, não `append`: o CSV por catálogo é sempre reescrito como snapshot consistente
-- durante a execução, o collector já grava checkpoints intermédios no `target_tests.csv`, por isso consegues ver progresso enquanto corre
-- os logs desta recolha ficam em `logs/coverage/`
-- `ok=False` no log quer dizer apenas que essa invocação de `defects4j coverage` não produziu cobertura utilizável; esse teste é ignorado para o mapeamento final
-- a resolução de testes pode vir diretamente de `tests.all` ou de expansão `classe -> métodos`, dependendo do que o subject exporta
-- o matching de cobertura usa classe, ficheiro e linhas do target; quando o XML só permite um matching mais fraco, o collector emite `WARN fallback XML match`
-- o CSV final inclui `match_mode`, para distinguires matches fortes (`strict_class_and_file`) de matches mais fracos
-- por defeito, o collector reutiliza checkouts já existentes; usa `--no-reuse-checkout` se precisares de forçar checkout limpo
-- não precisas de passar `--reuse-checkout` explicitamente, porque esse já é o comportamento default
-- se usares `--clean`, o diretório de trabalho do catálogo é apagado antes de começar, o que na prática invalida a reutilização desse catálogo
-
-Este comando é importante porque a execução falha de forma estrita se não houver mapeamento de testes para o target.
-
-Exemplo para o catálogo pilot:
-
-```bash
-python3 -m harness.targets.test_coverage_collection harness/datasets/catalogs/defects4j_pilot_catalog.json
-```
-
-Fluxo completo para preparar o mapa de testes do pilot:
-
-```bash
-python3 -m harness.targets.test_coverage_templates harness/datasets/catalogs/defects4j_pilot_catalog.json
-python3 -m harness.targets.test_coverage_collection harness/datasets/catalogs/defects4j_pilot_catalog.json
-python3 -m harness.targets.test_coverage_templates --combine
-```
-
-Durante a recolha de coverage, podes acompanhar o progresso por teste em:
-
-- `logs/coverage/<catalog>__coverage_<timestamp>.log`
-
-### Reconstruir o índice global de experiências
+### Rebuild the global experiment index
 
 ```bash
 python3 -m harness.reporting.experiment_index
 ```
 
-O que faz:
+Scans `harness/executions/runs/`, reads each `run_manifest.json`, `results.csv`, and `summary.json`, and aggregates everything into `harness/reports/experiment_index.csv`.
 
-- percorre `harness/executions/runs/`
-- lê `run_manifest.json`, `results.csv` e `summary.json`
-- agrega tudo em `harness/reports/experiment_index.csv`
+### Generate kill matrices
 
-### Gerar kill matrices
-
-O fluxo atual tem 2 passos.
-
-1. gerar os ficheiros base `*_kill_matrix_long.csv` e `*_kill_matrix.csv`
-2. construir as matrizes finais por `run`, `target` e `model`
-
-No layout principal do harness:
-
-- o índice global fica em `harness/reports/experiment_index.csv`
-- os kill matrices base ficam em `harness/reports/matrices/base/`
-- as matrizes finais ficam em `harness/reports/matrices/`
-
-Alguns artefactos já existentes neste repo ainda usam o path legado `harness/experiments/target_coverage/kill_matrices/`. O CLI novo aceita esse layout por compatibilidade.
-
-Passo 1, gerar os kill matrices base a partir dos resultados estruturados:
+**Step 1 — base matrices from run results:**
 
 ```bash
 python3 -m harness.reporting.kill_matrix --group-by run
 ```
 
-O que faz:
+Reads `results.csv` and `test_results.csv` from each run directory, outputs base files to `harness/reports/matrices/base/`.
 
-- lê `harness/executions/runs/<run_name>/execution/results.csv`
-- lê `harness/executions/runs/<run_name>/execution/test_results.csv`
-- gera os ficheiros base em `harness/reports/matrices/base/`
-
-Passo 2, construir as matrizes finais:
+**Step 2 — final matrices by run, target, and model:**
 
 ```bash
 python3 -m harness.reporting.build_kill_matrices
 ```
 
-O que faz:
-
-- lê todos os `*_kill_matrix_long.csv` em `harness/reports/matrices/base/`
-- junta com `harness/reports/experiment_index.csv`
-- escreve artefactos finais em `harness/reports/matrices/`
-
-Se estiveres a trabalhar com artefactos legados já produzidos em `harness/experiments/target_coverage/kill_matrices/`, usa:
-
-```bash
-python3 -m harness.reporting.build_kill_matrices \
-  --runs-dir harness/experiments/target_coverage/kill_matrices
-```
-
-Artefactos produzidos:
+Reads all `*_kill_matrix_long.csv` files in `harness/reports/matrices/base/`, joins with the experiment index, and writes:
 
 - `harness/reports/matrices/per_run/<run_name>.csv`
 - `harness/reports/matrices/per_target/<target_id>.csv`
 - `harness/reports/matrices/per_model/model_kill_rates.csv`
 
-Exemplo com output Excel:
+Add `--format excel` to produce `.xlsx` files (requires `openpyxl`).
 
-```bash
-python3 -m harness.reporting.build_kill_matrices --format excel
-```
-
-Se `openpyxl` não estiver instalado, o comando falha com uma mensagem clara.
-
-### Resumir um batch
+### Summarise a batch
 
 ```bash
 python3 -m harness.reporting.summarize_batch --batch-id batch01
 ```
 
-O que faz:
+Reads the batch manifest, aggregates generation, execution, and rejection stats, and writes reports to `harness/reports/batch_summaries/`.
 
-- lê o manifesto do batch
-- agrega geração, execução e rejeições
-- escreve relatórios em `harness/reports/batch_summaries/`
+## Recommended Workflows
 
-### Executar mutantes manuais
-
-```bash
-python3 -m harness.executions.manual_mutants configs/debugging/manual_mutants_sample.json
-```
-
-O que faz:
-
-- carrega mutantes definidos manualmente em JSON
-- ignora a fase de geração por LLM
-- corre o pipeline de execução normal sobre esses mutantes
-
-Útil para debugging e validação do runner.
-
-### Smoke test manual do Defects4J
-
-```bash
-python3 scripts/test_defects4j_smoke.py
-```
-
-O que faz:
-
-- corre um teste manual rápido ao comportamento base do `Defects4J`
-- serve como sanity check do ambiente
-
-## Onde Ficam os Resultados
-
-Resultados e artefactos principais:
-
-- `harness/executions/runs/<run_name>/`
-- `harness/executions/runs/<run_name>/generation/`
-- `harness/executions/runs/<run_name>/execution/results.csv`
-- `harness/executions/runs/<run_name>/execution/test_results.csv`
-- `harness/executions/runs/<run_name>/execution/summary.json`
-- `harness/executions/batches/batchNN.json`
-- `harness/reports/experiment_index.csv`
-- `harness/reports/matrices/base/`
-- `harness/reports/matrices/per_run/`
-- `harness/reports/matrices/per_target/`
-- `harness/reports/matrices/per_model/`
-
-Paths legados que ainda podem aparecer em artefactos antigos:
-
-- `harness/experiments/target_coverage/kill_matrices/`
-
-## Fluxos Recomendados
-
-### Fluxo A: correr um catálogo completo
-
-1. validar o catálogo
-2. criar os templates `target_tests.csv`
-3. recolher cobertura para preencher os testes por target
-4. combinar os mapeamentos num índice global, se necessário
-5. correr `run_batch.py`
-6. gerar índice, kill matrices base e matrizes finais
-
-Comandos:
+### A — Run a complete catalog
 
 ```bash
 python3 -m harness.targets.validation harness/datasets/catalogs/defects4j_final_catalog.json
@@ -484,53 +252,55 @@ python3 -m harness.targets.test_coverage_templates --combine
 python3 run_batch.py configs/sample_config_full_pipeline.json
 python3 -m harness.reporting.experiment_index
 python3 -m harness.reporting.kill_matrix --group-by run
-python3 -m harness.reporting.build_kill_matrices --runs-dir harness/reports/matrices/base
+python3 -m harness.reporting.build_kill_matrices
 ```
 
-### Fluxo B: testar um target específico
-
-1. editar um ficheiro JSON em `configs/debugging/`
-2. correr `run_llm.py`
-3. inspecionar `results.csv`, `test_results.csv` e `summary.json`
-
-Comando:
+### B — Test a single target
 
 ```bash
+# edit a config in configs/debugging/, then:
 python3 run_llm.py configs/debugging/test_gpt.json
+# inspect:
+#   harness/executions/runs/<run_name>/execution/results.csv
+#   harness/executions/runs/<run_name>/execution/test_results.csv
+#   harness/executions/runs/<run_name>/execution/summary.json
 ```
 
-### Fluxo C: validar o runner sem LLM
+### C — Validate the runner without an LLM
 
 ```bash
 python3 -m harness.executions.manual_mutants configs/debugging/manual_mutants_sample.json
 ```
 
-## Testes
+Loads manually defined mutants from a JSON file and runs the full execution pipeline against them, skipping the LLM generation phase.
 
-Teste automático atualmente presente no repositório:
+## Where Results Are Stored
+
+| Path | Contents |
+|---|---|
+| `harness/executions/runs/<run_name>/` | Full run artifact directory |
+| `harness/executions/runs/<run_name>/generation/` | Generated and rejected mutants |
+| `harness/executions/runs/<run_name>/execution/results.csv` | Per-mutant execution results |
+| `harness/executions/runs/<run_name>/execution/test_results.csv` | Per-test results |
+| `harness/executions/runs/<run_name>/execution/summary.json` | Run summary |
+| `harness/executions/batches/batchNN.json` | Batch manifest |
+| `harness/reports/experiment_index.csv` | Global experiment index |
+| `harness/reports/matrices/base/` | Base kill matrix files |
+| `harness/reports/matrices/per_run/` | Kill matrices per run |
+| `harness/reports/matrices/per_target/` | Kill matrices per target |
+| `harness/reports/matrices/per_model/` | Kill rates per model |
+
+## Tests
 
 ```bash
 python3 -m unittest tests.test_kill_matrix_pipeline
 ```
 
-O que valida:
+Validates fast-failure when the target tests mapping is missing, correct generation of `test_results.csv`, and kill matrix construction from structured results.
 
-- falha rápida quando falta o mapeamento de target tests
-- geração correta de `test_results.csv`
-- construção de kill matrices a partir dos resultados estruturados
+## Notes
 
-## Notas Importantes
-
-- `run_llm.py` e `run_batch.py` esperam sempre um ficheiro de configuração JSON como primeiro argumento.
-- `run_llm.py --help` e `run_batch.py --help` não funcionam como CLI tradicional porque os scripts leem diretamente `sys.argv[1]` como path de config.
-- o modo `execute_only` exige `run_name` numa run individual ou `source_batch_id`/`source_batch_manifest` num batch.
-- a infraestrutura de execução distingue entre `target_tests.csv` em falta e targets sem testes mapeados; com `missing_target_tests_policy: "report_and_skip"`, a run fecha com estado `no_coverage`.
-- o repositório hoje está centrado em `Defects4J`, mesmo que a estrutura interna já esteja preparada para abstrações por dataset.
-
-## Ficheiros de Referência
-
-- [configs/sample_config_full_pipeline.json](/home/francisco/mt-harness/configs/sample_config_full_pipeline.json)
-- [configs/sample_config_generation.json](/home/francisco/mt-harness/configs/sample_config_generation.json)
-- [configs/sample_config_execution.json](/home/francisco/mt-harness/configs/sample_config_execution.json)
-- [harness/datasets/catalogs/defects4j_final_catalog.json](/home/francisco/mt-harness/harness/datasets/catalogs/defects4j_final_catalog.json)
-- [harness/datasets/coverage/README.md](/home/francisco/mt-harness/harness/datasets/coverage/README.md)
+- Both `run_llm.py` and `run_batch.py` expect a JSON config file as their first argument; they do not support `--help` flags.
+- `execute_only` mode requires `run_name` (single run) or `source_batch_id` / `source_batch_manifest` (batch).
+- With `missing_target_tests_policy: "report_and_skip"`, a run without coverage data closes with status `no_coverage` instead of failing hard.
+- The harness is currently centred on Defects4J; the internal structure is already abstracted by dataset but other adapters are not yet complete.
