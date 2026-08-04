@@ -1,0 +1,448 @@
+{
+  "requested_count": 40,
+  "accepted_count": 3,
+  "rejected_count": 37,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the behavioral property of serializing only non-null fields.",
+        "line": 41,
+        "precode": "if (prop != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the behavioral property of respecting the order of attributes.",
+        "line": 30,
+        "precode": "xgen.setNextIsAttribute(true);",
+        "aftercode": "xgen.setNextIsAttribute(false);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(false);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[i]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the behavioral property of respecting the order of text fields.",
+        "line": 45,
+        "precode": "if (i == textIndex) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the behavioral property of serializing only non-null fields.",
+        "line": 51,
+        "precode": "if ((cdata != null) && cdata.get(i)) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the behavioral property of respecting the order of any-getter fields.",
+        "line": 60,
+        "precode": "if (_anyGetterWriter != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the behavioral property of respecting the order of unwrapped fields.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the behavioral property of respecting the order of wrapped fields.",
+        "line": 39,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": "xgen.setNextName(xmlNames[props.length - i - 1]);",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[props.length - i - 1]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "requested_count": 40,
+  "accepted_count": 30,
+  "rejected_count": 10,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 2,
+        "reasoning": "Failure to remove processed changes from working set",
+        "line": 12,
+        "precode": "it.remove();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "Failure to remove changes from working set",
+        "line": 30,
+        "precode": "it.remove();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 18,
+        "reasoning": "Incorrectly processing delete changes in ADD loop",
+        "line": 54,
+        "precode": "change.type() == Change.TYPE_ADD",
+        "aftercode": "change.type() == Change.TYPE_DELETE",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            change.type() == Change.TYPE_DELETE\n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Removing break statement in deletion logic",
+        "line": 38,
+        "precode": "break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Incorrectly inverting isDeletedLater check",
+        "line": 43,
+        "precode": "!isDeletedLater(workingSet, entry)",
+        "aftercode": "isDeletedLater(workingSet, entry)",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                isDeletedLater(workingSet, entry) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && \n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Passing incorrect stream to copyStream",
+        "line": 44,
+        "precode": "copyStream(in, out, entry);",
+        "aftercode": "copyStream(change.getInput(), out, entry);",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(change.getInput(), out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && \n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "Failure to remove processed changes from working set",
+        "line": 60,
+        "precode": "it.remove();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Incorrectly skipping entries that should be copied",
+        "line": 43,
+        "precode": "!isDeletedLater(workingSet, entry)",
+        "aftercode": "isDeletedLater(workingSet, entry)",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                isDeletedLater(workingSet, entry) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && \n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 32,
+        "reasoning": "Incorrectly processing changes in ADD loop",
+        "line": 54,
+        "precode": "change.type() == Change.TYPE_ADD",
+        "aftercode": "change.type() == Change.TYPE_DELETE_DIR",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            change.type() == Change.TYPE_DELETE_DIR\n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 38,
+        "reasoning": "Incorrectly processing changes in ADD loop",
+        "line": 54,
+        "precode": "change.type() == Change.TYPE_ADD",
+        "aftercode": "change.type() == Change.TYPE_DELETE",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            change.type() == Change.TYPE_DELETE\n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

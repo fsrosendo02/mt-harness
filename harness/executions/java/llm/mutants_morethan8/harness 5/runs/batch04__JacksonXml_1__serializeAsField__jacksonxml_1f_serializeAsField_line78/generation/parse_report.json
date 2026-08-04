@@ -1,0 +1,118 @@
+{
+  "requested_count": 48,
+  "accepted_count": 39,
+  "rejected_count": 9,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Null value handling bypassed",
+        "line": 15,
+        "precode": "        if (value == null) {",
+        "aftercode": "        if (value == null) { return; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Serializer selection bypassed",
+        "line": 34,
+        "precode": "         JsonSerializer<Object> ser = _serializer;",
+        "aftercode": "         JsonSerializer<Object> ser = new JsonSerializer<>() { public void serialize(Object o, JsonGenerator j, SerializerProvider p) {}};",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "Self-reference check bypassed",
+        "line": 53,
+        "precode": "         if (value == bean) {",
+        "aftercode": "         if (value == bean) { return; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 25,
+        "reasoning": "Suppressable value comparison modified",
+        "line": 48,
+        "precode": "                 if (_suppressableValue.equals(value)) {",
+        "aftercode": "                 if (_suppressableValue != null && _suppressableValue.equals(value)) {",
+        "candidate_code": "    @Override\n    public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider prov)\n        throws Exception\n    {\n        Object value = get(bean);\n\n        /* 13-Feb-2014, tatu: As per [#103], default handling does not really\n         *   work here. Rather, we need just a wrapping and should NOT call\n         *   null handler, as it does not know what to do...\n         *   \n         *   Question, however, is what should it be serialized as. We have two main\n         *   choices; equivalent empty List, and \"nothing\" (missing). Let's start with\n         *   empty List? But producing missing entry is non-trivial...\n         */\n        if (value == null) {\n            // if (_nullSerializer != null) { ... }\n\n            // For Empty List, we'd do this:\n            /*\n            @SuppressWarnings(\"resource\")\n            final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n            if (xmlGen != null) {\n                xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n                xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n            }\n            */\n            // but for missing thing, well, just output nothing\n            \n            return;\n        }\n\n        // then find serializer to use\n        JsonSerializer<Object> ser = _serializer;\n        if (ser == null) {\n            Class<?> cls = value.getClass();\n            PropertySerializerMap map = _dynamicSerializers;\n            ser = map.serializerFor(cls);\n            if (ser == null) {\n                ser = _findAndAddDynamic(map, cls, prov);\n            }\n        }\n        // and then see if we must suppress certain values (default, empty)\n        if (_suppressableValue != null) {\n            if (MARKER_FOR_EMPTY == _suppressableValue) {\n                if (ser.isEmpty(prov, value)) {\n                    return;\n                }\n            if (_suppressableValue != null && _suppressableValue.equals(value)) {\n                return;\n            }\n        }\n        // For non-nulls: simple check for direct cycles\n        if (value == bean) {\n            // NOTE: method signature here change 2.3->2.4\n            if (_handleSelfReference(bean, jgen, prov, ser)) {\n                return;\n            }\n        }\n\n        final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n        // Ok then; addition we want to do is to add wrapper element, and that's what happens here\n        // 19-Aug-2013, tatu: ... except for those nasty 'convertValue()' calls...\n        if (xmlGen != null) {\n            xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n        }\n        jgen.writeFieldName(_name);\n        if (_typeSerializer == null) {\n            ser.serialize(value, jgen, prov);\n        } else {\n            ser.serializeWithType(value, jgen, prov, _typeSerializer);\n        }\n        if (xmlGen != null) {\n            xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 26,
+        "reasoning": "Suppressable value comparison modified",
+        "line": 48,
+        "precode": "                 if (_suppressableValue.equals(value)) {",
+        "aftercode": "                 if (_suppressableValue.equals(value) || true) {",
+        "candidate_code": "    @Override\n    public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider prov)\n        throws Exception\n    {\n        Object value = get(bean);\n\n        /* 13-Feb-2014, tatu: As per [#103], default handling does not really\n         *   work here. Rather, we need just a wrapping and should NOT call\n         *   null handler, as it does not know what to do...\n         *   \n         *   Question, however, is what should it be serialized as. We have two main\n         *   choices; equivalent empty List, and \"nothing\" (missing). Let's start with\n         *   empty List? But producing missing entry is non-trivial...\n         */\n        if (value == null) {\n            // if (_nullSerializer != null) { ... }\n\n            // For Empty List, we'd do this:\n            /*\n            @SuppressWarnings(\"resource\")\n            final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n            if (xmlGen != null) {\n                xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n                xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n            }\n            */\n            // but for missing thing, well, just output nothing\n            \n            return;\n        }\n\n        // then find serializer to use\n        JsonSerializer<Object> ser = _serializer;\n        if (ser == null) {\n            Class<?> cls = value.getClass();\n            PropertySerializerMap map = _dynamicSerializers;\n            ser = map.serializerFor(cls);\n            if (ser == null) {\n                ser = _findAndAddDynamic(map, cls, prov);\n            }\n        }\n        // and then see if we must suppress certain values (default, empty)\n        if (_suppressableValue != null) {\n            if (MARKER_FOR_EMPTY == _suppressableValue) {\n                if (ser.isEmpty(prov, value)) {\n                    return;\n                }\n            if (_suppressableValue.equals(value) || true) {\n                return;\n            }\n        }\n        // For non-nulls: simple check for direct cycles\n        if (value == bean) {\n            // NOTE: method signature here change 2.3->2.4\n            if (_handleSelfReference(bean, jgen, prov, ser)) {\n                return;\n            }\n        }\n\n        final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n        // Ok then; addition we want to do is to add wrapper element, and that's what happens here\n        // 19-Aug-2013, tatu: ... except for those nasty 'convertValue()' calls...\n        if (xmlGen != null) {\n            xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n        }\n        jgen.writeFieldName(_name);\n        if (_typeSerializer == null) {\n            ser.serialize(value, jgen, prov);\n        } else {\n            ser.serializeWithType(value, jgen, prov, _typeSerializer);\n        }\n        if (xmlGen != null) {\n            xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 27,
+        "reasoning": "Suppressable value comparison modified",
+        "line": 48,
+        "precode": "                 if (_suppressableValue.equals(value)) {",
+        "aftercode": "                 if (true) {",
+        "candidate_code": "    @Override\n    public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider prov)\n        throws Exception\n    {\n        Object value = get(bean);\n\n        /* 13-Feb-2014, tatu: As per [#103], default handling does not really\n         *   work here. Rather, we need just a wrapping and should NOT call\n         *   null handler, as it does not know what to do...\n         *   \n         *   Question, however, is what should it be serialized as. We have two main\n         *   choices; equivalent empty List, and \"nothing\" (missing). Let's start with\n         *   empty List? But producing missing entry is non-trivial...\n         */\n        if (value == null) {\n            // if (_nullSerializer != null) { ... }\n\n            // For Empty List, we'd do this:\n            /*\n            @SuppressWarnings(\"resource\")\n            final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n            if (xmlGen != null) {\n                xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n                xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n            }\n            */\n            // but for missing thing, well, just output nothing\n            \n            return;\n        }\n\n        // then find serializer to use\n        JsonSerializer<Object> ser = _serializer;\n        if (ser == null) {\n            Class<?> cls = value.getClass();\n            PropertySerializerMap map = _dynamicSerializers;\n            ser = map.serializerFor(cls);\n            if (ser == null) {\n                ser = _findAndAddDynamic(map, cls, prov);\n            }\n        }\n        // and then see if we must suppress certain values (default, empty)\n        if (_suppressableValue != null) {\n            if (MARKER_FOR_EMPTY == _suppressableValue) {\n                if (ser.isEmpty(prov, value)) {\n                    return;\n                }\n            if (true) {\n                return;\n            }\n        }\n        // For non-nulls: simple check for direct cycles\n        if (value == bean) {\n            // NOTE: method signature here change 2.3->2.4\n            if (_handleSelfReference(bean, jgen, prov, ser)) {\n                return;\n            }\n        }\n\n        final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n        // Ok then; addition we want to do is to add wrapper element, and that's what happens here\n        // 19-Aug-2013, tatu: ... except for those nasty 'convertValue()' calls...\n        if (xmlGen != null) {\n            xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n        }\n        jgen.writeFieldName(_name);\n        if (_typeSerializer == null) {\n            ser.serialize(value, jgen, prov);\n        } else {\n            ser.serializeWithType(value, jgen, prov, _typeSerializer);\n        }\n        if (xmlGen != null) {\n            xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Serializer dynamic lookup bypassed",
+        "line": 37,
+        "precode": "             ser = map.serializerFor(cls);",
+        "aftercode": "             ser = new JsonSerializer<>() { public void serialize(Object o, JsonGenerator j, SerializerProvider p) {}};",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 44,
+        "reasoning": "Serializer dynamic addition bypassed",
+        "line": 39,
+        "precode": "             ser = _findAndAddDynamic(map, cls, prov);",
+        "aftercode": "             ser = new JsonSerializer<>() { public void serialize(Object o, JsonGenerator j, SerializerProvider p) {}};",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 48,
+        "reasoning": "Suppressable value marker bypassed",
+        "line": 44,
+        "precode": "             if (MARKER_FOR_EMPTY == _suppressableValue) {",
+        "aftercode": "             if (MARKER_FOR_EMPTY == _suppressableValue) { return; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

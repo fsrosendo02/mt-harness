@@ -1,0 +1,254 @@
+{
+  "requested_count": 32,
+  "accepted_count": 11,
+  "rejected_count": 21,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method checks for duplicate name keys and adjusts them. This mutant removes the check entirely.",
+        "line": 46,
+        "precode": "curOffset != nextOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method increments the loop index when a name key is fixed. This mutant removes this increment.",
+        "line": 58,
+        "precode": "i++;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method compares offsets and name keys to detect duplicate name keys. This mutant removes the comparison of name keys.",
+        "line": 47,
+        "precode": "curNameKey.equals(nextNameKey) &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method creates a new DSTZone object with modified end recurrence name key. This mutant uses the original key instead.",
+        "line": 77,
+        "precode": "tailZone.iEndRecurrence.renameAppend(\"-Summer\")",
+        "aftercode": "tailZone.iEndRecurrence",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method checks for the special case of duplicate name keys and adjusts them. This mutant removes the check entirely.",
+        "line": 39,
+        "precode": "String curNameKey = nameKeys[i];",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method throws an IllegalArgumentException when a transition is out of order. This mutant does not throw an exception.",
+        "line": 17,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method checks if the current and next offsets are different for duplicate name keys. This mutant removes this check.",
+        "line": 47,
+        "precode": "curOffset != nextOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method checks if the current and next standard offsets are equal for duplicate name keys. This mutant removes this check.",
+        "line": 48,
+        "precode": "curStdOffset == nextStdOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method uses 'intern()' on modified name keys to ensure uniqueness. This mutant does not use 'intern()'.",
+        "line": 56,
+        "precode": "nameKeys[i] = (curNameKey + \"-Summer\").intern();",
+        "aftercode": "nameKeys[i] = curNameKey + \"-Summer\";",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = curNameKey + \"-Summer\";\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method uses 'intern()' on modified name keys to ensure uniqueness. This mutant does not use 'intern()'.",
+        "line": 58,
+        "precode": "nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();",
+        "aftercode": "nameKeys[i + 1] = nextNameKey + \"-Summer\";",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = nextNameKey + \"-Summer\";\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method throws an IllegalArgumentException when a transition is out of order. This mutant does not throw an exception.",
+        "line": 17,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method checks if the current and next offsets are different for duplicate name keys. This mutant removes this check.",
+        "line": 47,
+        "precode": "curOffset != nextOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method checks if the current and next standard offsets are equal for duplicate name keys. This mutant removes this check.",
+        "line": 48,
+        "precode": "curStdOffset == nextStdOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method increments the loop index when a name key is fixed. This mutant incorrectly increments it by two.",
+        "line": 58,
+        "precode": "i++;",
+        "aftercode": "i += 2;",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i += 2;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method uses 'intern()' on modified name keys to ensure uniqueness. This mutant does not use 'intern()'.",
+        "line": 56,
+        "precode": "nameKeys[i] = (curNameKey + \"-Summer\").intern();",
+        "aftercode": "nameKeys[i] = curNameKey + \"-Summer\";",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = curNameKey + \"-Summer\";\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method uses 'intern()' on modified name keys to ensure uniqueness. This mutant does not use 'intern()'.",
+        "line": 58,
+        "precode": "nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();",
+        "aftercode": "nameKeys[i + 1] = nextNameKey + \"-Summer\";",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = nextNameKey + \"-Summer\";\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method throws an IllegalArgumentException when a transition is out of order. This mutant does not throw an exception.",
+        "line": 17,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method checks if the current and next offsets are different for duplicate name keys. This mutant removes this check.",
+        "line": 47,
+        "precode": "curOffset != nextOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method checks if the current and next standard offsets are equal for duplicate name keys. This mutant removes this check.",
+        "line": 48,
+        "precode": "curStdOffset == nextStdOffset &&",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method increments the loop index when a name key is fixed. This mutant incorrectly increments it by two.",
+        "line": 58,
+        "precode": "i++;",
+        "aftercode": "i += 2;",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i += 2;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method uses 'intern()' on modified name keys to ensure uniqueness. This mutant does not use 'intern()'.",
+        "line": 56,
+        "precode": "nameKeys[i] = (curNameKey + \"-Summer\").intern();",
+        "aftercode": "nameKeys[i] = curNameKey + \"-Summer\";",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = curNameKey + \"-Summer\";\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "requested_count": 32,
+  "accepted_count": 18,
+  "rejected_count": 14,
+  "rejections": [
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "The filter.tail() method call is made without checking if the current node has a sibling before calling nextSibling().",
+        "line": 39,
+        "precode": "Node prev = node;",
+        "aftercode": "if (node.nextSibling() != null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            if (node.nextSibling() != null)// In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "The loop condition is not checked before accessing the node's child nodes.",
+        "line": 10,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (node == null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (node == null) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "The filter.head() method call is made without checking the result before calling tail().",
+        "line": 7,
+        "precode": "if (result == FilterResult.STOP)",
+        "aftercode": "if (result != FilterResult.CONTINUE)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result != FilterResult.CONTINUE)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The filter.head() method call is made without checking the result before calling tail().",
+        "line": 11,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (result != FilterResult.SKIP_CHILDREN)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                if (result != FilterResult.SKIP_CHILDREN)\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "The loop condition is not checked before accessing the node's child nodes.",
+        "line": 10,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (node == null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (node == null) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The loop condition is not checked before accessing the node's child nodes.",
+        "line": 10,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (node == null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (node == null) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The filter.head() method call is made without checking the result before calling tail().",
+        "line": 11,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (result != FilterResult.STOP)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                if (result != FilterResult.STOP)\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "The filter.head() method call is made without checking the result before calling tail().",
+        "line": 11,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (result != FilterResult.SKIP_CHILDREN)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                if (result != FilterResult.SKIP_CHILDREN)\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The filter.head() method call is made without checking the result before calling tail().",
+        "line": 11,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (result != FilterResult.STOP)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                if (result != FilterResult.STOP)\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "The filter.tail() method call is made without checking if the current node has a parent before calling parentNode().",
+        "line": 16,
+        "precode": "while (node.nextSibling() == null && depth > 0)",
+        "aftercode": "if (node.parentNode() != null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            if (node.parentNode() != null) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The filter.tail() method call is made without checking the result before removing the current node.",
+        "line": 28,
+        "precode": "if (result == FilterResult.REMOVE)",
+        "aftercode": "if (result != FilterResult.CONTINUE)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result != FilterResult.CONTINUE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The filter.tail() method call is made without checking if the current node has a sibling before calling nextSibling().",
+        "line": 39,
+        "precode": "Node prev = node;",
+        "aftercode": "if (node.nextSibling() != null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            if (node.nextSibling() != null)// In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The loop condition is not checked before accessing the node's child nodes.",
+        "line": 10,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (node == null)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (node == null) {\n                node = node.childNode(0);\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The filter.head() method call is made without checking the result before calling tail().",
+        "line": 11,
+        "precode": "if (result == FilterResult.CONTINUE && node.childNodeSize() > 0)",
+        "aftercode": "if (result != FilterResult.SKIP_CHILDREN)",
+        "candidate_code": "    public static FilterResult filter(NodeFilter filter, Node root) {\n        Node node = root;\n        int depth = 0;\n\n        while (node != null) {\n            FilterResult result = filter.head(node, depth);\n            if (result == FilterResult.STOP)\n                return result;\n            // Descend into child nodes:\n            if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {\n                if (result != FilterResult.SKIP_CHILDREN)\n                ++depth;\n                continue;\n            }\n            // No siblings, move upwards:\n            while (node.nextSibling() == null && depth > 0) {\n                // 'tail' current node:\n                if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                    result = filter.tail(node, depth);\n                    if (result == FilterResult.STOP)\n                        return result;\n                }\n                Node prev = node; // In case we need to remove it below.\n                node = node.parentNode();\n                depth--;\n                if (result == FilterResult.REMOVE)\n                    prev.remove(); // Remove AFTER finding parent.\n                result = FilterResult.CONTINUE; // Parent was not pruned.\n            }\n            // 'tail' current node, then proceed with siblings:\n            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {\n                result = filter.tail(node, depth);\n                if (result == FilterResult.STOP)\n                    return result;\n            }\n            if (node == root)\n                return result;\n            Node prev = node; // In case we need to remove it below.\n            node = node.nextSibling();\n            if (result == FilterResult.REMOVE)\n                prev.remove(); // Remove AFTER finding sibling.\n        }\n        // root == null?\n        return FilterResult.CONTINUE;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

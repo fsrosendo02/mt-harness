@@ -1,0 +1,68 @@
+{
+  "requested_count": 16,
+  "accepted_count": 11,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 8,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly handling duplicate headers.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {",
+        "aftercode": "if (containsHeader && (!emptyHeader || (emptyHeader && this.format.getIgnoreEmptyHeaders()))) { // logical error in ignoring empty headers",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && this.format.getIgnoreEmptyHeaders()))) { // logical error in ignoring empty headers\n                        throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header +\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly handling duplicate headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": "if (true) { hdrMap.put(header, Integer.valueOf(i)); } // always true condition",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly handling missing headers.",
+        "line": 9,
+        "precode": "final CSVRecord nextRecord = this.nextRecord();",
+        "aftercode": "if (false) { final CSVRecord nextRecord = this.nextRecord(); } // never executed condition",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly handling missing headers.",
+        "line": 9,
+        "precode": "final CSVRecord nextRecord = this.nextRecord();",
+        "aftercode": "while (true) { final CSVRecord nextRecord = this.nextRecord(); } // infinite loop",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly handling missing headers.",
+        "line": 12,
+        "precode": "headerRecord = nextRecord.values();",
+        "aftercode": "if (false) { headerRecord = nextRecord.values(); } // never executed condition",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "requested_count": 24,
+  "accepted_count": 9,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violate completeness property",
+        "line": 30,
+        "precode": "else if (ArArchiveInputStream.matches(signature, signatureLength))",
+        "aftercode": "if (false)",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        if (false) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violate usability property",
+        "line": 75,
+        "precode": "IOUtils.closeQuietly(tais);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violate maintainability property",
+        "line": 76,
+        "precode": "IOUtils.closeQuietly(tais);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violate compatibility property",
+        "line": 78,
+        "precode": "throw new ArchiveException(\"No Archiver found for the stream signature\");",
+        "aftercode": ""
+      }
+    }
+  ]
+}

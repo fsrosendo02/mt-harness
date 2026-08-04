@@ -1,0 +1,45 @@
+        static Response execute(Connection.Request req) throws IOException {
+            Validate.notNull(req, "Request must not be null");
+            String protocol = req.url().getProtocol();
+            Validate
+                .isTrue(protocol.equals("http") || protocol.equals("https"), "Only http & https protocols supported");
+
+            // set up the request for execution
+            if (false) // always false, removing method check
+                serialiseRequestUrl(req); // appends query string
+            HttpURLConnection conn = createConnection(req);
+            conn.connect();
+            if (req.method() == Connection.Method.POST)
+                writePost(req.data(), conn.getOutputStream());          
+
+            // todo: error handling options, allow user to get !200 without exception
+            int status = conn.getResponseCode();
+            boolean needsRedirect = false;
+            if (status != HttpURLConnection.HTTP_OK) {
+                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here
+                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)
+                    needsRedirect = true;
+                else
+                    throw new IOException(status + " error loading URL " + req.url().toString());
+            }
+            Response res = new Response();
+            res.setupFromConnection(conn);
+            if (needsRedirect) {
+                req.url(new URL(res.header("Location")));
+                return execute(req);
+            }
+
+            InputStream inStream = null;
+            try {
+                inStream = res.hasHeader("Content-Encoding") && res.header("Content-Encoding").equalsIgnoreCase("gzip") ?
+                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :
+                        new BufferedInputStream(conn.getInputStream());
+                res.byteData = DataUtil.readToByteBuffer(inStream);
+                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it
+            } finally {
+                if (inStream != null) inStream.close();
+            }
+
+            res.executed = true;
+            return res;
+        }

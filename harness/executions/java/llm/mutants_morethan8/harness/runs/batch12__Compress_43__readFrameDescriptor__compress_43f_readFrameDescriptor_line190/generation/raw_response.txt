@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changes the behavior of premature end of stream detection.",
+      "line": 3,
+      "precode": "if (flags == -1) {",
+      "aftercode": "if (flags != -1) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Alters the version check behavior.",
+      "line": 7,
+      "precode": "contentHash.update(flags);",
+      "aftercode": "contentHash.update(~flags);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Modifies the block independence expectation.",
+      "line": 10,
+      "precode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;",
+      "aftercode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) != 0;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Changes the behavior of block dependency buffer creation.",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];",
+      "aftercode": "blockDependencyBuffer = null;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Alters the block dependency buffer assignment.",
+      "line": 17,
+      "precode": "blockDependencyBuffer = null;",
+      "aftercode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];"
+    },
+    {
+      "id": 6,
+      "reasoning": "Modifies the block checksum expectation.",
+      "line": 18,
+      "precode": "expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;",
+      "aftercode": "expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) == 0;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Changes the content size expectation.",
+      "line": 19,
+      "precode": "expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;",
+      "aftercode": "expectContentSize = (flags & CONTENT_SIZE_MASK) == 0;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Alters the content checksum expectation.",
+      "line": 20,
+      "precode": "expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;",
+      "aftercode": "expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) == 0;"
+    },
+    {
+      "id": 9,
+      "reasoning": "Changes the behavior of premature end of stream detection for BD byte.",
+      "line": 23,
+      "precode": "if (bdByte == -1) { // max size is irrelevant for this implementation",
+      "aftercode": "if (bdByte != -1) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Alters the content hash update behavior.",
+      "line": 25,
+      "precode": "contentHash.update(bdByte);",
+      "aftercode": "contentHash.update(~bdByte);"
+    },
+    {
+      "id": 11,
+      "reasoning": "Modifies the content size reading condition.",
+      "line": 26,
+      "precode": "if (expectContentSize) { // for now we don't care, contains the uncompressed size",
+      "aftercode": "if (!expectContentSize) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "Alters the content size byte array length.",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8];",
+      "aftercode": "byte[] contentSize = new byte[4];"
+    },
+    {
+      "id": 13,
+      "reasoning": "Changes the premature end of stream detection for content size.",
+      "line": 31,
+      "precode": "if (8 != skipped) {",
+      "aftercode": "if (8 == skipped) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Alters the content hash update behavior for content size.",
+      "line": 33,
+      "precode": "contentHash.update(contentSize, 0, contentSize.length);",
+      "aftercode": "contentHash.update(contentSize, 0, contentSize.length / 2);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Modifies the header hash reading behavior.",
+      "line": 35,
+      "precode": "int headerHash = readOneByte();",
+      "aftercode": "int headerHash = ~readOneByte();"
+    },
+    {
+      "id": 16,
+      "reasoning": "Changes the premature end of stream detection for frame header checksum.",
+      "line": 37,
+      "precode": "if (headerHash == -1) { // partial hash of header.",
+      "aftercode": "if (headerHash != -1) {"
+    },
+    {
+      "id": 17,
+      "reasoning": "Alters the expected hash calculation.",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);",
+      "aftercode": "int expectedHash = (int) ((contentHash.getValue() << 8) & 0xff);"
+    },
+    {
+      "id": 18,
+      "reasoning": "Modifies the content hash reset behavior.",
+      "line": 40,
+      "precode": "contentHash.reset();",
+      "aftercode": "// contentHash.reset();"
+    },
+    {
+      "id": 19,
+      "reasoning": "Changes the frame header checksum mismatch condition.",
+      "line": 41,
+      "precode": "if (headerHash != expectedHash) {",
+      "aftercode": "if (headerHash == expectedHash) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Alters the IOException message for frame header checksum mismatch.",
+      "line": 43,
+      "precode": "throw new IOException(\"frame header checksum mismatch.\");",
+      "aftercode": "throw new IOException(\"frame header checksum match.\");"
+    },
+    {
+      "id": 21,
+      "reasoning": "Modifies the VERSION_MASK value.",
+      "line": 7,
+      "precode": "(flags & VERSION_MASK) != SUPPORTED_VERSION",
+      "aftercode": "(flags & ~VERSION_MASK) != SUPPORTED_VERSION"
+    },
+    {
+      "id": 22,
+      "reasoning": "Changes the BLOCK_INDEPENDENCE_MASK value.",
+      "line": 10,
+      "precode": "(flags & BLOCK_INDEPENDENCE_MASK) == 0",
+      "aftercode": "(flags & ~BLOCK_INDEPENDENCE_MASK) == 0"
+    },
+    {
+      "id": 23,
+      "reasoning": "Alters the BLOCK_CHECKSUM_MASK value.",
+      "line": 18,
+      "precode": "(flags & BLOCK_CHECKSUM_MASK) != 0",
+      "aftercode": "(flags & ~BLOCK_CHECKSUM_MASK) != 0"
+    },
+    {
+      "id": 24,
+      "reasoning": "Modifies the CONTENT_SIZE_MASK value.",
+      "line": 19,
+      "precode": "(flags & CONTENT_SIZE_MASK) != 0",
+      "aftercode": "(flags & ~CONTENT_SIZE_MASK) != 0"
+    }
+  ]
+}

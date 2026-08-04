@@ -1,0 +1,97 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static void verbosePrintInternal(
+ 2:         final PrintStream out,
+ 3:         final Object label,
+ 4:         final Map<?, ?> map,
+ 5:         final ArrayStack<Map<?, ?>> lineage,
+ 6:         final boolean debug) {
+ 7: 
+ 8:         printIndent(out, lineage.size());
+ 9: 
+10:         if (map == null) {
+11:             if (label != null) {
+12:                 out.print(label);
+13:                 out.print(" = ");
+14:             }
+15:             out.println("null");
+16:             return;
+17:         }
+18:         if (label != null) {
+19:             out.print(label);
+20:             out.println(" = ");
+21:         }
+22: 
+23:         printIndent(out, lineage.size());
+24:         out.println("{");
+25: 
+26:         lineage.push(map);
+27: 
+28:         for (Map.Entry<?, ?> entry : map.entrySet()) {
+29:             Object childKey = entry.getKey();
+30:             Object childValue = entry.getValue();
+31:             if (childValue instanceof Map && !lineage.contains(childValue)) {
+32:                 verbosePrintInternal(
+33:                     out,
+34:                     (childKey == null ? "null" : childKey),
+35:                     (Map<?, ?>) childValue,
+36:                     lineage,
+37:                     debug);
+38:             } else {
+39:                 printIndent(out, lineage.size());
+40:                 out.print(childKey);
+41:                 out.print(" = ");
+42: 
+43:                 final int lineageIndex = lineage.indexOf(childValue);
+44:                 if (lineageIndex == -1) {
+45:                     out.print(childValue);
+46:                 } else if (lineage.size() - 1 == lineageIndex) {
+47:                     out.print("(this Map)");
+48:                 } else {
+49:                     out.print(
+50:                         "(ancestor["
+51:                             + (lineage.size() - 1 - lineageIndex - 1)
+52:                             + "] Map)");
+53:                 }
+54: 
+55:                 if (debug && childValue != null) {
+56:                     out.print(' ');
+57:                     out.println(childValue.getClass().getName());
+58:                 } else {
+59:                     out.println();
+60:                 }
+61:             }
+62:         }
+63: 
+64:         lineage.pop();
+65: 
+66:         printIndent(out, lineage.size());
+67:         out.println(debug ? "} " + map.getClass().getName() : "}");
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

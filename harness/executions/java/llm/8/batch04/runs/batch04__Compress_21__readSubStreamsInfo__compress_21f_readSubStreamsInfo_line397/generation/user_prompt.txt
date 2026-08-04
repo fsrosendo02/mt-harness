@@ -1,0 +1,112 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void readSubStreamsInfo(final DataInput header, final Archive archive) throws IOException {
+ 2:         for (final Folder folder : archive.folders) {
+ 3:             folder.numUnpackSubStreams = 1;
+ 4:         }
+ 5:         int totalUnpackStreams = archive.folders.length;
+ 6:         
+ 7:         int nid = header.readUnsignedByte();
+ 8:         if (nid == NID.kNumUnpackStream) {
+ 9:             totalUnpackStreams = 0;
+10:             for (final Folder folder : archive.folders) {
+11:                 final long numStreams = readUint64(header);
+12:                 folder.numUnpackSubStreams = (int)numStreams;
+13:                 totalUnpackStreams += numStreams;
+14:             }
+15:             nid = header.readUnsignedByte();
+16:         }
+17:         
+18:         final SubStreamsInfo subStreamsInfo = new SubStreamsInfo();
+19:         subStreamsInfo.unpackSizes = new long[totalUnpackStreams];
+20:         subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams);
+21:         subStreamsInfo.crcs = new long[totalUnpackStreams];
+22:         
+23:         int nextUnpackStream = 0;
+24:         for (final Folder folder : archive.folders) {
+25:             if (folder.numUnpackSubStreams == 0) {
+26:                 continue;
+27:             }
+28:             long sum = 0;
+29:             if (nid == NID.kSize) {
+30:                 for (int i = 0; i < (folder.numUnpackSubStreams - 1); i++) {
+31:                     final long size = readUint64(header);
+32:                     subStreamsInfo.unpackSizes[nextUnpackStream++] = size;
+33:                     sum += size;
+34:                 }
+35:             }
+36:             subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;
+37:         }
+38:         if (nid == NID.kSize) {
+39:             nid = header.readUnsignedByte();
+40:         }
+41:         
+42:         int numDigests = 0;
+43:         for (final Folder folder : archive.folders) {
+44:             if (folder.numUnpackSubStreams != 1 || !folder.hasCrc) {
+45:                 numDigests += folder.numUnpackSubStreams;
+46:             }
+47:         }
+48:         
+49:         if (nid == NID.kCRC) {
+50:             final BitSet hasMissingCrc = readAllOrBits(header, numDigests);
+51:             final long[] missingCrcs = new long[numDigests];
+52:             for (int i = 0; i < numDigests; i++) {
+53:                 if (hasMissingCrc.get(i)) {
+54:                     missingCrcs[i] = 0xffffFFFFL & Integer.reverseBytes(header.readInt());
+55:                 }
+56:             }
+57:             int nextCrc = 0;
+58:             int nextMissingCrc = 0;
+59:             for (final Folder folder: archive.folders) {
+60:                 if (folder.numUnpackSubStreams == 1 && folder.hasCrc) {
+61:                     subStreamsInfo.hasCrc.set(nextCrc, true);
+62:                     subStreamsInfo.crcs[nextCrc] = folder.crc;
+63:                     ++nextCrc;
+64:                 } else {
+65:                     for (int i = 0; i < folder.numUnpackSubStreams; i++) {
+66:                         subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));
+67:                         subStreamsInfo.crcs[nextCrc] = missingCrcs[nextMissingCrc];
+68:                         ++nextCrc;
+69:                         ++nextMissingCrc;
+70:                     }
+71:                 }
+72:             }
+73:             
+74:             nid = header.readUnsignedByte();
+75:         }
+76:         
+77:         if (nid != NID.kEnd) {
+78:             throw new IOException("Badly terminated SubStreamsInfo");
+79:         }
+80:         
+81:         archive.subStreamsInfo = subStreamsInfo;
+82:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

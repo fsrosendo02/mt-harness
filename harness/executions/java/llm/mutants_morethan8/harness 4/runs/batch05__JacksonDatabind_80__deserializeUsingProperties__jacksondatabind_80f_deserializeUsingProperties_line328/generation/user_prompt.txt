@@ -1,0 +1,105 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public EnumMap<?,?> _deserializeUsingProperties(JsonParser p, DeserializationContext ctxt) throws IOException
+ 2:     {
+ 3:         final PropertyBasedCreator creator = _propertyBasedCreator;
+ 4:         // null -> no ObjectIdReader for EnumMaps
+ 5:         PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, null);
+ 6: 
+ 7:         String keyName;
+ 8:         if (p.isExpectedStartObjectToken()) {
+ 9:             keyName = p.nextFieldName();
+10:         } else if (p.hasToken(JsonToken.FIELD_NAME)) {
+11:             keyName = p.getCurrentName();
+12:         } else {
+13:             keyName = null;
+14:         }
+15: 
+16:         for (; keyName != null; keyName = p.nextFieldName()) {
+17:             JsonToken t = p.nextToken(); // to get to value
+18:             // creator property?
+19:             SettableBeanProperty prop = creator.findCreatorProperty(keyName);
+20:             if (prop != null) {
+21:                 // Last property to set?
+22:                 if (buffer.assignParameter(prop, prop.deserialize(p, ctxt))) {
+23:                     EnumMap<?,?> result;
+24:                     try {
+25:                         result = (EnumMap<?,?>)creator.build(ctxt, buffer);
+26:                     } catch (Exception e) {
+27:                         return wrapAndThrow(e, _containerType.getRawClass(), keyName);
+28:                     }
+29:                     return deserialize(p, ctxt, result);
+30:                 }
+31:                 continue;
+32:             }
+33:             // other property? needs buffering
+34:             // but we need to let key deserializer handle it separately, nonetheless
+35:             Enum<?> key = (Enum<?>) _keyDeserializer.deserializeKey(keyName, ctxt);
+36:             if (key == null) {
+37:                 if (!ctxt.isEnabled(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)) {
+38:                     return (EnumMap<?,?>) ctxt.handleWeirdStringValue(_enumClass, keyName,
+39:                             "value not one of declared Enum instance names for %s",
+40:                             _containerType.getKeyType());
+41:                 }
+42:                 // 24-Mar-2012, tatu: Null won't work as a key anyway, so let's
+43:                 //  just skip the entry then. But we must skip the value as well, if so.
+44:                 p.nextToken();
+45:                 p.skipChildren();
+46:                 continue;
+47:             }
+48:             Object value; 
+49: 
+50:             try {
+51:                 if (t == JsonToken.VALUE_NULL) {
+52:                     if (_skipNullValues) {
+53:                         continue;
+54:                     }
+55:                     value = _nullProvider.getNullValue(ctxt);
+56:                 } else if (_valueTypeDeserializer == null) {
+57:                     value = _valueDeserializer.deserialize(p, ctxt);
+58:                 } else {
+59:                     value = _valueDeserializer.deserializeWithType(p, ctxt, _valueTypeDeserializer);
+60:                 }
+61:             } catch (Exception e) {
+62:                 wrapAndThrow(e, _containerType.getRawClass(), keyName);
+63:                 return null;
+64:             }
+65:             buffer.bufferMapProperty(key, value);
+66:         }
+67:         // end of JSON object?
+68:         // if so, can just construct and leave...
+69:         try {
+70:             return (EnumMap<?,?>)creator.build(ctxt, buffer);
+71:         } catch (Exception e) {
+72:             wrapAndThrow(e, _containerType.getRawClass(), keyName);
+73:             return null;
+74:         }
+75:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

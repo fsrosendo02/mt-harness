@@ -1,0 +1,76 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private int handleS(final String value, final DoubleMetaphoneResult result, int index,
+ 2:                         final boolean slavoGermanic) {
+ 3:         if (contains(value, index - 1, 3, "ISL", "YSL")) {
+ 4:             //-- special cases "island", "isle", "carlisle", "carlysle" --//
+ 5:             index++;
+ 6:         } else if (index == 0 && contains(value, index, 5, "SUGAR")) {
+ 7:             //-- special case "sugar-" --//
+ 8:             result.append('X', 'S');
+ 9:             index++;
+10:         } else if (contains(value, index, 2, "SH")) {
+11:             if (contains(value, index + 1, 4, "HEIM", "HOEK", "HOLM", "HOLZ")) {
+12:                 //-- germanic --//
+13:                 result.append('S');
+14:             } else {
+15:                 result.append('X');
+16:             }
+17:             index += 2;
+18:         } else if (contains(value, index, 3, "SIO", "SIA") || contains(value, index, 4, "SIAN")) {
+19:             //-- Italian and Armenian --//
+20:             if (slavoGermanic) {
+21:                 result.append('S');
+22:             } else {
+23:                 result.append('S', 'X');
+24:             }
+25:             index += 3;
+26:         } else if ((index == 0 && contains(value, index + 1, 1, "M", "N", "L", "W")) ||
+27:                    contains(value, index + 1, 1, "Z")) {
+28:             //-- german & anglicisations, e.g. "smith" match "schmidt" //
+29:             // "snider" match "schneider" --//
+30:             //-- also, -sz- in slavic language although in hungarian it //
+31:             //   is pronounced "s" --//
+32:             result.append('S', 'X');
+33:             index = contains(value, index + 1, 1, "Z") ? index + 2 : index + 1;
+34:         } else if (contains(value, index, 2, "SC")) {
+35:             index = handleSC(value, result, index);
+36:         } else {
+37:             if (index == value.length() - 1 && contains(value, index - 2, 2, "AI", "OI")) {
+38:                 //-- french e.g. "resnais", "artois" --//
+39:                 result.appendAlternate('S');
+40:             } else {
+41:                 result.append('S');
+42:             }
+43:             index = contains(value, index + 1, 1, "S", "Z") ? index + 2 : index + 1;
+44:         }
+45:         return index;
+46:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

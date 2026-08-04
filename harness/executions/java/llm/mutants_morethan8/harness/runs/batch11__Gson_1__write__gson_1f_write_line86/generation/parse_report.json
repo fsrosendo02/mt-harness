@@ -1,0 +1,31 @@
+{
+  "requested_count": 24,
+  "accepted_count": 22,
+  "rejected_count": 2,
+  "rejections": [
+    {
+      "index": 19,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Incorrect array element processing",
+        "line": 21,
+        "precode": "/* always print null when its parent element is an array! */",
+        "aftercode": "/* skip null when parent is array */"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Incorrect handling of serializeNulls in object processing",
+        "line": 34,
+        "precode": "if (!serializeNulls && value.isJsonNull())",
+        "aftercode": "if (serializeNulls || value.isJsonNull())",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (serializeNulls || value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

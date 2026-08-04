@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonXml_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksonxml_1f_hasXMLFormat__line682",
+  "file_path": "src/main/java/com/fasterxml/jackson/dataformat/xml/XmlFactory.java",
+  "function_name": "hasXMLFormat",
+  "start_line": 682,
+  "end_line": 770,
+  "mutant_id": "rej22",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 22,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch01__JacksonXml_1__hasXMLFormat__jacksonxml_1f_hasXMLFormat_line682/generation/raw_response.txt",
+  "payload": {
+    "id": 22,
+    "reasoning": "Violates the behavior of returning a no match when the first character after '<!' is not a '-' or 'D'.",
+    "line": 73,
+    "precode": "if (b == BYTE_HYPHEN) {",
+    "aftercode": "if (b != BYTE_HYPHEN) {",
+    "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b != BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+    "resolution_reason": "exact_search_match"
+  },
+  "log_path": "harness/runs/batch01__JacksonXml_1__hasXMLFormat__jacksonxml_1f_hasXMLFormat_line682/rejected/rej22.log",
+  "mutant_path": "harness/runs/batch01__JacksonXml_1__hasXMLFormat__jacksonxml_1f_hasXMLFormat_line682/rejected/rej22.mutant.txt",
+  "original_path": "harness/runs/batch01__JacksonXml_1__hasXMLFormat__jacksonxml_1f_hasXMLFormat_line682/rejected/original.txt"
+}

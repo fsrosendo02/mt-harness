@@ -1,0 +1,58 @@
+{
+  "requested_count": 16,
+  "accepted_count": 12,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 4,
+        "reasoning": "The original method checks if the header contains a duplicate name. A mutant does not perform this check.",
+        "line": 28,
+        "precode": "throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header + \"\\\" in \" + Arrays.toString(headerRecord));",
+        "aftercode": "// throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header + \"\\\" in \" + Arrays.toString(headerRecord));",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {\n                        // throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header + \"\\\" in \" + Arrays.toString(headerRecord));\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 5,
+        "reasoning": "The original method throws an exception if the header is empty and 'ignoreEmptyHeaders' is false. A mutant allows empty headers without throwing an exception.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {",
+        "aftercode": "// if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    // if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) { {\n                        throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header +\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "A mutant that adds headers to the map even if they are empty and 'ignoreEmptyHeaders' is true.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": "if (!header.trim().isEmpty()) { hdrMap.put(header, Integer.valueOf(i)); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "A mutant that does not check the 'skipHeaderRecord' flag before reading the next record.",
+        "line": 16,
+        "precode": "this.nextRecord();",
+        "aftercode": "// this.nextRecord();",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    // this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {\n                        throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header +\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

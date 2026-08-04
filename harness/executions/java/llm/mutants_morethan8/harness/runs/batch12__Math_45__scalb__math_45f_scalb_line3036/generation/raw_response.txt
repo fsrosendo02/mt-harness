@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the property of handling normal numbers by changing the exponent calculation.",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n + 1024)) << 52);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the property of handling special cases by removing NaN check.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isInfinite(d) || (d == 0)) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the property of handling underflow by changing the threshold.",
+      "line": 12,
+      "precode": "if (n < -2098) {",
+      "aftercode": "if (n < -2097) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the property of handling overflow by changing the threshold.",
+      "line": 15,
+      "precode": "if (n > 2097) {",
+      "aftercode": "if (n > 2098) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the property of decomposing the double by changing the sign extraction.",
+      "line": 21,
+      "precode": "final long sign = bits & 0x8000000000000000L;",
+      "aftercode": "final long sign = bits & 0x4000000000000000L;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the property of decomposing the double by changing the exponent extraction.",
+      "line": 23,
+      "precode": "int exponent = ((int) (bits >>> 52)) & 0x7ff;",
+      "aftercode": "int exponent = ((int) (bits >>> 51)) & 0x7ff;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the property of decomposing the double by changing the mantissa extraction.",
+      "line": 24,
+      "precode": "long mantissa = bits & 0x000fffffffffffffL;",
+      "aftercode": "long mantissa = bits & 0x001fffffffffffffL;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the property of computing the scaled exponent by adding instead of subtracting.",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the property of handling subnormal numbers by changing the threshold.",
+      "line": 34,
+      "precode": "if (scaledExponent > -53) {",
+      "aftercode": "if (scaledExponent > -52) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the property of scaling down the mantissa by changing the bit shift.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent + 1));"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the property of scaling down the mantissa by changing the rounding bit.",
+      "line": 42,
+      "precode": "mantissa = mantissa >>> (1 - scaledExponent);",
+      "aftercode": "mantissa = mantissa >>> (-scaledExponent);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the property of scaling down the mantissa by changing the rounding condition.",
+      "line": 43,
+      "precode": "if (mostSignificantLostBit != 0) {",
+      "aftercode": "if (mostSignificantLostBit == 0) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the property of handling underflow by changing the return value.",
+      "line": 50,
+      "precode": "return (sign == 0L) ? 0.0 : -0.0;",
+      "aftercode": "return (sign == 0L) ? -0.0 : 0.0;"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the property of normalizing subnormal numbers by changing the loop condition.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 52) == 0) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the property of handling overflow by changing the exponent check.",
+      "line": 64,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the property of handling overflow by changing the return value.",
+      "line": 68,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign == 0L) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the property of handling overflow by changing the exponent check.",
+      "line": 71,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2046) {"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the property of handling overflow by changing the return value.",
+      "line": 73,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign == 0L) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the property of handling normal numbers by changing the threshold.",
+      "line": 4,
+      "precode": "if ((n > -1023) && (n < 1024)) {",
+      "aftercode": "if ((n >= -1023) && (n <= 1023)) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the property of handling underflow by changing the return value.",
+      "line": 58,
+      "precode": "--scaledExponent;",
+      "aftercode": "++scaledExponent;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the property of handling overflow by changing the mantissa mask.",
+      "line": 63,
+      "precode": "mantissa = mantissa & 0x000fffffffffffffL;",
+      "aftercode": "mantissa = mantissa & 0x001fffffffffffffL;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the property of handling subnormal numbers by changing the hidden bit recovery.",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa & ~(1L << 52);"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the property of handling normal numbers by changing the exponent adjustment.",
+      "line": 31,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) (scaledExponent - 1)) << 52) | mantissa);"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the property of handling subnormal numbers by changing the rounding bit shift.",
+      "line": 44,
+      "precode": "mantissa++;",
+      "aftercode": "mantissa--;"
+    }
+  ]
+}

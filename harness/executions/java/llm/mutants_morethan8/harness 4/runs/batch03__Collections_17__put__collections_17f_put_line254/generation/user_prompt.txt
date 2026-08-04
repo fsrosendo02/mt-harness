@@ -1,0 +1,107 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public V put(K key, V value) {
+ 2:         if (delegateMap != null) {
+ 3:             return delegateMap.put(key, value);
+ 4:         }
+ 5:         // change existing mapping
+ 6:         if (key == null) {
+ 7:             switch (size) {  // drop through
+ 8:                 case 3:
+ 9:                     if (key3 == null) {
+10:                         V old = value3;
+11:                         value3 = value;
+12:                         return old;
+13:                     }
+14:                 case 2:
+15:                     if (key2 == null) {
+16:                         V old = value2;
+17:                         value2 = value;
+18:                         return old;
+19:                     }
+20:                 case 1:
+21:                     if (key1 == null) {
+22:                         V old = value1;
+23:                         value1 = value;
+24:                         return old;
+25:                     }
+26:             }
+27:         } else {
+28:             if (size > 0) {
+29:                 int hashCode = key.hashCode();
+30:                 switch (size) {  // drop through
+31:                     case 3:
+32:                         if (hash3 == hashCode && key.equals(key3)) {
+33:                             V old = value3;
+34:                             value3 = value;
+35:                             return old;
+36:                         }
+37:                     case 2:
+38:                         if (hash2 == hashCode && key.equals(key2)) {
+39:                             V old = value2;
+40:                             value2 = value;
+41:                             return old;
+42:                         }
+43:                     case 1:
+44:                         if (hash1 == hashCode && key.equals(key1)) {
+45:                             V old = value1;
+46:                             value1 = value;
+47:                             return old;
+48:                         }
+49:                 }
+50:             }
+51:         }
+52: 
+53:         // add new mapping
+54:         switch (size) {
+55:             default:
+56:                 convertToMap();
+57:                 delegateMap.put(key, value);
+58:                 return null;
+59:             case 2:
+60:                 hash3 = (key == null ? 0 : key.hashCode());
+61:                 key3 = key;
+62:                 value3 = value;
+63:                 break;
+64:             case 1:
+65:                 hash2 = (key == null ? 0 : key.hashCode());
+66:                 key2 = key;
+67:                 value2 = value;
+68:                 break;
+69:             case 0:
+70:                 hash1 = (key == null ? 0 : key.hashCode());
+71:                 key1 = key;
+72:                 value1 = value;
+73:                 break;
+74:         }
+75:         size++;
+76:         return null;
+77:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

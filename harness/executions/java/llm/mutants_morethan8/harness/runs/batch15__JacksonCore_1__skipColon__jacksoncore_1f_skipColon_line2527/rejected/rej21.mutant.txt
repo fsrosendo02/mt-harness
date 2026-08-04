@@ -1,0 +1,71 @@
+    private int _skipColon()
+        throws IOException, JsonParseException
+    {
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        // first fast case: we just got a colon without white space:
+        int i = _inputBuffer[_inputPtr++];
+        if (i == INT_COLON) {
+            if (_inputPtr < _inputEnd) {
+                i = _inputBuffer[_inputPtr] & 0xFF;
+                if (i > INT_SPACE && i != INT_SLASH) {
+                    ++_inputPtr;
+                    return i;
+                }
+            }
+        } else {
+            // need to skip potential leading space
+            i &= 0xFF;
+            
+            space_loop:
+            while (true) {
+                switch (i) {
+                case INT_SPACE:
+                case INT_TAB:
+                    break;
+                case INT_CR:
+                    _skipCR();
+                    break;
+                case INT_LF:
+                    _skipLF();
+                    break;
+                case INT_SLASH:
+                    _skipComment();
+                    break;
+                default:
+                    if (i < INT_SPACE) {
+                        _throwInvalidSpace(i);
+                    }
+                    break space_loop;
+                }
+                if (_inputPtr >= _inputEnd) {
+                    loadMoreGuaranteed();
+                }
+                i = _inputBuffer[_inputPtr++] & 0xFF;
+            }
+            if (i != INT_COLON) {
+                _reportUnexpectedChar(i, "was expecting a colon to separate field name and value");
+            }
+        }
+
+            // either way, found colon, skip through trailing WS
+        if (_inputPtr <= _inputEnd) {
+            i = _inputBuffer[_inputPtr++] & 0xFF;
+            if (i > INT_SPACE) {
+                if (i != INT_SLASH) {
+                    return i;
+                }
+                _skipComment();
+            } else if (i != INT_SPACE) {
+                if (i == INT_LF) {
+                    _skipLF();
+                } else if (i == INT_CR) {
+                    _skipCR();
+                } else if (i != INT_TAB) {
+                    _throwInvalidSpace(i);
+                }
+            }
+        }
+        throw _constructError("Unexpected end-of-input within/between "+_parsingContext.getTypeDesc()+" entries");
+    }

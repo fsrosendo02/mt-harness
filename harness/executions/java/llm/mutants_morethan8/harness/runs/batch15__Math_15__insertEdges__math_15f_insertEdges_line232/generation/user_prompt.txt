@@ -1,0 +1,119 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static void insertEdges(final double hyperplaneThickness,
+ 2:                                     final BSPTree<Euclidean2D> node,
+ 3:                                     final List<Edge> edges) {
+ 4: 
+ 5:         // find an edge with an hyperplane that can be inserted in the node
+ 6:         int index = 0;
+ 7:         Edge inserted =null;
+ 8:         while (inserted == null && index < edges.size()) {
+ 9:             inserted = edges.get(index++);
+10:             if (inserted.getNode() == null) {
+11:                 if (node.insertCut(inserted.getLine())) {
+12:                     inserted.setNode(node);
+13:                 } else {
+14:                     inserted = null;
+15:                 }
+16:             } else {
+17:                 inserted = null;
+18:             }
+19:         }
+20: 
+21:         if (inserted == null) {
+22:             // no suitable edge was found, the node remains a leaf node
+23:             // we need to set its inside/outside boolean indicator
+24:             final BSPTree<Euclidean2D> parent = node.getParent();
+25:             if (parent == null || node == parent.getMinus()) {
+26:                 node.setAttribute(Boolean.TRUE);
+27:             } else {
+28:                 node.setAttribute(Boolean.FALSE);
+29:             }
+30:             return;
+31:         }
+32: 
+33:         // we have split the node by inserted an edge as a cut sub-hyperplane
+34:         // distribute the remaining edges in the two sub-trees
+35:         final List<Edge> plusList  = new ArrayList<Edge>();
+36:         final List<Edge> minusList = new ArrayList<Edge>();
+37:         for (final Edge edge : edges) {
+38:             if (edge != inserted) {
+39:                 final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());
+40:                 final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());
+41:                 Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?
+42:                                  Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);
+43:                 Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?
+44:                                  Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);
+45:                 switch (startSide) {
+46:                     case PLUS:
+47:                         if (endSide == Side.MINUS) {
+48:                             // we need to insert a split point on the hyperplane
+49:                             final Vertex splitPoint = edge.split(inserted.getLine());
+50:                             minusList.add(splitPoint.getOutgoing());
+51:                             plusList.add(splitPoint.getIncoming());
+52:                         } else {
+53:                             plusList.add(edge);
+54:                         }
+55:                         break;
+56:                     case MINUS:
+57:                         if (endSide == Side.PLUS) {
+58:                             // we need to insert a split point on the hyperplane
+59:                             final Vertex splitPoint = edge.split(inserted.getLine());
+60:                             minusList.add(splitPoint.getIncoming());
+61:                             plusList.add(splitPoint.getOutgoing());
+62:                         } else {
+63:                             minusList.add(edge);
+64:                         }
+65:                         break;
+66:                     default:
+67:                         if (endSide == Side.PLUS) {
+68:                             plusList.add(edge);
+69:                         } else if (endSide == Side.MINUS) {
+70:                             minusList.add(edge);
+71:                         }
+72:                         break;
+73:                 }
+74:             }
+75:         }
+76: 
+77:         // recurse through lower levels
+78:         if (!plusList.isEmpty()) {
+79:             insertEdges(hyperplaneThickness, node.getPlus(),  plusList);
+80:         } else {
+81:             node.getPlus().setAttribute(Boolean.FALSE);
+82:         }
+83:         if (!minusList.isEmpty()) {
+84:             insertEdges(hyperplaneThickness, node.getMinus(), minusList);
+85:         } else {
+86:             node.getMinus().setAttribute(Boolean.TRUE);
+87:         }
+88: 
+89:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private int handleG(final String value, final DoubleMetaphoneResult result, int index,
+ 2:                         final boolean slavoGermanic) {
+ 3:         if (charAt(value, index + 1) == 'H') {
+ 4:             index = handleGH(value, result, index);
+ 5:         } else if (charAt(value, index + 1) == 'N') {
+ 6:             if (index == 1 && isVowel(charAt(value, 0)) && !slavoGermanic) {
+ 7:                 result.append("KN", "N");
+ 8:             } else if (!contains(value, index + 2, 2, "EY") &&
+ 9:                        charAt(value, index + 1) != 'Y' && !slavoGermanic) {
+10:                 result.append("N", "KN");
+11:             } else {
+12:                 result.append("KN");
+13:             }
+14:             index = index + 2;
+15:         } else if (contains(value, index + 1, 2, "LI") && !slavoGermanic) {
+16:             result.append("KL", "L");
+17:             index += 2;
+18:         } else if (index == 0 &&
+19:                    (charAt(value, index + 1) == 'Y' ||
+20:                     contains(value, index + 1, 2, ES_EP_EB_EL_EY_IB_IL_IN_IE_EI_ER))) {
+21:             //-- -ges-, -gep-, -gel-, -gie- at beginning --//
+22:             result.append('K', 'J');
+23:             index += 2;
+24:         } else if ((contains(value, index + 1, 2, "ER") ||
+25:                     charAt(value, index + 1) == 'Y') &&
+26:                    !contains(value, 0, 6, "DANGER", "RANGER", "MANGER") &&
+27:                    !contains(value, index - 1, 1, "E", "I") &&
+28:                    !contains(value, index - 1, 3, "RGY", "OGY")) {
+29:             //-- -ger-, -gy- --//
+30:             result.append('K', 'J');
+31:             index += 2;
+32:         } else if (contains(value, index + 1, 1, "E", "I", "Y") ||
+33:                    contains(value, index - 1, 4, "AGGI", "OGGI")) {
+34:             //-- Italian "biaggi" --//
+35:             if (contains(value, 0 ,4, "VAN ", "VON ") ||
+36:                 contains(value, 0, 3, "SCH") ||
+37:                 contains(value, index + 1, 2, "ET")) {
+38:                 //-- obvious germanic --//
+39:                 result.append('K');
+40:             } else if (contains(value, index + 1, 3, "IER")) {
+41:                 result.append('J');
+42:             } else {
+43:                 result.append('J', 'K');
+44:             }
+45:             index += 2;
+46:         } else if (charAt(value, index + 1) == 'G') {
+47:             index += 2;
+48:             result.append('K');
+49:         } else {
+50:             index++;
+51:             result.append('K');
+52:         }
+53:         return index;
+54:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

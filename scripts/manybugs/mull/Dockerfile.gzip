@@ -1,0 +1,49 @@
+# Reproducible mull toolchain image for the ManyBugs `gzip` family.
+#
+# Base is Ubuntu 18.04 (bionic), not the original prosyslab/manybugs image
+# (Xenial: apt repos are dead/EOL, can't install mull there) and not a
+# modern Ubuntu (glibc >=2.28 breaks gnulib's freadahead.c in this-era
+# gzip). See mull_baseline_plan.md ("Desafio central: toolchain") for the
+# full isolation of why bionic is the point that actually compiles.
+#
+# gcc-multilib is required because the ManyBugs gzip scenarios were built
+# with CFLAGS=-m32 (32-bit). This is NOT necessarily true for other
+# families (lighttpd/libtiff/python/gmp) — re-verify per family before
+# reusing this Dockerfile as a template; see "RESOLVIDO: causa isolada"
+# in the plan for why this mattered here (a 64-bit rebuild silently
+# diverges in runtime behavior from the 32-bit original).
+FROM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && apt-get install -y -qq \
+      curl \
+      ca-certificates \
+      gnupg \
+      apt-transport-https \
+      clang-9 \
+      gcc-multilib \
+      make \
+      perl \
+      psmisc \
+      sqlite3 \
+      texinfo \
+    && curl -1sLf "https://dl.cloudsmith.io/public/mull-project/mull-stable/setup.deb.sh" | bash \
+    && apt-get install -y -qq mull-9 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# mull-ir-frontend-9 is the -fpass-plugin used to embed mutations at
+# compile time. -O1 -fexperimental-new-pass-manager are required for the
+# plugin to actually run under LLVM 9/10 (undocumented publicly; see
+# mull's own tests-lit/lit.cfg at tag 0.18.0). Baking the full CFLAGS
+# recipe into an env var here is a convenience for prepare_mull_checkout.py
+# — it still must be passed to `make` as a command-line argument, not left
+# as an inherited environment variable, because `./configure CFLAGS=...`
+# freezes its own CFLAGS into the generated Makefile and a Makefile
+# assignment wins over an environment variable of the same name.
+ENV MULL_CC=clang-9
+ENV MULL_CFLAGS="-m32 -O1 -fexperimental-new-pass-manager -fpass-plugin=/usr/lib/mull-ir-frontend-9 -g -grecord-command-line"
+ENV MULL_LDFLAGS="-m32"
+
+WORKDIR /experiment

@@ -1,0 +1,111 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static double roundUnscaled(double unscaled, double sign,
+ 2:         int roundingMethod) {
+ 3:         switch (roundingMethod) {
+ 4:         case BigDecimal.ROUND_CEILING :
+ 5:             if (sign == -1) {
+ 6:                 unscaled = Math.floor(nextAfter(unscaled, Double.NEGATIVE_INFINITY));
+ 7:             } else {
+ 8:                 unscaled = Math.ceil(nextAfter(unscaled, Double.POSITIVE_INFINITY));
+ 9:             }
+10:             break;
+11:         case BigDecimal.ROUND_DOWN :
+12:             unscaled = Math.floor(nextAfter(unscaled, Double.NEGATIVE_INFINITY));
+13:             break;
+14:         case BigDecimal.ROUND_FLOOR :
+15:             if (sign == -1) {
+16:                 unscaled = Math.ceil(nextAfter(unscaled, Double.POSITIVE_INFINITY));
+17:             } else {
+18:                 unscaled = Math.floor(nextAfter(unscaled, Double.NEGATIVE_INFINITY));
+19:             }
+20:             break;
+21:         case BigDecimal.ROUND_HALF_DOWN : {
+22:             unscaled = nextAfter(unscaled, Double.NEGATIVE_INFINITY);
+23:             double fraction = unscaled - Math.floor(unscaled);
+24:             if (fraction > 0.5) {
+25:                 unscaled = Math.ceil(unscaled);
+26:             } else {
+27:                 unscaled = Math.floor(unscaled);
+28:             }
+29:             break;
+30:         }
+31:         case BigDecimal.ROUND_HALF_EVEN : {
+32:             double fraction = unscaled - Math.floor(unscaled);
+33:             if (fraction > 0.5) {
+34:                 unscaled = Math.ceil(unscaled);
+35:             } else if (fraction < 0.5) {
+36:                 unscaled = Math.floor(unscaled);
+37:             } else {
+38:                 // The following equality test is intentional and needed for rounding purposes
+39:                 if (Math.floor(unscaled) / 2.0 == Math.floor(Math
+40:                     .floor(unscaled) / 2.0)) { // even
+41:                     unscaled = Math.floor(unscaled);
+42:                 } else { // odd
+43:                     unscaled = Math.ceil(unscaled);
+44:                 }
+45:             }
+46:             break;
+47:         }
+48:         case BigDecimal.ROUND_HALF_UP : {
+49:             unscaled = nextAfter(unscaled, Double.POSITIVE_INFINITY);
+50:             double fraction = unscaled - Math.floor(unscaled);
+51:             if (fraction >= 0.5) {
+52:                 unscaled = Math.ceil(unscaled);
+53:             } else {
+54:                 unscaled = Math.floor(unscaled);
+55:             }
+56:             break;
+57:         }
+58:         case BigDecimal.ROUND_UNNECESSARY :
+59:             if (unscaled != Math.floor(unscaled)) {
+60:                 throw new ArithmeticException("Inexact result from rounding");
+61:             }
+62:             break;
+63:         case BigDecimal.ROUND_UP :
+64:             unscaled = Math.ceil(nextAfter(unscaled,  Double.POSITIVE_INFINITY));
+65:             break;
+66:         default :
+67:             throw MathRuntimeException.createIllegalArgumentException(
+68:                   "invalid rounding method {0}, valid methods: {1} ({2}), {3} ({4})," +
+69:                   " {5} ({6}), {7} ({8}), {9} ({10}), {11} ({12}), {13} ({14}), {15} ({16})",
+70:                   roundingMethod,
+71:                   "ROUND_CEILING",     BigDecimal.ROUND_CEILING,
+72:                   "ROUND_DOWN",        BigDecimal.ROUND_DOWN,
+73:                   "ROUND_FLOOR",       BigDecimal.ROUND_FLOOR,
+74:                   "ROUND_HALF_DOWN",   BigDecimal.ROUND_HALF_DOWN,
+75:                   "ROUND_HALF_EVEN",   BigDecimal.ROUND_HALF_EVEN,
+76:                   "ROUND_HALF_UP",     BigDecimal.ROUND_HALF_UP,
+77:                   "ROUND_UNNECESSARY", BigDecimal.ROUND_UNNECESSARY,
+78:                   "ROUND_UP",          BigDecimal.ROUND_UP);
+79:         }
+80:         return unscaled;
+81:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

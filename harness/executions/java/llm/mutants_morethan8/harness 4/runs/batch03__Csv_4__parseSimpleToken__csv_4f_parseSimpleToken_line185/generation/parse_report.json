@@ -1,0 +1,302 @@
+{
+  "requested_count": 40,
+  "accepted_count": 17,
+  "rejected_count": 23,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 1,
+        "reasoning": "The method does not handle the case where `readEndOfLine(ch)` returns false immediately, without checking other conditions.",
+        "line": 4,
+        "precode": "if (readEndOfLine(ch))",
+        "aftercode": "if (true) // <--- MUTATED",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (true) // <--- MUTATED {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not handle the case where `trimTrailingSpaces(token.content)` fails.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "try { trimTrailingSpaces(token.content); } catch (Exception e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not handle the case where `trimTrailingSpaces(token.content)` fails.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "try { trimTrailingSpaces(token.content); } catch (Exception e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not handle the case where `in` is null.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (in == null) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (in == null) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not handle the case where `in` is closed.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (in.isClosed()) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (in.isClosed()) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not handle the case where `Constants.END_OF_STREAM` is invalid.",
+        "line": 17,
+        "precode": "token.content.append((char) ch).append((char) in.getLastChar());",
+        "aftercode": "token.content.append((char) Constants.END_OF_STREAM);",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) Constants.END_OF_STREAM);\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not handle the case where `in.read()` returns an unexpected character.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (Constants.END_OF_STREAM == in.read()) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (Constants.END_OF_STREAM == in.read()) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not handle the case where `token.content` is too long.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "if (token.content.length() > 1024) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            if (token.content.length() > 1024) return token;\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not handle the case where `ignoreSurroundingSpaces` is true.",
+        "line": 28,
+        "precode": "if (ignoreSurroundingSpaces)",
+        "aftercode": "!ignoreSurroundingSpaces",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        !ignoreSurroundingSpaces {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not handle the case where `trimTrailingSpaces(token.content)` fails.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "try { trimTrailingSpaces(token.content); } catch (Exception e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method does not handle the case where `in` is null.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (in == null) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (in == null) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not handle the case where `in` is closed.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (in.isClosed()) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (in.isClosed()) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method does not handle the case where `Constants.END_OF_STREAM` is invalid.",
+        "line": 17,
+        "precode": "token.content.append((char) ch).append((char) in.getLastChar());",
+        "aftercode": "token.content.append((char) Constants.END_OF_STREAM);",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) Constants.END_OF_STREAM);\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method does not handle the case where `in.read()` returns an unexpected character.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (Constants.END_OF_STREAM == in.read()) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (Constants.END_OF_STREAM == in.read()) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method does not handle the case where `token.content` is too long.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "if (token.content.length() > 1024) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            if (token.content.length() > 1024) return token;\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method does not handle the case where `ignoreSurroundingSpaces` is true.",
+        "line": 28,
+        "precode": "if (ignoreSurroundingSpaces)",
+        "aftercode": "!ignoreSurroundingSpaces",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        !ignoreSurroundingSpaces {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method does not handle the case where `trimTrailingSpaces(token.content)` fails.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "try { trimTrailingSpaces(token.content); } catch (Exception e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method does not handle the case where `in` is null.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (in == null) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (in == null) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method does not handle the case where `in` is closed.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (in.isClosed()) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (in.isClosed()) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method does not handle the case where `Constants.END_OF_STREAM` is invalid.",
+        "line": 17,
+        "precode": "token.content.append((char) ch).append((char) in.getLastChar());",
+        "aftercode": "token.content.append((char) Constants.END_OF_STREAM);",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) Constants.END_OF_STREAM);\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method does not handle the case where `in.read()` returns an unexpected character.",
+        "line": 21,
+        "precode": "ch = in.read();",
+        "aftercode": "if (Constants.END_OF_STREAM == in.read()) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                if (Constants.END_OF_STREAM == in.read()) return token;// continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "comment_insensitive_nearest_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method does not handle the case where `token.content` is too long.",
+        "line": 29,
+        "precode": "trimTrailingSpaces(token.content);",
+        "aftercode": "if (token.content.length() > 1024) return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            if (token.content.length() > 1024) return token;\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method does not handle the case where `ignoreSurroundingSpaces` is true.",
+        "line": 28,
+        "precode": "if (ignoreSurroundingSpaces)",
+        "aftercode": "!ignoreSurroundingSpaces",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        !ignoreSurroundingSpaces {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

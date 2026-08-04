@@ -1,0 +1,77 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Deprecated // since 2.4; not used by this module
+ 2:     protected <A extends Annotation> A findAnnotation(Class<A> annotationClass, Annotated annotated,
+ 3:             boolean includePackage, boolean includeClass, boolean includeSuperclasses)
+ 4:     {
+ 5:         A annotation = annotated.getAnnotation(annotationClass);
+ 6:         if (annotation != null) {
+ 7:             return annotation;
+ 8:         }
+ 9:         Class<?> memberClass = null;
+10:         if (annotated instanceof AnnotatedParameter) {
+11:             memberClass = ((AnnotatedParameter) annotated).getDeclaringClass();
+12:         } else {
+13:             AnnotatedElement annType = annotated.getAnnotated();
+14:             if (annType instanceof Member) {
+15:                 memberClass = ((Member) annType).getDeclaringClass();
+16:                 if (includeClass) {
+17:                     annotation = (A) memberClass.getAnnotation(annotationClass);
+18:                     if (annotation != null) {
+19:                         return annotation;
+20:                     }
+21:                 }
+22:             } else if (annType instanceof Class<?>) {
+23:                 memberClass = (Class<?>) annType;
+24:             } else {
+25:                 throw new IllegalStateException("Unsupported annotated member: " + annotated.getClass().getName());
+26:             }
+27:         }
+28:         if (memberClass != null) {
+29:             if (includeSuperclasses) {
+30:                 Class<?> superclass = memberClass.getSuperclass();
+31:                 while (superclass != null && superclass != Object.class) {
+32:                     annotation = (A) superclass.getAnnotation(annotationClass);
+33:                     if (annotation != null) {
+34:                         return annotation;
+35:                     }
+36:                     superclass = superclass.getSuperclass();
+37:                 }
+38:             }
+39:             if (includePackage) {
+40:                 Package pkg = memberClass.getPackage();
+41:                 if (pkg != null) {
+42:                     return memberClass.getPackage().getAnnotation(annotationClass);
+43:                 }
+44:             }
+45:         }
+46:         return null;
+47:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

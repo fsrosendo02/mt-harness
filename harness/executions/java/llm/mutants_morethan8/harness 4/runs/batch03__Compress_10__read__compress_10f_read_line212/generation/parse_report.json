@@ -1,0 +1,351 @@
+{
+  "requested_count": 40,
+  "accepted_count": 13,
+  "rejected_count": 27,
+  "rejections": [
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method assumes that inf.inflate() will not throw an exception.",
+        "line": 24,
+        "precode": "ret = inf.inflate(b, off, len);",
+        "aftercode": "try { ret = inf.inflate(b, off, len); } catch (DataFormatException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not handle the case where crc.update() throws an exception.",
+        "line": 28,
+        "precode": "crc.update(b, off, ret);",
+        "aftercode": "try { crc.update(b, off, ret); } catch (IOException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method does not handle the case where in.reset() throws an exception.",
+        "line": 41,
+        "precode": "in.reset();",
+        "aftercode": "try { in.reset(); } catch (IOException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method assumes that inf.end() will not throw an exception.",
+        "line": 72,
+        "precode": "inf.end();",
+        "aftercode": "try { inf.end(); } catch (IOException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method assumes that in.mark() will always reset the position.",
+        "line": 12,
+        "precode": "in.mark(buf.length);",
+        "aftercode": "in.mark(0);",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(0);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not handle the case where crc.getValue() is null.",
+        "line": 56,
+        "precode": "if (crcStored != crc.getValue())",
+        "aftercode": "if (crcStored != null && crcStored != crc.getValue())",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != null && crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not handle the case where isize is -1.",
+        "line": 64,
+        "precode": "if (isize != memberSize)",
+        "aftercode": "if (isize == -1 || isize != memberSize)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize == -1 || isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not handle the case where decompressConcatenated is false.",
+        "line": 70,
+        "precode": "&& !init(false)",
+        "aftercode": "&& init(true)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                && init(true) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method assumes that inf.end() will not throw an exception.",
+        "line": 72,
+        "precode": "inf.end();",
+        "aftercode": "try { inf.end(); } catch (IOException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not handle the case where endReached is true.",
+        "line": 73,
+        "precode": "return size == 0 ? -1 : size;",
+        "aftercode": "if (endReached) return -1;",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    if (endReached) return -1;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method assumes that in.mark() will always reset the position.",
+        "line": 12,
+        "precode": "in.mark(buf.length);",
+        "aftercode": "in.mark(0);",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(0);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not handle the case where bufUsed is less than 0.",
+        "line": 15,
+        "precode": "bufUsed = in.read(buf);",
+        "aftercode": "if (bufUsed < 0) throw new IOException(\"Invalid input\");",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                if (bufUsed < 0) throw new IOException(\"Invalid input\");\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not handle the case where inf.getRemaining() is -1.",
+        "line": 43,
+        "precode": "int skipAmount = bufUsed - inf.getRemaining();",
+        "aftercode": "int skipAmount = bufUsed + inf.getRemaining();",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed + inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method assumes that in.skip() will always skip the correct amount.",
+        "line": 45,
+        "precode": "if (in.skip(skipAmount) != skipAmount)",
+        "aftercode": "if (in.skip(0) != skipAmount)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(0) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method does not handle the case where crc.getValue() is null.",
+        "line": 56,
+        "precode": "if (crcStored != crc.getValue())",
+        "aftercode": "if (crcStored != null && crcStored != crc.getValue())",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != null && crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not handle the case where isize is -1.",
+        "line": 64,
+        "precode": "if (isize != memberSize)",
+        "aftercode": "if (isize == -1 || isize != memberSize)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize == -1 || isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method does not handle the case where decompressConcatenated is false.",
+        "line": 70,
+        "precode": "&& !init(false)",
+        "aftercode": "&& init(true)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                && init(true) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method assumes that inf.end() will not throw an exception.",
+        "line": 72,
+        "precode": "inf.end();",
+        "aftercode": "try { inf.end(); } catch (IOException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method does not handle the case where endReached is true.",
+        "line": 73,
+        "precode": "return size == 0 ? -1 : size;",
+        "aftercode": "if (endReached) return -1;",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    if (endReached) return -1;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method assumes that in.mark() will always reset the position.",
+        "line": 12,
+        "precode": "in.mark(buf.length);",
+        "aftercode": "in.mark(0);",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(0);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method does not handle the case where bufUsed is less than 0.",
+        "line": 15,
+        "precode": "bufUsed = in.read(buf);",
+        "aftercode": "if (bufUsed < 0) throw new IOException(\"Invalid input\");",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                if (bufUsed < 0) throw new IOException(\"Invalid input\");\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method does not handle the case where inf.getRemaining() is -1.",
+        "line": 43,
+        "precode": "int skipAmount = bufUsed - inf.getRemaining();",
+        "aftercode": "int skipAmount = bufUsed + inf.getRemaining();",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed + inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method assumes that in.skip() will always skip the correct amount.",
+        "line": 45,
+        "precode": "if (in.skip(skipAmount) != skipAmount)",
+        "aftercode": "if (in.skip(0) != skipAmount)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(0) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method does not handle the case where crc.getValue() is null.",
+        "line": 56,
+        "precode": "if (crcStored != crc.getValue())",
+        "aftercode": "if (crcStored != null && crcStored != crc.getValue())",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != null && crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method does not handle the case where isize is -1.",
+        "line": 64,
+        "precode": "if (isize != memberSize)",
+        "aftercode": "if (isize == -1 || isize != memberSize)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize == -1 || isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method does not handle the case where decompressConcatenated is false.",
+        "line": 70,
+        "precode": "&& !init(false)",
+        "aftercode": "&& init(true)",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                && init(true) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method assumes that inf.end() will not throw an exception.",
+        "line": 72,
+        "precode": "inf.end();",
+        "aftercode": "try { inf.end(); } catch (IOException e) { return -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

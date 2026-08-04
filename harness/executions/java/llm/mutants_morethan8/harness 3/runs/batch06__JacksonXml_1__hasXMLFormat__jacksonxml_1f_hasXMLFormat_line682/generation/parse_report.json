@@ -1,0 +1,332 @@
+{
+  "requested_count": 32,
+  "accepted_count": 5,
+  "rejected_count": 27,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates property of correctly handling DOCTYPE declaration <!DOCTYPE ...>",
+        "line": 79,
+        "precode": "if (b == BYTE_D)",
+        "aftercode": "if (b != BYTE_D)",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            if (b != BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates property of correctly handling XML namespace",
+        "line": 91,
+        "precode": "if (b == BYTE_COLON)",
+        "aftercode": "if (b != BYTE_COLON)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates property of correctly handling CDATA section <![CDATA[ ... ]]>",
+        "line": 97,
+        "precode": "if (b == BYTE_SQUARE_BRACKET)",
+        "aftercode": "if (b != BYTE_SQUARE_BRACKET)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates property of correctly handling XML entity",
+        "line": 103,
+        "precode": "if (b == BYTE_AMP)",
+        "aftercode": "if (b != BYTE_AMP)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates property of correctly handling XML attribute with single quote",
+        "line": 109,
+        "precode": "if (b == BYTE_SINGLE_QUOTE)",
+        "aftercode": "if (b != BYTE_SINGLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates property of correctly handling XML attribute with double quote",
+        "line": 115,
+        "precode": "if (b == BYTE_DOUBLE_QUOTE)",
+        "aftercode": "if (b != BYTE_DOUBLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates property of correctly handling XML element with namespace",
+        "line": 121,
+        "precode": "if (b == BYTE_COLON)",
+        "aftercode": "if (b != BYTE_COLON)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates property of correctly handling XML element with attribute",
+        "line": 127,
+        "precode": "if (b == BYTE_SPACE)",
+        "aftercode": "if (b != BYTE_SPACE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates property of correctly handling XML element with single quote",
+        "line": 133,
+        "precode": "if (b == BYTE_SINGLE_QUOTE)",
+        "aftercode": "if (b != BYTE_SINGLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates property of correctly handling XML element with double quote",
+        "line": 139,
+        "precode": "if (b == BYTE_DOUBLE_QUOTE)",
+        "aftercode": "if (b != BYTE_DOUBLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates property of correctly handling XML element with text content",
+        "line": 145,
+        "precode": "if (b == BYTE_LT)",
+        "aftercode": "if (b != BYTE_LT)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates property of correctly handling XML element with child elements",
+        "line": 151,
+        "precode": "if (b == BYTE_GT)",
+        "aftercode": "if (b != BYTE_GT)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates property of correctly handling XML element with closing tag",
+        "line": 157,
+        "precode": "if (b == BYTE_SLASH)",
+        "aftercode": "if (b != BYTE_SLASH)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates property of correctly handling XML element with namespace",
+        "line": 163,
+        "precode": "if (b == BYTE_COLON)",
+        "aftercode": "if (b != BYTE_COLON)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates property of correctly handling XML element with attribute",
+        "line": 169,
+        "precode": "if (b == BYTE_SPACE)",
+        "aftercode": "if (b != BYTE_SPACE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates property of correctly handling XML element with single quote",
+        "line": 175,
+        "precode": "if (b == BYTE_SINGLE_QUOTE)",
+        "aftercode": "if (b != BYTE_SINGLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates property of correctly handling XML element with double quote",
+        "line": 181,
+        "precode": "if (b == BYTE_DOUBLE_QUOTE)",
+        "aftercode": "if (b != BYTE_DOUBLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates property of correctly handling XML element with text content",
+        "line": 187,
+        "precode": "if (b == BYTE_LT)",
+        "aftercode": "if (b != BYTE_LT)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates property of correctly handling XML element with child elements",
+        "line": 193,
+        "precode": "if (b == BYTE_GT)",
+        "aftercode": "if (b != BYTE_GT)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates property of correctly handling XML element with closing tag",
+        "line": 199,
+        "precode": "if (b == BYTE_SLASH)",
+        "aftercode": "if (b != BYTE_SLASH)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates property of correctly handling XML element with namespace",
+        "line": 205,
+        "precode": "if (b == BYTE_COLON)",
+        "aftercode": "if (b != BYTE_COLON)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates property of correctly handling XML element with attribute",
+        "line": 211,
+        "precode": "if (b == BYTE_SPACE)",
+        "aftercode": "if (b != BYTE_SPACE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates property of correctly handling XML element with single quote",
+        "line": 217,
+        "precode": "if (b == BYTE_SINGLE_QUOTE)",
+        "aftercode": "if (b != BYTE_SINGLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates property of correctly handling XML element with double quote",
+        "line": 223,
+        "precode": "if (b == BYTE_DOUBLE_QUOTE)",
+        "aftercode": "if (b != BYTE_DOUBLE_QUOTE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates property of correctly handling XML element with text content",
+        "line": 229,
+        "precode": "if (b == BYTE_LT)",
+        "aftercode": "if (b != BYTE_LT)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates property of correctly handling XML element with child elements",
+        "line": 235,
+        "precode": "if (b == BYTE_GT)",
+        "aftercode": "if (b != BYTE_GT)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates property of correctly handling XML element with closing tag",
+        "line": 241,
+        "precode": "if (b == BYTE_SLASH)",
+        "aftercode": "if (b != BYTE_SLASH)",
+        "resolution_reason": "precode_not_found"
+      }
+    }
+  ]
+}

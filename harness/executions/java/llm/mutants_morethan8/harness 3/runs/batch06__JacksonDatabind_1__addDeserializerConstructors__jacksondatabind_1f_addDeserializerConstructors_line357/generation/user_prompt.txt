@@ -1,0 +1,122 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected void _addDeserializerConstructors
+ 2:         (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,
+ 3:          AnnotationIntrospector intr, CreatorCollector creators)
+ 4:         throws JsonMappingException
+ 5:     {
+ 6:         /* First things first: the "default constructor" (zero-arg
+ 7:          * constructor; whether implicit or explicit) is NOT included
+ 8:          * in list of constructors, so needs to be handled separately.
+ 9:          */
+10:         AnnotatedConstructor defaultCtor = beanDesc.findDefaultConstructor();
+11:         if (defaultCtor != null) {
+12:             if (!creators.hasDefaultCreator() || intr.hasCreatorAnnotation(defaultCtor)) {
+13:                 creators.setDefaultCreator(defaultCtor);
+14:             }
+15:         }
+16: 
+17:         String[] ctorPropNames = null;
+18:         AnnotatedConstructor propertyCtor = null;
+19:         for (BeanPropertyDefinition propDef : beanDesc.findProperties()) {
+20:             if (propDef.getConstructorParameter() != null) {
+21:                 AnnotatedParameter param = propDef.getConstructorParameter();
+22:                 AnnotatedWithParams owner = param.getOwner();
+23:                 if (owner instanceof AnnotatedConstructor) {
+24:                     if (propertyCtor == null) {
+25:                         propertyCtor = (AnnotatedConstructor) owner;
+26:                         ctorPropNames = new String[propertyCtor.getParameterCount()];
+27:                     }
+28:                     ctorPropNames[param.getIndex()] = propDef.getName();
+29:                 }
+30:             }
+31:         }
+32: 
+33:         for (AnnotatedConstructor ctor : beanDesc.getConstructors()) {
+34:             int argCount = ctor.getParameterCount();
+35:             boolean isCreator = intr.hasCreatorAnnotation(ctor) || ctor == propertyCtor;
+36:             boolean isVisible =  vchecker.isCreatorVisible(ctor);
+37:             // some single-arg constructors (String, number) are auto-detected
+38:             if (argCount == 1) {
+39:                 String name = ctor == propertyCtor ? ctorPropNames[0] : null;
+40:                 _handleSingleArgumentConstructor(ctxt, beanDesc, vchecker, intr, creators,
+41:                         ctor, isCreator, isVisible, name);
+42:                 continue;
+43:             }
+44:             if (!isCreator && !isVisible) {
+45:                 continue;
+46:             }
+47:             // [JACKSON-541] improved handling a bit so:
+48:             // 2 or more args; all params must have name annotations
+49:             // ... or @JacksonInject (or equivalent)
+50:             /* [JACKSON-711] One more possibility; can have 1 or more injectables, and
+51:              * exactly one non-annotated parameter: if so, it's still delegating.
+52:              */
+53:             AnnotatedParameter nonAnnotatedParam = null;
+54:             int namedCount = 0;
+55:             int injectCount = 0;
+56:             CreatorProperty[] properties = new CreatorProperty[argCount];
+57:             for (int i = 0; i < argCount; ++i) {
+58:                 AnnotatedParameter param = ctor.getParameter(i);
+59:                 String name = null;
+60:                 if (ctor == propertyCtor) {
+61:                     name = ctorPropNames[i];
+62:                 }
+63:                 if (name == null) {
+64:                     PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);
+65:                     name = (pn == null) ? null : pn.getSimpleName();
+66:                 }
+67:                 Object injectId = intr.findInjectableValueId(param);
+68:                 if (name != null && name.length() > 0) {
+69:                     ++namedCount;
+70:                     properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);
+71:                 } else if (injectId != null) {
+72:                     ++injectCount;
+73:                     properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);
+74:                 } else if (nonAnnotatedParam == null) {
+75:                     nonAnnotatedParam = param;
+76:                 }
+77:             }
+78: 
+79:             // Ok: if named or injectable, we have more work to do
+80:             if (isCreator || namedCount > 0 || injectCount > 0) {
+81:                 // simple case; everything covered:
+82:                 if ((namedCount + injectCount) == argCount) {
+83:                     creators.addPropertyCreator(ctor, properties);
+84:                 } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {
+85:                     // [712] secondary: all but one injectable, one un-annotated (un-named)
+86:                     creators.addDelegatingCreator(ctor, properties);
+87:                 } else { // otherwise, record the incomplete parameter for later error messaging.
+88:                     creators.addIncompeteParameter(nonAnnotatedParam);
+89:                 }
+90:             }
+91:         }
+92:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

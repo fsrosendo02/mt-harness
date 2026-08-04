@@ -1,0 +1,97 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void processPaxHeader(String key, String val, Map<String, String> headers) {
+ 2:     /*
+ 3:      * The following headers are defined for Pax.
+ 4:      * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields
+ 5:      * mtime
+ 6:      * comment
+ 7:      * gid, gname
+ 8:      * linkpath
+ 9:      * size
+10:      * uid,uname
+11:      * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those
+12:      *
+13:      * GNU sparse files use additional members, we use
+14:      * GNU.sparse.size to detect the 0.0 and 0.1 versions and
+15:      * GNU.sparse.realsize for 1.0.
+16:      *
+17:      * star files use additional members of which we use
+18:      * SCHILY.filetype in order to detect star sparse files.
+19:      *
+20:      * If called from addExtraPaxHeader, these additional headers must be already present .
+21:      */
+22:         switch (key) {
+23:             case "path":
+24:                 setName(val);
+25:                 break;
+26:             case "linkpath":
+27:                 setLinkName(val);
+28:                 break;
+29:             case "gid":
+30:                 setGroupId(Long.parseLong(val));
+31:                 break;
+32:             case "gname":
+33:                 setGroupName(val);
+34:                 break;
+35:             case "uid":
+36:                 setUserId(Long.parseLong(val));
+37:                 break;
+38:             case "uname":
+39:                 setUserName(val);
+40:                 break;
+41:             case "size":
+42:                 setSize(Long.parseLong(val));
+43:                 break;
+44:             case "mtime":
+45:                 setModTime((long) (Double.parseDouble(val) * 1000));
+46:                 break;
+47:             case "SCHILY.devminor":
+48:                 setDevMinor(Integer.parseInt(val));
+49:                 break;
+50:             case "SCHILY.devmajor":
+51:                 setDevMajor(Integer.parseInt(val));
+52:                 break;
+53:             case "GNU.sparse.size":
+54:                 fillGNUSparse0xData(headers);
+55:                 break;
+56:             case "GNU.sparse.realsize":
+57:                 fillGNUSparse1xData(headers);
+58:                 break;
+59:             case "SCHILY.filetype":
+60:                 if ("sparse".equals(val)) {
+61:                     fillStarSparseData(headers);
+62:                 }
+63:                 break;
+64:             default:
+65:                 extraPaxHeaders.put(key,val);
+66:         }
+67:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

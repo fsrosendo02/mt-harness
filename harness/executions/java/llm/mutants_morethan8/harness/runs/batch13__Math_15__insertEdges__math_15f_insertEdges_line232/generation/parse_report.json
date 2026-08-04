@@ -1,0 +1,226 @@
+{
+  "requested_count": 24,
+  "accepted_count": 6,
+  "rejected_count": 19,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "The method does not check if an edge has already been inserted into the node before trying to insert a new one, leading to redundant insertion attempts.",
+        "line": 9,
+        "precode": "inserted = edges.get(index++);",
+        "aftercode": "if (inserted == null) { inserted = edges.get(index++); } else { inserted = null; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method does not handle the case where an edge with a non-null node is found, potentially skipping suitable edges.",
+        "line": 9,
+        "precode": "inserted = edges.get(index++);",
+        "aftercode": "if (inserted == null || inserted.getNode() != null) { inserted = edges.get(index++); } else { inserted = null; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method sets the node's attribute to true if it is a leaf node and its parent is null, ignoring the case where the node is the minus child of its parent.",
+        "line": 26,
+        "precode": "node.setAttribute(Boolean.TRUE);",
+        "aftercode": "if (parent == null) { node.setAttribute(Boolean.TRUE); } else if (node != parent.getMinus()) { node.setAttribute(Boolean.FALSE); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method sets the minus node's attribute to false if it is empty, regardless of whether it has been split by an edge or not.",
+        "line": 81,
+        "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+        "aftercode": "if (!minusList.isEmpty()) { node.getMinus().setAttribute(Boolean.FALSE); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method sets the plus node's attribute to false if it is empty, regardless of whether it has been split by an edge or not.",
+        "line": 81,
+        "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+        "aftercode": "if (plusList.isEmpty()) { node.getPlus().setAttribute(Boolean.TRUE); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+        "line": 50,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+        "line": 50,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method incorrectly uses a strict equality check for side comparisons, which may not accurately reflect the intended behavior when considering floating-point precision.",
+        "line": 42,
+        "precode": "Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?",
+        "aftercode": "Side startSide = (FastMath.abs(startOffset) < hyperplaneThickness) ?",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) < hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    case PLUS:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method does not check if an edge is null before attempting to access its start location, which could lead to a NullPointerException.",
+        "line": 39,
+        "precode": "final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());",
+        "aftercode": "if (edge != null && edge.getStart() != null) { final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not check if an edge is null before attempting to access its end location, which could lead to a NullPointerException.",
+        "line": 40,
+        "precode": "final double endOffset = inserted.getLine().getOffset(edge.getEnd().getLocation());",
+        "aftercode": "if (edge != null && edge.getEnd() != null) { final double endOffset = inserted.getLine().getOffset(edge.getEnd().getLocation()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not check if an edge is null before attempting to split it, which could lead to a NullPointerException.",
+        "line": 49,
+        "precode": "final Vertex splitPoint = edge.split(inserted.getLine());",
+        "aftercode": "if (edge != null) { final Vertex splitPoint = edge.split(inserted.getLine()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not check if the plusList is empty before recursively calling insertEdges, which could lead to unnecessary recursive calls.",
+        "line": 78,
+        "precode": "insertEdges(hyperplaneThickness, node.getPlus(), plusList);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not check if the minusList is empty before recursively calling insertEdges, which could lead to unnecessary recursive calls.",
+        "line": 83,
+        "precode": "insertEdges(hyperplaneThickness, node.getMinus(), minusList);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method sets the attribute of the plus or minus node to false or true based on whether the list is empty, regardless of whether a split occurred.",
+        "line": 81,
+        "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method sets the attribute of the plus or minus node to false or true based on whether the list is empty, regardless of whether a split occurred.",
+        "line": 81,
+        "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+        "line": 50,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+        "line": 50,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+        "line": 50,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+        "line": 50,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    }
+  ]
+}

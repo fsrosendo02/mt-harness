@@ -1,0 +1,112 @@
+{
+  "requested_count": 16,
+  "accepted_count": 7,
+  "rejected_count": 9,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 1,
+        "reasoning": "The custom serializers list is not iterated over correctly",
+        "line": 8,
+        "precode": "for (Serializers serializers : customSerializers()) {",
+        "aftercode": "for (int i = 0; i < customSerializers().size(); i++) { Serializers serializers = customSerializers().get(i);",
+        "candidate_code": "    protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,\n            CollectionType type, BeanDescription beanDesc, boolean staticTyping,\n            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) \n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = null;\n        // Module-provided custom collection serializers?\n        for (int i = 0; i < customSerializers().size(); i++) { Serializers serializers = customSerializers().get(i); {\n            ser = serializers.findCollectionSerializer(config,\n                    type, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                break;\n            }\n        }\n\n        if (ser == null) {\n            // We may also want to use serialize Collections \"as beans\", if (and only if)\n            // this is specified with `@JsonFormat(shape=Object)`\n            JsonFormat.Value format = beanDesc.findExpectedFormat(null);\n            if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {\n                return null;\n            }\n            Class<?> raw = type.getRawClass();\n            if (EnumSet.class.isAssignableFrom(raw)) {\n                // this may or may not be available (Class doesn't; type of field/method does)\n                JavaType enumType = type.getContentType();\n                // and even if nominally there is something, only use if it really is enum\n                if (!enumType.isEnumType()) {\n                    enumType = null;\n                }\n                ser = buildEnumSetSerializer(enumType);\n            } else {\n                Class<?> elementRaw = type.getContentType().getRawClass();\n                if (isIndexedList(raw)) {\n                    if (elementRaw == String.class) {\n                        // [JACKSON-829] Must NOT use if we have custom serializer\n                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                            ser = IndexedStringListSerializer.instance;\n                        }\n                    } else {\n                        ser = buildIndexedListSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                    }\n                } else if (elementRaw == String.class) {\n                    // [JACKSON-829] Must NOT use if we have custom serializer\n                    if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                        ser = StringCollectionSerializer.instance;\n                    }\n                }\n                if (ser == null) {\n                    ser = buildCollectionSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                }\n            }\n        }\n        // [Issue#120]: Allow post-processing\n        if (_factoryConfig.hasSerializerModifiers()) {\n            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);\n            }\n        }\n        return ser;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The enumType variable is not checked for null before being used",
+        "line": 28,
+        "precode": "if (!enumType.isEnumType()) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The elementValueSerializer is never null-checked before being used",
+        "line": 40,
+        "precode": "if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The buildCollectionSerializer method is called recursively without a base case",
+        "line": 51,
+        "precode": "if (ser == null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 10,
+        "reasoning": "The factoryConfig's serializerModifiers are not iterated over correctly",
+        "line": 57,
+        "precode": "for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {",
+        "aftercode": "for (int i = 0; i < _factoryConfig.serializerModifiers().size(); i++) { BeanSerializerModifier mod = _factoryConfig.serializerModifiers().get(i);",
+        "candidate_code": "    protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,\n            CollectionType type, BeanDescription beanDesc, boolean staticTyping,\n            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) \n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = null;\n        // Module-provided custom collection serializers?\n        for (Serializers serializers : customSerializers()) {\n            ser = serializers.findCollectionSerializer(config,\n                    type, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                break;\n            }\n        }\n\n        if (ser == null) {\n            // We may also want to use serialize Collections \"as beans\", if (and only if)\n            // this is specified with `@JsonFormat(shape=Object)`\n            JsonFormat.Value format = beanDesc.findExpectedFormat(null);\n            if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {\n                return null;\n            }\n            Class<?> raw = type.getRawClass();\n            if (EnumSet.class.isAssignableFrom(raw)) {\n                // this may or may not be available (Class doesn't; type of field/method does)\n                JavaType enumType = type.getContentType();\n                // and even if nominally there is something, only use if it really is enum\n                if (!enumType.isEnumType()) {\n                    enumType = null;\n                }\n                ser = buildEnumSetSerializer(enumType);\n            } else {\n                Class<?> elementRaw = type.getContentType().getRawClass();\n                if (isIndexedList(raw)) {\n                    if (elementRaw == String.class) {\n                        // [JACKSON-829] Must NOT use if we have custom serializer\n                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                            ser = IndexedStringListSerializer.instance;\n                        }\n                    } else {\n                        ser = buildIndexedListSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                    }\n                } else if (elementRaw == String.class) {\n                    // [JACKSON-829] Must NOT use if we have custom serializer\n                    if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                        ser = StringCollectionSerializer.instance;\n                    }\n                }\n                if (ser == null) {\n                    ser = buildCollectionSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                }\n            }\n        }\n        // [Issue#120]: Allow post-processing\n        if (_factoryConfig.hasSerializerModifiers()) {\n            for (int i = 0; i < _factoryConfig.serializerModifiers().size(); i++) { BeanSerializerModifier mod = _factoryConfig.serializerModifiers().get(i); {\n                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);\n            }\n        }\n        return ser;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 13,
+        "reasoning": "The buildIndexedListSerializer method is not called correctly",
+        "line": 41,
+        "precode": "ser = buildIndexedListSerializer(type.getContentType(), staticTyping, elementTypeSerializer, elementValueSerializer);",
+        "aftercode": "buildIndexedListSerializer(type.getContentType(), staticTyping, elementTypeSerializer, elementValueSerializer);",
+        "candidate_code": "    protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,\n            CollectionType type, BeanDescription beanDesc, boolean staticTyping,\n            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) \n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = null;\n        // Module-provided custom collection serializers?\n        for (Serializers serializers : customSerializers()) {\n            ser = serializers.findCollectionSerializer(config,\n                    type, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                break;\n            }\n        }\n\n        if (ser == null) {\n            // We may also want to use serialize Collections \"as beans\", if (and only if)\n            // this is specified with `@JsonFormat(shape=Object)`\n            JsonFormat.Value format = beanDesc.findExpectedFormat(null);\n            if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {\n                return null;\n            }\n            Class<?> raw = type.getRawClass();\n            if (EnumSet.class.isAssignableFrom(raw)) {\n                // this may or may not be available (Class doesn't; type of field/method does)\n                JavaType enumType = type.getContentType();\n                // and even if nominally there is something, only use if it really is enum\n                if (!enumType.isEnumType()) {\n                    enumType = null;\n                }\n                ser = buildEnumSetSerializer(enumType);\n            } else {\n                Class<?> elementRaw = type.getContentType().getRawClass();\n                if (isIndexedList(raw)) {\n                    if (elementRaw == String.class) {\n                        // [JACKSON-829] Must NOT use if we have custom serializer\n                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                            ser = IndexedStringListSerializer.instance;\n                        }\n                    } else {\n                        buildIndexedListSerializer(type.getContentType(), staticTyping, elementTypeSerializer, elementValueSerializer);\n                            elementTypeSerializer, elementValueSerializer);\n                    }\n                } else if (elementRaw == String.class) {\n                    // [JACKSON-829] Must NOT use if we have custom serializer\n                    if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                        ser = StringCollectionSerializer.instance;\n                    }\n                }\n                if (ser == null) {\n                    ser = buildCollectionSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                }\n            }\n        }\n        // [Issue#120]: Allow post-processing\n        if (_factoryConfig.hasSerializerModifiers()) {\n            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);\n            }\n        }\n        return ser;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The buildCollectionSerializer method is called recursively without a base case",
+        "line": 52,
+        "precode": "if (ser == null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "The _factoryConfig's serializerModifiers are always empty",
+        "line": 57,
+        "precode": "for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The return statement is removed at the end of the method",
+        "line": 62,
+        "precode": "return ser;",
+        "aftercode": ""
+      }
+    }
+  ]
+}

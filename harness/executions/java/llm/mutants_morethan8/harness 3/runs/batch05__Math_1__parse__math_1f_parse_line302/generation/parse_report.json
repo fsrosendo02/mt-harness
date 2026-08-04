@@ -1,0 +1,381 @@
+{
+  "requested_count": 32,
+  "accepted_count": 1,
+  "rejected_count": 31,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 1,
+        "reasoning": "The method does not handle the case where the source string is null.",
+        "line": 2,
+        "precode": "public RealMatrix parse(String source, ParsePosition pos) {",
+        "aftercode": "public RealMatrix parse(String source, ParsePosition pos) {\n    if (source == null)\n        return null;\n",
+        "candidate_code": "    public RealMatrix parse(String source, ParsePosition pos) {\n    if (source == null)\n        return null; {\n        int initialIndex = pos.getIndex();\n\n        final String trimmedPrefix = prefix.trim();\n        final String trimmedSuffix = suffix.trim();\n        final String trimmedRowPrefix = rowPrefix.trim();\n        final String trimmedRowSuffix = rowSuffix.trim();\n        final String trimmedColumnSeparator = columnSeparator.trim();\n        final String trimmedRowSeparator = rowSeparator.trim();\n\n        // parse prefix\n        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n        if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {\n            return null;\n        }\n\n        // parse components\n        List<List<Number>> matrix = new ArrayList<List<Number>>();\n        List<Number> rowComponents = new ArrayList<Number>();\n        for (boolean loop = true; loop;){\n\n            if (!rowComponents.isEmpty()) {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {\n                    if (trimmedRowSuffix.length() != 0 &&\n                        !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n                        return null;\n                    } else {\n                        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n                            matrix.add(rowComponents);\n                            rowComponents = new ArrayList<Number>();\n                            continue;\n                        } else {\n                            loop = false;\n                        }\n                    }\n                }\n            } else {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                if (trimmedRowPrefix.length() != 0 &&\n                    !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n                    return null;\n                }\n            }\n\n            if (loop) {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                Number component = CompositeFormat.parseNumber(source, format, pos);\n                if (component != null) {\n                    rowComponents.add(component);\n                } else {\n                    if (rowComponents.isEmpty()) {\n                        loop = false;\n                    } else {\n                        // invalid component\n                        // set index back to initial, error index should already be set\n                        pos.setIndex(initialIndex);\n                        return null;\n                    }\n                }\n            }\n\n        }\n\n        if (!rowComponents.isEmpty()) {\n            matrix.add(rowComponents);\n        }\n\n        // parse suffix\n        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n        if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n        }\n\n        // do not allow an empty matrix\n        if (matrix.isEmpty()) {\n            pos.setIndex(initialIndex);\n            return null;\n        }\n\n        // build vector\n        double[][] data = new double[matrix.size()][];\n        int row = 0;\n        for (List<Number> rowList : matrix) {\n            data[row] = new double[rowList.size()];\n            for (int i = 0; i < rowList.size(); i++) {\n                data[row][i] = rowList.get(i).doubleValue();\n            }\n            row++;\n        }\n        return MatrixUtils.createRealMatrix(data);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method does not handle the case where the prefix is empty.",
+        "line": 14,
+        "precode": "if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {\n            return null;\n        }",
+        "aftercode": "if (trimmedPrefix.length() == 0)\n            return null;\n        if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {\n            return null;\n        }\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method does not handle the case where the suffix is empty.",
+        "line": 72,
+        "precode": "if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n        }",
+        "aftercode": "if (trimmedSuffix.length() == 0)\n            return null;\n        if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n        }\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method does not handle the case where the row prefix is empty.",
+        "line": 43,
+        "precode": "if (trimmedRowPrefix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n            return null;\n        }",
+        "aftercode": "if (trimmedRowPrefix.length() == 0)\n            return null;\n        if (trimmedRowPrefix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n            return null;\n        }\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method does not handle the case where the column separator is empty.",
+        "line": 25,
+        "precode": "if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {\n            if (trimmedRowSuffix.length() != 0 &&\n",
+        "aftercode": "if (trimmedColumnSeparator.length() == 0)\n            return null;\n        if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {\n            if (trimmedRowSuffix.length() != 0 &&\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not handle the case where the row separator is empty.",
+        "line": 30,
+        "precode": "if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n                matrix.add(rowComponents);\n",
+        "aftercode": "if (trimmedRowSeparator.length() == 0)\n            return null;\n        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n            matrix.add(rowComponents);\n",
+        "candidate_code": "    public RealMatrix parse(String source, ParsePosition pos) {\n        int initialIndex = pos.getIndex();\n\n        final String trimmedPrefix = prefix.trim();\n        final String trimmedSuffix = suffix.trim();\n        final String trimmedRowPrefix = rowPrefix.trim();\n        final String trimmedRowSuffix = rowSuffix.trim();\n        final String trimmedColumnSeparator = columnSeparator.trim();\n        final String trimmedRowSeparator = rowSeparator.trim();\n\n        // parse prefix\n        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n        if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {\n            return null;\n        }\n\n        // parse components\n        List<List<Number>> matrix = new ArrayList<List<Number>>();\n        List<Number> rowComponents = new ArrayList<Number>();\n        for (boolean loop = true; loop;){\n\n            if (!rowComponents.isEmpty()) {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {\n                    if (trimmedRowSuffix.length() != 0 &&\n                        !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n                        return null;\n                    } else {\n                        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                        if (trimmedRowSeparator.length() == 0)\n            return null;\n        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n            matrix.add(rowComponents); {\n                            matrix.add(rowComponents);\n                            rowComponents = new ArrayList<Number>();\n                            continue;\n                        } else {\n                            loop = false;\n                        }\n                    }\n                }\n            } else {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                if (trimmedRowPrefix.length() != 0 &&\n                    !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n                    return null;\n                }\n            }\n\n            if (loop) {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                Number component = CompositeFormat.parseNumber(source, format, pos);\n                if (component != null) {\n                    rowComponents.add(component);\n                } else {\n                    if (rowComponents.isEmpty()) {\n                        loop = false;\n                    } else {\n                        // invalid component\n                        // set index back to initial, error index should already be set\n                        pos.setIndex(initialIndex);\n                        return null;\n                    }\n                }\n            }\n\n        }\n\n        if (!rowComponents.isEmpty()) {\n            matrix.add(rowComponents);\n        }\n\n        // parse suffix\n        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n        if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n        }\n\n        // do not allow an empty matrix\n        if (matrix.isEmpty()) {\n            pos.setIndex(initialIndex);\n            return null;\n        }\n\n        // build vector\n        double[][] data = new double[matrix.size()][];\n        int row = 0;\n        for (List<Number> rowList : matrix) {\n            data[row] = new double[rowList.size()];\n            for (int i = 0; i < rowList.size(); i++) {\n                data[row][i] = rowList.get(i).doubleValue();\n            }\n            row++;\n        }\n        return MatrixUtils.createRealMatrix(data);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method does not handle the case where the row prefix is empty and there are components.",
+        "line": 44,
+        "precode": "if (trimmedRowPrefix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n            return null;\n        }",
+        "aftercode": "if (trimmedRowPrefix.length() == 0 && !rowComponents.isEmpty())\n            return null;\n        if (trimmedRowPrefix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n            return null;\n        }\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not handle the case where the column separator is empty and there are components.",
+        "line": 26,
+        "precode": "if (trimmedRowSuffix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n            return null;\n        } else {\n",
+        "aftercode": "if (trimmedColumnSeparator.length() == 0 && !rowComponents.isEmpty())\n            return null;\n        if (trimmedRowSuffix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n            return null;\n        } else {\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not handle the case where the row separator is empty and there are components.",
+        "line": 31,
+        "precode": "if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n                matrix.add(rowComponents);\n",
+        "aftercode": "if (trimmedRowSeparator.length() == 0 && !rowComponents.isEmpty())\n            return null;\n        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n            matrix.add(rowComponents);\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not handle the case where the row prefix is empty and there are components in the first row.",
+        "line": 41,
+        "precode": "if (trimmedRowPrefix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n            return null;\n        }",
+        "aftercode": "if (trimmedRowPrefix.length() == 0 && rowComponents.isEmpty())\n            return null;\n        if (trimmedRowPrefix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n            return null;\n        }\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not handle the case where the column separator is empty and there are components in the first row.",
+        "line": 27,
+        "precode": "if (trimmedRowSuffix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n            return null;\n        } else {\n",
+        "aftercode": "if (trimmedColumnSeparator.length() == 0 && rowComponents.isEmpty())\n            return null;\n        if (trimmedRowSuffix.length() != 0 && !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n            return null;\n        } else {\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not handle the case where the row separator is empty and there are components in the first row.",
+        "line": 32,
+        "precode": "if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n                matrix.add(rowComponents);\n",
+        "aftercode": "if (trimmedRowSeparator.length() == 0 && rowComponents.isEmpty())\n            return null;\n        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n            matrix.add(rowComponents);\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method does not handle the case where there are no components.",
+        "line": 67,
+        "precode": "if (!rowComponents.isEmpty()) {\n            matrix.add(rowComponents);\n        }",
+        "aftercode": "if (rowComponents.isEmpty())\n            return null;\n        if (!rowComponents.isEmpty()) {\n            matrix.add(rowComponents);\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method does not handle the case where the suffix is empty and there are components.",
+        "line": 74,
+        "precode": "if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n        }",
+        "aftercode": "if (trimmedSuffix.length() == 0 && !rowComponents.isEmpty())\n            return null;\n        if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not handle the case where there are empty rows.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "int row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!rowList.isEmpty())\n        data[row] = new double[rowList.size()];\n    else\n        data[row] = new double[1];\n    for (int i = 0; i < rowList.size(); i++) {\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not handle the case where there are empty rows in the middle.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "int row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!rowList.isEmpty())\n        data[row] = new double[rowList.size()];\n    else\n        data[row] = new double[1];\n    for (int i = 0; i < rowList.size(); i++) {\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not handle the case where there are empty rows at the end.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "int row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!rowList.isEmpty())\n        data[row] = new double[rowList.size()];\n    else\n        break;\n    for (int i = 0; i < rowList.size(); i++) {\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not handle the case where there are empty rows in all positions.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "int row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!rowList.isEmpty())\n        data[row] = new double[rowList.size()];\n    else\n        break;\n    for (int i = 0; i < rowList.size(); i++) {\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not handle the case where there are duplicate rows.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not handle the case where there are duplicate rows, but only at the end.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not handle the case where there are duplicate rows, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not handle the case where there are duplicate rows, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method does not handle the case where there are duplicate rows in all positions, but only at the end of each row.",
+        "line": 82,
+        "precode": "double[][] data = new double[matrix.size()];",
+        "aftercode": "Set<List<Number>> set = new HashSet<>();\nint row = 0;\nfor (List<Number> rowList : matrix) {\n    if (!set.contains(rowList)) {\n        data[row] = new double[rowList.size()];\n",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

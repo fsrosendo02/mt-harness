@@ -1,0 +1,158 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method does not account for the possibility of a root name being null or empty, which it should.",
+      "line": 10,
+      "precode": "if (root != null) {",
+      "aftercode": "if (root == null) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method assumes that if the local name is not found, it will always fall back to sanitizing the simple class name. It does not account for cases where both localName and sanitized simple class name are null or empty.",
+      "line": 15,
+      "precode": "if (localName == null || localName.length() == 0) {",
+      "aftercode": "if (localName != null && localName.length() > 0) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method assigns an empty namespace to the QName if the ns is null or empty, but it does not check for cases where both ns and findNamespace(intr, ac) return null or empty.",
+      "line": 22,
+      "precode": "if (ns == null || ns.length() == 0) {",
+      "aftercode": "if (ns != null && ns.length() > 0) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method does not check if the rootType is an array or a nested type, which could lead to incorrect QName construction.",
+      "line": 18,
+      "precode": "localName = StaxUtil.sanitizeXmlTypeName(rootType.getSimpleName());",
+      "aftercode": "localName = rootType.isArray() ? rootType.getComponentType().getSimpleName() : rootType.getEnclosingClass() != null ? rootType.getName().replace('$', '.') : rootType.getSimpleName();"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method uses the StaxUtil.sanitizeXmlTypeName for local name, which might not always be appropriate. It does not consider using qualified names.",
+      "line": 18,
+      "precode": "localName = StaxUtil.sanitizeXmlTypeName(rootType.getSimpleName());",
+      "aftercode": "localName = rootType.getCanonicalName();"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method uses a simple check for the length of localName, which might not be adequate. It should also validate if the string contains invalid characters.",
+      "line": 16,
+      "precode": "localName.length() == 0",
+      "aftercode": "!isValidXmlIdentifier(localName)"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method assigns an empty namespace to the QName if it is null, but it does not ensure that the resulting QName is valid XML. It should check for invalid characters in the namespace.",
+      "line": 26,
+      "precode": "ns = \"\";",
+      "aftercode": "ns = isValidXmlNamespace(ns) ? ns : \"\";"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method returns a QName with an empty namespace if it cannot find the namespace. It should throw an exception or return null in such cases.",
+      "line": 28,
+      "precode": "return new QName(ns, localName);",
+      "aftercode": "if (ns.isEmpty()) { throw new IllegalArgumentException(\"Namespace cannot be empty\"); } return new QName(ns, localName);"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method attempts to sanitize the simple class name only if it is null or empty. It does not account for cases where sanitization might fail.",
+      "line": 18,
+      "precode": "localName = StaxUtil.sanitizeXmlTypeName(rootType.getSimpleName());",
+      "aftercode": "try { localName = StaxUtil.sanitizeXmlTypeName(rootType.getSimpleName()); } catch (Exception e) { localName = rootType.getCanonicalName(); }"
+    },
+    {
+      "id": 10,
+      "reasoning": "The method relies on the `findNamespace` method to determine the namespace. It does not account for cases where `findNamespace` returns null or an invalid namespace.",
+      "line": 23,
+      "precode": "ns = findNamespace(intr, ac);",
+      "aftercode": "ns = isValidXmlNamespace(ns) ? ns : \"\";"
+    },
+    {
+      "id": 11,
+      "reasoning": "The method defaults to using the simple class name if the root name is not found. It does not consider using a qualified name for this default case.",
+      "line": 19,
+      "precode": "return new QName(\"\", localName);",
+      "aftercode": "return new QName(rootType.getPackage().getName(), localName);"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method uses the `findRootName` method to determine the root name. It does not account for cases where `findRootName` might return a malformed or invalid qualified name.",
+      "line": 9,
+      "precode": "PropertyName root = intr.findRootName(ac);",
+      "aftercode": "try { PropertyName root = intr.findRootName(ac); } catch (Exception e) { throw new IllegalArgumentException(\"Malformed qualified name\"); }"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method assigns a sanitized simple class name to the QName if it is null or empty. It does not consider using a different default value for localName.",
+      "line": 19,
+      "precode": "return new QName(\"\", localName);",
+      "aftercode": "return new QName(\"\", \"defaultLocalName\");"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method assumes that if the namespace is null or empty, it should be set to an empty string. It does not consider other default values for ns.",
+      "line": 26,
+      "precode": "ns = \"\";",
+      "aftercode": "ns = \"http://default.namespace/\";"
+    },
+    {
+      "id": 15,
+      "reasoning": "The method checks if the root name is not null and then retrieves its local name. It does not account for cases where the root object itself might be null.",
+      "line": 10,
+      "precode": "if (root != null) {",
+      "aftercode": "if (root == null || root.getName() == null) {"
+    },
+    {
+      "id": 16,
+      "reasoning": "The method checks if the local name is not empty. It does not consider cases where the local name might be a whitespace string.",
+      "line": 15,
+      "precode": "if (localName == null || localName.length() == 0) {",
+      "aftercode": "if (localName == null || localName.trim().isEmpty()) {"
+    },
+    {
+      "id": 17,
+      "reasoning": "The method assigns a namespace to the QName if it is not found. It does not account for cases where the default namespace might be invalid.",
+      "line": 23,
+      "precode": "ns = findNamespace(intr, ac);",
+      "aftercode": "ns = isValidXmlNamespace(ns) ? ns : \"http://default.namespace/\";"
+    },
+    {
+      "id": 18,
+      "reasoning": "The method returns a QName constructed from localName and ns. It does not account for cases where both are invalid or malformed.",
+      "line": 28,
+      "precode": "return new QName(ns, localName);",
+      "aftercode": "try { return new QName(ns, localName); } catch (IllegalArgumentException e) { throw new IllegalArgumentException(\"Invalid QName\"); }"
+    },
+    {
+      "id": 19,
+      "reasoning": "The method uses the `getCanonicalName` method to determine the local name. It does not account for cases where the canonical name might be null or empty.",
+      "line": 18,
+      "precode": "localName = rootType.getCanonicalName();",
+      "aftercode": "if (rootType.getCanonicalName() != null) { localName = rootType.getCanonicalName(); } else { localName = rootType.getName().replace('$', '.'); }"
+    },
+    {
+      "id": 20,
+      "reasoning": "The method uses the `getComponentType` method to determine the array component type. It does not account for cases where the array component type might be null.",
+      "line": 18,
+      "precode": "localName = rootType.isArray() ? rootType.getComponentType().getSimpleName() : rootType.getEnclosingClass() != null ? rootType.getName().replace('$', '.') : rootType.getSimpleName();",
+      "aftercode": "if (rootType.isArray()) { localName = rootType.getComponentType().getSimpleName(); } else if (rootType.getEnclosingClass() != null) { localName = rootType.getName().replace('$', '.'); } else { localName = rootType.getSimpleName(); }"
+    },
+    {
+      "id": 21,
+      "reasoning": "The method uses the `getName` method to determine the nested type. It does not account for cases where the nested type name might be null or empty.",
+      "line": 18,
+      "precode": "localName = rootType.getEnclosingClass() != null ? rootType.getName().replace('$', '.') : rootType.getSimpleName();",
+      "aftercode": "if (rootType.getEnclosingClass() == null || rootType.getName().isEmpty()) { localName = rootType.getSimpleName(); } else { localName = rootType.getName().replace('$', '.'); }"
+    },
+    {
+      "id": 22,
+      "reasoning": "The method uses the `getSimpleName` method to determine the simple class name. It does not account for cases where the simple name might be null or empty.",
+      "line": 18,
+      "precode": "localName = rootType.getSimpleName();",
+      "aftercode": "if (rootType.getSimpleName() != null) { localName = rootType.getSimpleName(); } else { throw new IllegalArgumentException(\"Invalid class name\"); }"
+    }
+  ]
+}

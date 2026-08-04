@@ -1,0 +1,85 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   int doPeek() throws IOException {
+ 2:     int peekStack = stack[stackSize - 1];
+ 3:     if (peekStack == JsonScope.EMPTY_ARRAY) {
+ 4:       stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;
+ 5:     } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {
+ 6:       // Look for a comma before the next element.
+ 7:       int c = nextNonWhitespace(true);
+ 8:       switch (c) {
+ 9:       case ']':
+10:         return peeked = PEEKED_END_ARRAY;
+11:       case ';':
+12:         checkLenient(); // fall-through
+13:       case ',':
+14:         break;
+15:       default:
+16:         throw syntaxError("Unterminated array");
+17:       }
+18:     } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {
+19:       stack[stackSize - 1] = JsonScope.DANGLING_NAME;
+20:       // Look for a comma before the next element.
+21:       if (peekStack == JsonScope.NONEMPTY_OBJECT) {
+22:         int c = nextNonWhitespace(true);
+23:         switch (c) {
+24:         case '}':
+25:           return peeked = PEEKED_END_OBJECT;
+26:         case ';':
+27:           checkLenient(); // fall-through
+28:         case ',':
+29:           break;
+30:         default:
+31:           throw syntaxError("Unterminated object");
+32:         }
+33:       }
+34:       int c = nextNonWhitespace(true);
+35:       switch (c) {
+36:       case '"':
+37:         return peeked = PEEKED_DOUBLE_QUOTED_NAME;
+38:       case '\'':
+39:         checkLenient();
+40:         return peeked = PEEKED_SINGLE_QUOTED_NAME;
+41:       case '}':
+42:         if (peekStack != JsonScope.NONEMPTY_OBJECT) {
+43:           return peeked = PEEKED_END_OBJECT;
+44:         } else {
+45:           throw syntaxError("Expected name");
+46:         }
+47:       default:
+48:         checkLenient();
+49:         pos--; // Don't consume the first character in an unquoted string.
+50:         if (isLiteral((char) c)) {
+51:           return peeked = PEEKED_UNQUOTED_NAME;
+52:         } else {
+53:           throw syntaxError("Expected name");
+54:         }
+55:       }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

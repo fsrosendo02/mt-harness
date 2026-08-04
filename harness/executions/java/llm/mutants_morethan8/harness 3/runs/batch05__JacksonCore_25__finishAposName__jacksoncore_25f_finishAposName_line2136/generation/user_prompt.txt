@@ -1,0 +1,126 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)
+ 2:         throws IOException
+ 3:     {
+ 4:         int[] quads = _quadBuffer;
+ 5:         final int[] codes = _icLatin1;
+ 6: 
+ 7:         while (true) {
+ 8:             if (_inputPtr >= _inputEnd) {
+ 9:                 _quadLength = qlen;
+10:                 _pending32 = currQuad;
+11:                 _pendingBytes = currQuadBytes;
+12:                 _minorState = MINOR_FIELD_APOS_NAME;
+13:                 return (_currToken = JsonToken.NOT_AVAILABLE);
+14:             }
+15:             int ch = _inputBuffer[_inputPtr++] & 0xFF;
+16:             if (ch == INT_APOS) {
+17:                 break;
+18:             }
+19:             // additional check to skip handling of double-quotes
+20:             if (ch != '"' && codes[ch] != 0) {
+21:                 if (ch != '\\') {
+22:                     // Unquoted white space?
+23:                     _throwUnquotedSpace(ch, "name");
+24:                 } else {
+25:                     // Nope, escape sequence
+26:                     ch = _decodeCharEscape();
+27:                     if (ch < 0) { // method has set up state about escape sequence
+28:                         _minorState = MINOR_FIELD_NAME_ESCAPE;
+29:                         _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;
+30:                         _quadLength = qlen;
+31:                         _pending32 = currQuad;
+32:                         _pendingBytes = currQuadBytes;
+33:                         return (_currToken = JsonToken.NOT_AVAILABLE);
+34:                     }
+35:                 }
+36:                 if (ch > 127) {
+37:                     // Ok, we'll need room for first byte right away
+38:                     if (currQuadBytes >= 4) {
+39:                         if (qlen >= quads.length) {
+40:                             _quadBuffer = quads = growArrayBy(quads, quads.length);
+41:                         }
+42:                         quads[qlen++] = currQuad;
+43:                         currQuad = 0;
+44:                         currQuadBytes = 0;
+45:                     }
+46:                     if (ch < 0x800) { // 2-byte
+47:                         currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));
+48:                         ++currQuadBytes;
+49:                         // Second byte gets output below:
+50:                     } else { // 3 bytes; no need to worry about surrogates here
+51:                         currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));
+52:                         ++currQuadBytes;
+53:                         // need room for middle byte?
+54:                         if (currQuadBytes >= 4) {
+55:                             if (qlen >= quads.length) {
+56:                                 _quadBuffer = quads = growArrayBy(quads, quads.length);
+57:                             }
+58:                             quads[qlen++] = currQuad;
+59:                             currQuad = 0;
+60:                             currQuadBytes = 0;
+61:                         }
+62:                         currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));
+63:                         ++currQuadBytes;
+64:                     }
+65:                     // And same last byte in both cases, gets output below:
+66:                     ch = 0x80 | (ch & 0x3f);
+67:                 }
+68:             }
+69:             // Ok, we have one more byte to add at any rate:
+70:             if (currQuadBytes < 4) {
+71:                 ++currQuadBytes;
+72:                 currQuad = (currQuad << 8) | ch;
+73:             } else {
+74:                 if (qlen >= quads.length) {
+75:                     _quadBuffer = quads = growArrayBy(quads, quads.length);
+76:                 }
+77:                 quads[qlen++] = currQuad;
+78:                 currQuad = ch;
+79:                 currQuadBytes = 1;
+80:             }
+81:         }
+82: 
+83:         if (currQuadBytes > 0) {
+84:             if (qlen >= quads.length) {
+85:                 _quadBuffer = quads = growArrayBy(quads, quads.length);
+86:             }
+87:             quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);
+88:         } else if (qlen == 0) { // rare case but possible
+89:             return _fieldComplete("");
+90:         }
+91:         String name = _symbols.findName(quads, qlen);
+92:         if (name == null) {
+93:             name = _addName(quads, qlen, currQuadBytes);
+94:         }
+95:         return _fieldComplete(name);
+96:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public boolean evaluateStep(final StepInterpolator interpolator)
+ 2:         throws DerivativeException, EventException, ConvergenceException {
+ 3: 
+ 4:         try {
+ 5: 
+ 6:             forward = interpolator.isForward();
+ 7:             final double t1 = interpolator.getCurrentTime();
+ 8:             final int    n  = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));
+ 9:             final double h  = (t1 - t0) / n;
+10: 
+11:             double ta = t0;
+12:             double ga = g0;
+13:             double tb = t0 + (interpolator.isForward() ? convergence : -convergence);
+14:             for (int i = 0; i < n; ++i) {
+15: 
+16:                 // evaluate handler value at the end of the substep
+17:                 tb += h;
+18:                 interpolator.setInterpolatedTime(tb);
+19:                 final double gb = handler.g(tb, interpolator.getInterpolatedState());
+20: 
+21:                 // check events occurrence
+22:                 if (g0Positive ^ (gb >= 0)) {
+23:                     // there is a sign change: an event is expected during this step
+24: 
+25:                     // variation direction, with respect to the integration direction
+26:                     increasing = gb >= ga;
+27: 
+28:                     final UnivariateRealFunction f = new UnivariateRealFunction() {
+29:                         public double value(final double t) throws FunctionEvaluationException {
+30:                             try {
+31:                                 interpolator.setInterpolatedTime(t);
+32:                                 return handler.g(t, interpolator.getInterpolatedState());
+33:                             } catch (DerivativeException e) {
+34:                                 throw new FunctionEvaluationException(e, t);
+35:                             } catch (EventException e) {
+36:                                 throw new FunctionEvaluationException(e, t);
+37:                             }
+38:                         }
+39:                     };
+40:                     final BrentSolver solver = new BrentSolver();
+41:                     solver.setAbsoluteAccuracy(convergence);
+42:                     solver.setMaximalIterationCount(maxIterationCount);
+43:                     double root;
+44:                     try {
+45:                         root = (ta <= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);
+46:                     } catch (IllegalArgumentException iae) {
+47:                         // the interval did not really bracket a root
+48:                         root = Double.NaN;
+49:                     }
+50:                     if (Double.isNaN(root) ||
+51:                         ((Math.abs(root - ta) <= convergence) &&
+52:                          (Math.abs(root - previousEventTime) <= convergence))) {
+53:                         // we have either found nothing or found (again ?) a past event, we simply ignore it
+54:                         ta = tb;
+55:                         ga = gb;
+56:                     } else if (Double.isNaN(previousEventTime) ||
+57:                                (Math.abs(previousEventTime - root) > convergence)) {
+58:                         pendingEventTime = root;
+59:                         if (pendingEvent && (Math.abs(t1 - pendingEventTime) <= convergence)) {
+60:                             // we were already waiting for this event which was
+61:                             // found during a previous call for a step that was
+62:                             // rejected, this step must now be accepted since it
+63:                             // properly ends exactly at the event occurrence
+64:                             return false;
+65:                         }
+66:                         // either we were not waiting for the event or it has
+67:                         // moved in such a way the step cannot be accepted
+68:                         pendingEvent = true;
+69:                         return true;
+70:                     }
+71: 
+72:                 } else {
+73:                     // no sign change: there is no event for now
+74:                     ta = tb;
+75:                     ga = gb;
+76:                 }
+77: 
+78:             }
+79: 
+80:             // no event during the whole step
+81:             pendingEvent     = false;
+82:             pendingEventTime = Double.NaN;
+83:             return false;
+84: 
+85:         } catch (FunctionEvaluationException e) {
+86:             final Throwable cause = e.getCause();
+87:             if ((cause != null) && (cause instanceof DerivativeException)) {
+88:                 throw (DerivativeException) cause;
+89:             } else if ((cause != null) && (cause instanceof EventException)) {
+90:                 throw (EventException) cause;
+91:             }
+92:             throw new EventException(e);
+93:         }
+94: 
+95:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

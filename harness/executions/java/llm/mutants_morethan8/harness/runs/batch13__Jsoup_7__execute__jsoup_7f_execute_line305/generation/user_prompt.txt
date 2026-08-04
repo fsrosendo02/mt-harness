@@ -1,0 +1,75 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:         static Response execute(Connection.Request req) throws IOException {
+ 2:             Validate.notNull(req, "Request must not be null");
+ 3:             String protocol = req.url().getProtocol();
+ 4:             Validate
+ 5:                 .isTrue(protocol.equals("http") || protocol.equals("https"), "Only http & https protocols supported");
+ 6: 
+ 7:             // set up the request for execution
+ 8:             if (req.method() == Connection.Method.GET && req.data().size() > 0)
+ 9:                 serialiseRequestUrl(req); // appends query string
+10:             HttpURLConnection conn = createConnection(req);
+11:             conn.connect();
+12:             if (req.method() == Connection.Method.POST)
+13:                 writePost(req.data(), conn.getOutputStream());          
+14: 
+15:             // todo: error handling options, allow user to get !200 without exception
+16:             int status = conn.getResponseCode();
+17:             boolean needsRedirect = false;
+18:             if (status != HttpURLConnection.HTTP_OK) {
+19:                 // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here
+20:                 if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)
+21:                     needsRedirect = true;
+22:                 else
+23:                     throw new IOException(status + " error loading URL " + req.url().toString());
+24:             }
+25:             Response res = new Response();
+26:             res.setupFromConnection(conn);
+27:             if (needsRedirect) {
+28:                 req.url(new URL(res.header("Location")));
+29:                 return execute(req);
+30:             }
+31: 
+32:             InputStream inStream = null;
+33:             try {
+34:                 inStream = res.hasHeader("Content-Encoding") && res.header("Content-Encoding").equalsIgnoreCase("gzip") ?
+35:                         new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :
+36:                         new BufferedInputStream(conn.getInputStream());
+37:                 res.byteData = DataUtil.readToByteBuffer(inStream);
+38:                 res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it
+39:             } finally {
+40:                 if (inStream != null) inStream.close();
+41:             }
+42: 
+43:             res.executed = true;
+44:             return res;
+45:         }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

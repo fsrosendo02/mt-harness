@@ -1,0 +1,103 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     protected void serializeFields(Object bean, JsonGenerator gen0, SerializerProvider provider)
+ 3:         throws IOException
+ 4:     {
+ 5:         // 19-Aug-2013, tatu: During 'convertValue()', need to skip
+ 6:         if (!(gen0 instanceof ToXmlGenerator)) {
+ 7:             super.serializeFields(bean, gen0, provider);
+ 8:             return;
+ 9:         }
+10:         
+11:         final ToXmlGenerator xgen = (ToXmlGenerator) gen0;
+12:         final BeanPropertyWriter[] props;
+13:         if (_filteredProps != null && provider.getActiveView() != null) {
+14:             props = _filteredProps;
+15:         } else {
+16:             props = _props;
+17:         }
+18: 
+19:         final int attrCount = _attributeCount;
+20:         final boolean isAttribute = xgen._nextIsAttribute;
+21:         if (attrCount > 0) {
+22:             xgen.setNextIsAttribute(true);
+23:         }
+24:         final int textIndex = _textPropertyIndex;
+25:         final QName[] xmlNames = _xmlNames;
+26:         int i = 0;
+27:         final BitSet cdata = _cdata;
+28: 
+29:         try {
+30:             for (final int len = props.length; i < len; ++i) {
+31:                 // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer 
+32:                 // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.
+33:                 if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {
+34:                     xgen.setNextIsAttribute(false);
+35:                 }
+36:                 // also: if this is property to write as text ("unwrap"), need to:
+37:                 if (i == textIndex) {
+38:                     xgen.setNextIsUnwrapped(true);
+39:                 }
+40:                 xgen.setNextName(xmlNames[i]);
+41:                 BeanPropertyWriter prop = props[i];
+42:                 if (prop != null) { // can have nulls in filtered list
+43:                     if ((cdata != null) && cdata.get(i)) {
+44:                         xgen.setNextIsCData(true);
+45:                         prop.serializeAsField(bean, xgen, provider);
+46:                         xgen.setNextIsCData(false);
+47:                     } else {
+48:                         prop.serializeAsField(bean, xgen, provider);
+49:                     }
+50:                 }
+51:                 // Reset to avoid next value being written as unwrapped, 
+52:                 // for example when property is suppressed
+53:                 if (i == textIndex) {
+54:                     xgen.setNextIsUnwrapped(false);
+55:                 }
+56:             }
+57:             if (_anyGetterWriter != null) {
+58:                 // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up
+59:                 // with accidental attributes otherwise
+60:                 xgen.setNextIsAttribute(false);
+61:                 _anyGetterWriter.getAndSerialize(bean, xgen, provider);
+62:             }
+63:         } catch (Exception e) {
+64:             String name = (i == props.length) ? "[anySetter]" : props[i].getName();
+65:             wrapAndThrow(provider, e, bean, name);
+66:         } catch (StackOverflowError e) { // Bit tricky, can't do more calls as stack is full; so:
+67:             JsonMappingException mapE = JsonMappingException.from(gen0,
+68:                     "Infinite recursion (StackOverflowError)");
+69:             String name = (i == props.length) ? "[anySetter]" : props[i].getName();
+70:             mapE.prependPath(new JsonMappingException.Reference(bean, name));
+71:             throw mapE;
+72:         }
+73:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

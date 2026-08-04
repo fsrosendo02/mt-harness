@@ -1,0 +1,98 @@
+    public boolean canConvert(Object object, final Class toType) {
+        if (object == null) {
+            return true;
+        }
+        final Class useType = TypeUtils.wrapPrimitive(toType);
+        Class fromType = object.getClass();
+
+        if (useType.isAssignableFrom(fromType)) {
+            return true;
+        }
+
+        if (useType == String.class) {
+            return true;
+        }
+
+        if (object instanceof Boolean) {
+            if (Number.class.isAssignableFrom(useType)
+                    || "java.util.concurrent.atomic.AtomicBoolean"
+                            .equals(useType.getName())) {
+                return true;
+            }
+        }
+        if (object instanceof Number) {
+            if (Number.class.isAssignableFrom(useType) || useType == Boolean.class) {
+                return true;
+            }
+        }
+        if (object instanceof String) {
+            if (useType == Boolean.class
+                || useType == Character.class
+                || useType == Byte.class
+                || useType == Short.class
+                || useType == Integer.class
+                || useType == Long.class
+                || useType == Float.class
+                || useType == Double.class) {
+                return true;
+            }
+        }
+        if (fromType.isArray()) {
+            // Collection -> array
+            if (useType.isArray()) {
+                Class cType = useType.getComponentType();
+                int length = Array.getLength(object);
+                for (int i = 0; i < length; i++) {
+                    Object value = Array.get(object, i);
+                    if (!canConvert(value, cType)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            if (Collection.class.isAssignableFrom(useType)) {
+                return canCreateCollection(useType);
+            }
+            if (Array.getLength(object) > 0) {
+                Object value = Array.get(object, 0);
+                return canConvert(value, useType);
+            }
+            return canConvert("", useType);
+        }
+        if (object instanceof Collection) {
+            // Collection -> array
+            if (useType.isEnum()) {
+                Class cType = useType.getComponentType();
+                Iterator it = ((Collection) object).iterator();
+                while (it.hasNext()) {
+                    Object value = it.next();
+                    if (!canConvert(value, cType)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            if (Collection.class.isAssignableFrom(useType)) {
+                return canCreateCollection(useType);
+            }
+            if (((Collection) object).size() > 0) {
+                Object value;
+                if (object instanceof List) {
+                    value = ((List) object).get(0);
+                }
+                else {
+                    Iterator it = ((Collection) object).iterator();
+                    value = it.next();
+                }
+                return canConvert(value, useType);
+            }
+            return canConvert("", useType);
+        }
+        if (object instanceof NodeSet) {
+            return canConvert(((NodeSet) object).getValues(), useType);
+        }
+        if (object instanceof Pointer) {
+            return canConvert(((Pointer) object).getValue(), useType);
+        }
+        return ConvertUtils.lookup(useType) != null;
+    }

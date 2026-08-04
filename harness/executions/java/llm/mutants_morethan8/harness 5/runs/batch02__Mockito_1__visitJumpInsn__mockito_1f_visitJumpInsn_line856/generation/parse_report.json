@@ -1,0 +1,416 @@
+{
+  "requested_count": 48,
+  "accepted_count": 13,
+  "rejected_count": 34,
+  "rejections": [
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 61,
+        "precode": "else if (opcode <= 166)",
+        "aftercode": "else if (opcode > 166)",
+        "candidate_code": "    public void visitJumpInsn(final int opcode, final Label label) {\n        Label nextInsn = null;\n        // Label currentBlock = this.currentBlock;\n        if (currentBlock != null) {\n            if (compute == FRAMES) {\n                currentBlock.frame.execute(opcode, 0, null, null);\n                // 'label' is the target of a jump instruction\n                label.getFirst().status |= Label.TARGET;\n                // adds 'label' as a successor of this basic block\n                addSuccessor(Edge.NORMAL, label);\n                if (opcode != Opcodes.GOTO) {\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                }\n            } else {\n                if (opcode == Opcodes.JSR) {\n                    if ((label.status & Label.SUBROUTINE) == 0) {\n                        label.status |= Label.SUBROUTINE;\n                        ++subroutines;\n                    }\n                    currentBlock.status |= Label.JSR;\n                    addSuccessor(stackSize + 1, label);\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                    /*\n                     * note that, by construction in this method, a JSR block\n                     * has at least two successors in the control flow graph:\n                     * the first one leads the next instruction after the JSR,\n                     * while the second one leads to the JSR target.\n                     */\n                } else {\n                    // updates current stack size (max stack size unchanged\n                    // because stack size variation always negative in this\n                    // case)\n                    stackSize += Frame.SIZE[opcode];\n                    addSuccessor(stackSize, label);\n                }\n            }\n        }\n        // adds the instruction to the bytecode of the method\n        if ((label.status & Label.RESOLVED) != 0\n                && label.position - code.length < Short.MIN_VALUE)\n        {\n            /*\n             * case of a backward jump with an offset < -32768. In this case we\n             * automatically replace GOTO with GOTO_W, JSR with JSR_W and IFxxx\n             * <l> with IFNOTxxx <l'> GOTO_W <l>, where IFNOTxxx is the\n             * \"opposite\" opcode of IFxxx (i.e., IFNE for IFEQ) and where <l'>\n             * designates the instruction just after the GOTO_W.\n             */\n            if (opcode == Opcodes.GOTO) {\n                code.putByte(200); // GOTO_W\n            } else if (opcode == Opcodes.JSR) {\n                code.putByte(201); // JSR_W\n            } else {\n                // if the IF instruction is transformed into IFNOT GOTO_W the\n                // next instruction becomes the target of the IFNOT instruction\n                if (nextInsn != null) {\n                    nextInsn.status |= Label.TARGET;\n                }\n                else if (opcode > 166)\n                        ? ((opcode + 1) ^ 1) - 1\n                        : opcode ^ 1);\n                code.putShort(8); // jump offset\n                code.putByte(200); // GOTO_W\n            }\n            label.put(this, code, code.length - 1, true);\n        } else {\n            /*\n             * case of a backward jump with an offset >= -32768, or of a forward\n             * jump with, of course, an unknown offset. In these cases we store\n             * the offset in 2 bytes (which will be increased in\n             * resizeInstructions, if needed).\n             */\n            code.putByte(opcode);\n            label.put(this, code, code.length - 1, false);\n        }\n        if (currentBlock != null) {\n            if (nextInsn != null) {\n                // if the jump instruction is not a GOTO, the next instruction\n                // is also a successor of this instruction. Calling visitLabel\n                // adds the label of this next instruction as a successor of the\n                // current block, and starts a new basic block\n                visitLabel(nextInsn);\n            }\n            if (opcode == Opcodes.GOTO) {\n                noSuccessor();\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 87,
+        "precode": "noSuccessor();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 90,
+        "precode": "if (currentBlock != null)",
+        "aftercode": "// if (currentBlock != null)",
+        "candidate_code": "    public void visitJumpInsn(final int opcode, final Label label) {\n        Label nextInsn = null;\n        // Label currentBlock = this.currentBlock;\n        if (currentBlock != null) {\n            if (compute == FRAMES) {\n                currentBlock.frame.execute(opcode, 0, null, null);\n                // 'label' is the target of a jump instruction\n                label.getFirst().status |= Label.TARGET;\n                // adds 'label' as a successor of this basic block\n                addSuccessor(Edge.NORMAL, label);\n                if (opcode != Opcodes.GOTO) {\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                }\n            } else {\n                if (opcode == Opcodes.JSR) {\n                    if ((label.status & Label.SUBROUTINE) == 0) {\n                        label.status |= Label.SUBROUTINE;\n                        ++subroutines;\n                    }\n                    currentBlock.status |= Label.JSR;\n                    addSuccessor(stackSize + 1, label);\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                    /*\n                     * note that, by construction in this method, a JSR block\n                     * has at least two successors in the control flow graph:\n                     * the first one leads the next instruction after the JSR,\n                     * while the second one leads to the JSR target.\n                     */\n                } else {\n                    // updates current stack size (max stack size unchanged\n                    // because stack size variation always negative in this\n                    // case)\n                    stackSize += Frame.SIZE[opcode];\n                    addSuccessor(stackSize, label);\n                }\n            }\n        }\n        // adds the instruction to the bytecode of the method\n        if ((label.status & Label.RESOLVED) != 0\n                && label.position - code.length < Short.MIN_VALUE)\n        {\n            /*\n             * case of a backward jump with an offset < -32768. In this case we\n             * automatically replace GOTO with GOTO_W, JSR with JSR_W and IFxxx\n             * <l> with IFNOTxxx <l'> GOTO_W <l>, where IFNOTxxx is the\n             * \"opposite\" opcode of IFxxx (i.e., IFNE for IFEQ) and where <l'>\n             * designates the instruction just after the GOTO_W.\n             */\n            if (opcode == Opcodes.GOTO) {\n                code.putByte(200); // GOTO_W\n            } else if (opcode == Opcodes.JSR) {\n                code.putByte(201); // JSR_W\n            } else {\n                // if the IF instruction is transformed into IFNOT GOTO_W the\n                // next instruction becomes the target of the IFNOT instruction\n                if (nextInsn != null) {\n                    nextInsn.status |= Label.TARGET;\n                }\n                code.putByte(opcode <= 166\n                        ? ((opcode + 1) ^ 1) - 1\n                        : opcode ^ 1);\n                code.putShort(8); // jump offset\n                code.putByte(200); // GOTO_W\n            }\n            label.put(this, code, code.length - 1, true);\n        } else {\n            /*\n             * case of a backward jump with an offset >= -32768, or of a forward\n             * jump with, of course, an unknown offset. In these cases we store\n             * the offset in 2 bytes (which will be increased in\n             * resizeInstructions, if needed).\n             */\n            code.putByte(opcode);\n            label.put(this, code, code.length - 1, false);\n        }\n        if (currentBlock != null) {\n            if (nextInsn != null) {\n                // if the jump instruction is not a GOTO, the next instruction\n                // is also a successor of this instruction. Calling visitLabel\n                // adds the label of this next instruction as a successor of the\n                // current block, and starts a new basic block\n                visitLabel(nextInsn);\n            }\n            if (opcode == Opcodes.GOTO) {\n                noSuccessor();\n            }\n        }\n    // if (currentBlock != null)\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 93,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 97,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 104,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 113,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 115,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 120,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 127,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 136,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 147,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 154,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 163,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 170,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 178,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 186,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 194,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 200,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 212,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 219,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 226,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 240,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 248,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 254,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 261,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 268,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 41,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 275,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 42,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 281,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 43,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 289,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 44,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 296,
+        "precode": "if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "aftercode": "// if ((label.status & Label.RESOLVED) != 0 && label.position - code.length < Short.MIN_VALUE)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 45,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 303,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": "// if (opcode == Opcodes.GOTO)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 46,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 310,
+        "precode": "if (opcode == Opcodes.JSR)",
+        "aftercode": "// if (opcode == Opcodes.JSR)",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 47,
+        "reasoning": "Violates the invariant that a jump instruction cannot be executed more than once.",
+        "line": 316,
+        "precode": "if (nextInsn != null)",
+        "aftercode": "// if (nextInsn != null)",
+        "resolution_reason": "precode_not_found"
+      }
+    }
+  ]
+}

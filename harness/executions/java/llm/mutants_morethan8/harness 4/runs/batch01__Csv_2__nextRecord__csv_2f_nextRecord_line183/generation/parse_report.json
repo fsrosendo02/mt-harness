@@ -1,0 +1,198 @@
+{
+  "requested_count": 40,
+  "accepted_count": 15,
+  "rejected_count": 17,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method adds the token content even if it's EOF without checking readiness.",
+        "line": 17,
+        "precode": "record.add(reusableToken.content.toString());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method does not increment recordNumber when an empty record is found.",
+        "line": 35,
+        "precode": "recordNumber++;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method constructs a CSVRecord even if the record is empty.",
+        "line": 37,
+        "precode": "result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method does not throw an IOException when encountering an invalid token.",
+        "line": 21,
+        "precode": "throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not handle the case where a comment is encountered before any valid tokens.",
+        "line": 24,
+        "precode": "sb = new StringBuilder();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not append a newline to comments after a record.",
+        "line": 26,
+        "precode": "sb.append(\"\\n\");",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method adds a token to the record even if it's not a valid type.",
+        "line": 11,
+        "precode": "record.add(reusableToken.content.toString());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method increments recordNumber without checking if the record is empty.",
+        "line": 35,
+        "precode": "recordNumber++;",
+        "aftercode": "if (!record.isEmpty()) { recordNumber++; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not reset the StringBuilder when a new record starts.",
+        "line": 23,
+        "precode": "sb = null;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not handle the case where a comment is encountered after EOF.",
+        "line": 29,
+        "precode": "case COMMENT:",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not update the comment when a new token is encountered after a comment.",
+        "line": 28,
+        "precode": "sb.append(reusableToken.content);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not handle the case where a TOKEN is encountered before EOF.",
+        "line": 9,
+        "precode": "case TOKEN:",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method adds an EORECORD token to the record instead of ignoring it.",
+        "line": 13,
+        "precode": "record.add(reusableToken.content.toString());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not update the record number when a TOKEN is encountered after EOF.",
+        "line": 35,
+        "precode": "recordNumber++;",
+        "aftercode": "if (reusableToken.type != EOF) { recordNumber++; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method adds an empty comment to the CSVRecord when no comments are found.",
+        "line": 37,
+        "precode": "result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);",
+        "aftercode": "result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, \"\", this.recordNumber);",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, \"\", this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method does not handle the case where a TOKEN is encountered after COMMENT.",
+        "line": 9,
+        "precode": "case TOKEN:",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method adds a COMMENT token to the record instead of ignoring it.",
+        "line": 28,
+        "precode": "sb.append(reusableToken.content);",
+        "aftercode": ""
+      }
+    }
+  ]
+}

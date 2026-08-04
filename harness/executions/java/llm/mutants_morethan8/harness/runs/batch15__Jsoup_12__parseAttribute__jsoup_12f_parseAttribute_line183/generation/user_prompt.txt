@@ -1,0 +1,62 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private Attribute parseAttribute(Tag tag) {
+ 2:         tq.consumeWhitespace();
+ 3:         String key = tq.consumeAttributeKey();
+ 4:         String value = "";
+ 5:         tq.consumeWhitespace();
+ 6:         if (tq.matchChomp("=")) {
+ 7:             tq.consumeWhitespace();
+ 8: 
+ 9:             if (tq.matchChomp(SQ)) {
+10:                 value = tq.chompTo(SQ);
+11:             } else if (tq.matchChomp(DQ)) {
+12:                 value = tq.chompTo(DQ);
+13:             } else {
+14:                 StringBuilder valueAccum = new StringBuilder();
+15:                 // no ' or " to look for, so scan to end tag or space (or end of stream)
+16:                 // /> allowed only for empty tags
+17:                 while (!(tq.matchesAny("<", ">") || (tag.isEmpty() && tq.matches("/>")))  && !tq.matchesWhitespace() && !tq.isEmpty()) {
+18:                     valueAccum.append(tq.consume());
+19:                 }
+20:                 value = valueAccum.toString();
+21:             }
+22:             tq.consumeWhitespace();
+23:         }
+24:         if (key.length() != 0)
+25:             return Attribute.createFromEncoded(key, value);
+26:         else {
+27:             if (value.length() == 0) // no key, no val; unknown char, keep popping so not get stuck
+28:                 tq.advance();
+29:                 
+30:             return null;
+31:         }
+32:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

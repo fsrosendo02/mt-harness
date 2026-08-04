@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Codec_11",
+  "language": "java",
+  "version": "f",
+  "target_id": "codec_11f_pattern__line405",
+  "file_path": "src/main/java/org/apache/commons/codec/language/bm/Rule.java",
+  "function_name": "pattern",
+  "start_line": 405,
+  "end_line": 496,
+  "mutant_id": "rej10",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 10,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: }",
+  "raw_response_path": "harness/runs/batch01__Codec_11__pattern__codec_11f_pattern_line405/generation/raw_response.txt",
+  "payload": {
+    "id": 10,
+    "reasoning": "The method does not handle cases where the box contains alternatives but is not an exact match or matches every string",
+    "line": 59,
+    "precode": "return new RPattern() {",
+    "aftercode": "// return new RPattern() {",
+    "candidate_code": "    private static RPattern pattern(final String regex) {\n        boolean startsWith = regex.startsWith(\"^\");\n        boolean endsWith = regex.endsWith(\"$\");\n        final String content = regex.substring(startsWith ? 1 : 0, endsWith ? regex.length() - 1 : regex.length());\n        boolean boxes = content.contains(\"[\");\n\n        if (!boxes) {\n            if (startsWith && endsWith) {\n                // exact match\n                if (content.length() == 0) {\n                    // empty\n                    return new RPattern() {\n                        public boolean isMatch(CharSequence input) {\n                            return input.length() == 0;\n                        }\n                    };\n                } else {\n                    return new RPattern() {\n                        public boolean isMatch(CharSequence input) {\n                            return input.equals(content);\n                        }\n                    };\n                }\n            } else if ((startsWith || endsWith) && content.length() == 0) {\n                // matches every string\n                return ALL_STRINGS_RMATCHER;\n            } else if (startsWith) {\n                // matches from start\n                return new RPattern() {\n                    public boolean isMatch(CharSequence input) {\n                        return startsWith(input, content);\n                    }\n                };\n            } else if (endsWith) {\n                // matches from start\n                return new RPattern() {\n                    public boolean isMatch(CharSequence input) {\n                        return endsWith(input, content);\n                    }\n                };\n            }\n        } else {\n            boolean startsWithBox = content.startsWith(\"[\");\n            boolean endsWithBox = content.endsWith(\"]\");\n\n            if (startsWithBox && endsWithBox) {\n                String boxContent = content.substring(1, content.length() - 1);\n                if (!boxContent.contains(\"[\")) {\n                    // box containing alternatives\n                    boolean negate = boxContent.startsWith(\"^\");\n                    if (negate) {\n                        boxContent = boxContent.substring(1);\n                    }\n                    final String bContent = boxContent;\n                    final boolean shouldMatch = !negate;\n\n                    if (startsWith && endsWith) {\n                        // exact match\n                        // return new RPattern() { {\n                            public boolean isMatch(CharSequence input) {\n                                return input.length() == 1 && (contains(bContent, input.charAt(0)) == shouldMatch);\n                            }\n                        };\n                    } else if (startsWith) {\n                        // first char\n                        return new RPattern() {\n                            public boolean isMatch(CharSequence input) {\n                                return input.length() > 0 && (contains(bContent, input.charAt(0)) == shouldMatch);\n                            }\n                        };\n                    } else if (endsWith) {\n                        // last char\n                        return new RPattern() {\n                            public boolean isMatch(CharSequence input) {\n                                return input.length() > 0 && (contains(bContent, input.charAt(input.length() - 1)) == shouldMatch);\n                            }\n                        };\n                    }\n                }\n            }\n        }\n\n        // System.out.println(\"Couldn't optimize regex: \" + regex);\n        return new RPattern() {\n            Pattern pattern = Pattern.compile(regex);\n\n            public boolean isMatch(CharSequence input) {\n                Matcher matcher = pattern.matcher(input);\n                return matcher.find();\n            }\n        };\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch01__Codec_11__pattern__codec_11f_pattern_line405/rejected/rej10.log",
+  "mutant_path": "harness/runs/batch01__Codec_11__pattern__codec_11f_pattern_line405/rejected/rej10.mutant.txt",
+  "original_path": "harness/runs/batch01__Codec_11__pattern__codec_11f_pattern_line405/rejected/original.txt"
+}

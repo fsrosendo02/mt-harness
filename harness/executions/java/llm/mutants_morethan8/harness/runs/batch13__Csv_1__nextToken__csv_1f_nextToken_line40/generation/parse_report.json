@@ -1,0 +1,262 @@
+{
+  "requested_count": 24,
+  "accepted_count": 6,
+  "rejected_count": 23,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method incorrectly consumes characters silently when they are not end-of-line.",
+        "line": 14,
+        "precode": "\tc = in.readAgain();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not correctly ignore spaces at the beginning of a token if spaces are not ignored.",
+        "line": 45,
+        "precode": "\twhile (isWhitespace(c) && !eol) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method does not correctly handle encapsulated tokens if the character is an undefined value.",
+        "line": 64,
+        "precode": "\t\tisEncapsulator(c)",
+        "aftercode": "\t\tc == 'X'",
+        "candidate_code": "    @Override\n    Token nextToken(Token tkn) throws IOException {\n\n        // get the last read char (required for empty line detection)\n        int lastChar = in.readAgain();\n\n        //  read the next char and set eol\n        /* note: unfortunately isEndOfLine may consumes a character silently.\n        *       this has no effect outside of the method. so a simple workaround\n        *       is to call 'readAgain' on the stream...\n        */\n        int c = in.read();\n        boolean eol = isEndOfLine(c);\n        c = in.readAgain();\n\n        //  empty line detection: eol AND (last char was EOL or beginning)\n        if (emptyLinesIgnored) {\n            while (eol\n                    && (lastChar == '\\n' || lastChar == '\\r' || lastChar == ExtendedBufferedReader.UNDEFINED)\n                    && !isEndOfFile(lastChar)) {\n                // go on char ahead ...\n                lastChar = c;\n                c = in.read();\n                eol = isEndOfLine(c);\n                c = in.readAgain();\n                // reached end of file without any content (empty line at the end)\n                if (isEndOfFile(c)) {\n                    tkn.type = EOF;\n                    // don't set tkn.isReady here because no content\n                    return tkn;\n                }\n            }\n        }\n\n        // did we reach eof during the last iteration already ? EOF\n        if (isEndOfFile(lastChar) || (!isDelimiter(lastChar) && isEndOfFile(c))) {\n            tkn.type = EOF;\n            // don't set tkn.isReady here because no content\n            return tkn;\n        }\n\n        //  important: make sure a new char gets consumed in each iteration\n        while (tkn.type == INVALID) {\n            // ignore whitespaces at beginning of a token\n            if (surroundingSpacesIgnored) {\n                while (isWhitespace(c) && !eol) {\n                    c = in.read();\n                    eol = isEndOfLine(c);\n                }\n            }\n            \n            // ok, start of token reached: comment, encapsulated, or token\n            if (isCommentStart(c)) {\n                // ignore everything till end of line and continue (incr linecount)\n                in.readLine();\n                tkn = nextToken(tkn.reset());\n            } else if (isDelimiter(c)) {\n                // empty token return TOKEN(\"\")\n                tkn.type = TOKEN;\n            } else if (eol) {\n                // empty token return EORECORD(\"\")\n                //noop: tkn.content.append(\"\");\n                tkn.type = EORECORD;\n            c == 'X' {\n                // consume encapsulated token\n                encapsulatedTokenLexer(tkn, c);\n            } else if (isEndOfFile(c)) {\n                // end of file return EOF()\n                //noop: tkn.content.append(\"\");\n                tkn.type = EOF;\n                tkn.isReady = true; // there is data at EOF\n            } else {\n                // next token must be a simple token\n                // add removed blanks when not ignoring whitespace chars...\n                simpleTokenLexer(tkn, c);\n            }\n        }\n        return tkn;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered.",
+        "line": 66,
+        "precode": "\ttkn.isReady = true;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an EOF character.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an undefined character.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an encapsulated token.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a simple token.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a delimiter.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an EORECORD.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an EOF.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an invalid token.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a whitespace character.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a comment.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an undefined character.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an encapsulated token.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a simple token.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a delimiter.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an EORECORD.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an EOF.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading an invalid token.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a whitespace character.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not correctly handle the end of a file when it is encountered after reading a comment.",
+        "line": 71,
+        "precode": "\t\ttkn.isReady = true; // there is data at EOF",
+        "aftercode": ""
+      }
+    }
+  ]
+}

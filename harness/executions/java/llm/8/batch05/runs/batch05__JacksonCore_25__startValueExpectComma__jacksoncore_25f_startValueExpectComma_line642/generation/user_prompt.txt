@@ -1,0 +1,119 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private final JsonToken _startValueExpectComma(int ch) throws IOException
+ 2:     {
+ 3:         // First: any leading white space?
+ 4:         if (ch <= 0x0020) {
+ 5:             ch = _skipWS(ch); // will skip through all available ws (and comments)
+ 6:             if (ch <= 0) {
+ 7:                 _minorState = MINOR_VALUE_EXPECTING_COMMA;
+ 8:                 return _currToken;
+ 9:             }
+10:         }
+11:         if (ch != INT_COMMA) {
+12:             if (ch == INT_RBRACKET) {
+13:                 return _closeArrayScope();
+14:             }
+15:             if (ch == INT_RCURLY){
+16:                 return _closeObjectScope();
+17:             }
+18:             if (ch == INT_SLASH) {
+19:                 return _startSlashComment(MINOR_VALUE_EXPECTING_COMMA);
+20:             }
+21:             if (ch == INT_HASH) {
+22:                 return _finishHashComment(MINOR_VALUE_EXPECTING_COMMA);
+23:             }
+24:             _reportUnexpectedChar(ch, "was expecting comma to separate "+_parsingContext.typeDesc()+" entries");
+25:         }
+26:         int ptr = _inputPtr;
+27:         if (ptr >= _inputEnd) {
+28:             _minorState = MINOR_VALUE_WS_AFTER_COMMA;
+29:             return (_currToken = JsonToken.NOT_AVAILABLE);
+30:         }
+31:         ch = _inputBuffer[ptr];
+32:         _inputPtr = ptr+1;
+33:         if (ch <= 0x0020) {
+34:             ch = _skipWS(ch);
+35:             if (ch <= 0) {
+36:                 _minorState = MINOR_VALUE_WS_AFTER_COMMA;
+37:                 return _currToken;
+38:             }
+39:         }
+40:         _updateTokenLocation();
+41:         if (ch == INT_QUOTE) {
+42:             return _startString();
+43:         }
+44:         switch (ch) {
+45:         case '#':
+46:             return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA);
+47:         case '-':
+48:             return _startNegativeNumber();
+49:         case '/':
+50:             return _startSlashComment(MINOR_VALUE_WS_AFTER_COMMA);
+51: 
+52:         // Should we have separate handling for plus? Although
+53:         // it is not allowed per se, it may be erroneously used,
+54:         // and could be indicate by a more specific error message.
+55:         case '0':
+56:             return _startNumberLeadingZero();
+57: 
+58:         case '1':
+59:         case '2': case '3':
+60:         case '4': case '5':
+61:         case '6': case '7':
+62:         case '8': case '9':
+63:             return _startPositiveNumber(ch);
+64:         case 'f':
+65:             return _startFalseToken();
+66:         case 'n':
+67:             return _startNullToken();
+68:         case 't':
+69:             return _startTrueToken();
+70:         case '[':
+71:             return _startArrayScope();
+72:         case ']':
+73:             // Was that a trailing comma?
+74:             if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {
+75:                 return _closeArrayScope();
+76:             }
+77:             break;
+78:         case '{':
+79:             return _startObjectScope();
+80:         case '}':
+81:             // Was that a trailing comma?
+82:             if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {
+83:                 return _closeObjectScope();
+84:             }
+85:             break;
+86:         default:
+87:         }
+88:         return _startUnexpectedValue(true, ch);
+89:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

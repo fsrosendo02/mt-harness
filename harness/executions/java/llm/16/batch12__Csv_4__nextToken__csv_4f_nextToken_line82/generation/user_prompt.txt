@@ -1,0 +1,113 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     Token nextToken(final Token token) throws IOException {
+ 2: 
+ 3:         // get the last read char (required for empty line detection)
+ 4:         int lastChar = in.getLastChar();
+ 5: 
+ 6:         // read the next char and set eol
+ 7:         int c = in.read();
+ 8:         /*
+ 9:          * Note: The following call will swallow LF if c == CR. But we don't need to know if the last char was CR or LF
+10:          * - they are equivalent here.
+11:          */
+12:         boolean eol = readEndOfLine(c);
+13: 
+14:         // empty line detection: eol AND (last char was EOL or beginning)
+15:         if (ignoreEmptyLines) {
+16:             while (eol && isStartOfLine(lastChar)) {
+17:                 // go on char ahead ...
+18:                 lastChar = c;
+19:                 c = in.read();
+20:                 eol = readEndOfLine(c);
+21:                 // reached end of file without any content (empty line at the end)
+22:                 if (isEndOfFile(c)) {
+23:                     token.type = EOF;
+24:                     // don't set token.isReady here because no content
+25:                     return token;
+26:                 }
+27:             }
+28:         }
+29: 
+30:         // did we reach eof during the last iteration already ? EOF
+31:         if (isEndOfFile(lastChar) || (!isDelimiter(lastChar) && isEndOfFile(c))) {
+32:             token.type = EOF;
+33:             // don't set token.isReady here because no content
+34:             return token;
+35:         }
+36: 
+37:         if (isStartOfLine(lastChar) && isCommentStart(c)) {
+38:             final String line = in.readLine();
+39:             if (line == null) {
+40:                 token.type = EOF;
+41:                 // don't set token.isReady here because no content
+42:                 return token;
+43:             }
+44:             final String comment = line.trim();
+45:             token.content.append(comment);
+46:             token.type = COMMENT;
+47:             return token;
+48:         }
+49: 
+50:         // important: make sure a new char gets consumed in each iteration
+51:         while (token.type == INVALID) {
+52:             // ignore whitespaces at beginning of a token
+53:             if (ignoreSurroundingSpaces) {
+54:                 while (isWhitespace(c) && !eol) {
+55:                     c = in.read();
+56:                     eol = readEndOfLine(c);
+57:                 }
+58:             }
+59: 
+60:             // ok, start of token reached: encapsulated, or token
+61:             if (isDelimiter(c)) {
+62:                 // empty token return TOKEN("")
+63:                 token.type = TOKEN;
+64:             } else if (eol) {
+65:                 // empty token return EORECORD("")
+66:                 // noop: token.content.append("");
+67:                 token.type = EORECORD;
+68:             } else if (isQuoteChar(c)) {
+69:                 // consume encapsulated token
+70:                 parseEncapsulatedToken(token);
+71:             } else if (isEndOfFile(c)) {
+72:                 // end of file return EOF()
+73:                 // noop: token.content.append("");
+74:                 token.type = EOF;
+75:                 token.isReady = true; // there is data at EOF
+76:             } else {
+77:                 // next token must be a simple token
+78:                 // add removed blanks when not ignoring whitespace chars...
+79:                 parseSimpleToken(token, c);
+80:             }
+81:         }
+82:         return token;
+83:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

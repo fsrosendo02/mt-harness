@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonCore_2",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksoncore_2f__parseFloat__line1329",
+  "file_path": "src/main/java/com/fasterxml/jackson/core/json/UTF8StreamJsonParser.java",
+  "function_name": "_parseFloat",
+  "start_line": 1329,
+  "end_line": 1421,
+  "mutant_id": "rej26",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 26,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch01__JacksonCore_2__parseFloat__jacksoncore_2f_parseFloat_line1329/generation/raw_response.txt",
+  "payload": {
+    "id": 26,
+    "reasoning": "The code does not handle cases where the input ends before an exponent part.",
+    "line": 46,
+    "precode": "if (_inputPtr >= _inputEnd) {",
+    "aftercode": "if (_inputPtr < _inputEnd) {",
+    "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr < _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+    "resolution_reason": "exact_search_nearest_match"
+  },
+  "log_path": "harness/runs/batch01__JacksonCore_2__parseFloat__jacksoncore_2f_parseFloat_line1329/rejected/rej26.log",
+  "mutant_path": "harness/runs/batch01__JacksonCore_2__parseFloat__jacksoncore_2f_parseFloat_line1329/rejected/rej26.mutant.txt",
+  "original_path": "harness/runs/batch01__JacksonCore_2__parseFloat__jacksoncore_2f_parseFloat_line1329/rejected/original.txt"
+}

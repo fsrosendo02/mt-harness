@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Incorrect error handling for premature end of stream when reading flags",
+      "line": 4,
+      "precode": "throw new IOException(\"Premature end of stream while reading frame flags\")",
+      "aftercode": "return"
+    },
+    {
+      "id": 2,
+      "reasoning": "Incorrect version validation logic",
+      "line": 8,
+      "precode": "throw new IOException(\"Unsupported version \" + (flags >> 6))",
+      "aftercode": "throw new IOException(\"Unsupported version \" + (flags >> 8))"
+    },
+    {
+      "id": 3,
+      "reasoning": "Incorrect block independence flag calculation",
+      "line": 10,
+      "precode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0",
+      "aftercode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) != 0"
+    },
+    {
+      "id": 4,
+      "reasoning": "Failure to initialize block dependency buffer when needed",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]",
+      "aftercode": "blockDependencyBuffer = new byte[1]"
+    },
+    {
+      "id": 5,
+      "reasoning": "Incorrect block dependency buffer cleanup",
+      "line": 16,
+      "precode": "blockDependencyBuffer = null",
+      "aftercode": "blockDependencyBuffer = new byte[1]"
+    },
+    {
+      "id": 6,
+      "reasoning": "Incorrect error handling for BD byte read",
+      "line": 23,
+      "precode": "throw new IOException(\"Premature end of stream while reading frame BD byte\")",
+      "aftercode": "return"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrect content size array initialization",
+      "line": 27,
+      "precode": "byte[] contentSize = new byte[8]",
+      "aftercode": "byte[] contentSize = new byte[4]"
+    },
+    {
+      "id": 8,
+      "reasoning": "Incorrect byte reading method for content size",
+      "line": 28,
+      "precode": "int skipped = IOUtils.readFully(in, contentSize)",
+      "aftercode": "int skipped = in.read(contentSize)"
+    },
+    {
+      "id": 9,
+      "reasoning": "Incorrect content size validation",
+      "line": 30,
+      "precode": "if (8 != skipped)",
+      "aftercode": "if (7 != skipped)"
+    },
+    {
+      "id": 10,
+      "reasoning": "Incorrect header hash calculation",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff)",
+      "aftercode": "int expectedHash = (int) ((contentHash.getValue() >> 16) & 0xff)"
+    },
+    {
+      "id": 11,
+      "reasoning": "Failure to reset content hash before verification",
+      "line": 40,
+      "precode": "contentHash.reset()",
+      "aftercode": "// contentHash.reset()"
+    },
+    {
+      "id": 12,
+      "reasoning": "Incorrect checksum verification logic",
+      "line": 41,
+      "precode": "if (headerHash != expectedHash)",
+      "aftercode": "if (headerHash == expectedHash)"
+    },
+    {
+      "id": 13,
+      "reasoning": "Missing content hash update for flags byte",
+      "line": 6,
+      "precode": "contentHash.update(flags)",
+      "aftercode": "// contentHash.update(flags)"
+    },
+    {
+      "id": 14,
+      "reasoning": "Missing content hash update for BD byte",
+      "line": 25,
+      "precode": "contentHash.update(bdByte)",
+      "aftercode": "// contentHash.update(bdByte)"
+    },
+    {
+      "id": 15,
+      "reasoning": "Missing content hash update for content size",
+      "line": 33,
+      "precode": "contentHash.update(contentSize, 0, contentSize.length)",
+      "aftercode": "// contentHash.update(contentSize, 0, contentSize.length)"
+    },
+    {
+      "id": 16,
+      "reasoning": "Incorrect content hash update length",
+      "line": 33,
+      "precode": "contentHash.update(contentSize, 0, contentSize.length)",
+      "aftercode": "contentHash.update(contentSize, 0, 4)"
+    }
+  ]
+}

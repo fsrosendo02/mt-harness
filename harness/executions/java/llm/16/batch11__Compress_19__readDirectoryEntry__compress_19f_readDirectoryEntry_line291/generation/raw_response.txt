@@ -1,0 +1,109 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The original code ensures that the size of blockBuffer is only increased when needed. This mutant increases the buffer size unconditionally, potentially leading to excessive memory usage.",
+      "line": 21,
+      "precode": "blockBuffer = new byte[datalen];",
+      "aftercode": "blockBuffer = new byte[entry.getEntrySize()];"
+    },
+    {
+      "id": 2,
+      "reasoning": "The original code checks if the entry is a directory before adding it to the pending list. This mutant omits this check, potentially allowing invalid entries into the pending list.",
+      "line": 15,
+      "precode": "pending.put(Integer.valueOf(entry.getIno()), entry);",
+      "aftercode": "pending.put(Integer.valueOf(entry.getIno()), entry); // TODO: Check if entry is a directory"
+    },
+    {
+      "id": 3,
+      "reasoning": "The original code reads the record only if it's not the first iteration. This mutant incorrectly attempts to read the record on every iteration, which may lead to errors or unexpected behavior.",
+      "line": 10,
+      "precode": "raw.readRecord();",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "The original code reads a specific number of bytes into blockBuffer. This mutant changes the read count to a value that doesn't match the expected data length, potentially leading to incorrect parsing.",
+      "line": 24,
+      "precode": "raw.read(blockBuffer, 0, datalen) != datalen",
+      "aftercode": "raw.read(blockBuffer, 0, datalen - 1) != datalen"
+    },
+    {
+      "id": 5,
+      "reasoning": "The original code checks if the name is '.' or '..' and continues if it is. This mutant removes this check, potentially allowing invalid names to be processed.",
+      "line": 39,
+      "precode": "\".\".equals(name) || \"..\".equals(name)",
+      "aftercode": "false"
+    },
+    {
+      "id": 6,
+      "reasoning": "The original code increments the index by reclen in the loop. This mutant incorrectly uses a fixed increment value, potentially skipping over data or processing incorrect parts.",
+      "line": 32,
+      "precode": "i += reclen",
+      "aftercode": "i++"
+    },
+    {
+      "id": 7,
+      "reasoning": "The original code updates the entry's name and simple name if a path is found. This mutant removes this update, potentially leaving entries with incomplete or incorrect information.",
+      "line": 60,
+      "precode": "e.getValue().setName(path);",
+      "aftercode": "// e.getValue().setName(path);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The original code verifies the peeked bytes to ensure they are valid. This mutant skips this verification, potentially allowing invalid data to be processed.",
+      "line": 76,
+      "precode": "!DumpArchiveUtil.verify(peekBytes)",
+      "aftercode": "true"
+    },
+    {
+      "id": 9,
+      "reasoning": "The original code decrements the size by the constant value. This mutant incorrectly attempts to decrement the size by a different amount, potentially leading to off-by-one errors or incorrect parsing.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE",
+      "aftercode": "size -= (DumpArchiveConstants.TP_SIZE - 1)"
+    },
+    {
+      "id": 10,
+      "reasoning": "The original code checks the header type to determine behavior. This mutant incorrectly sets a different header type, potentially leading to incorrect processing or skipping of important data.",
+      "line": 6,
+      "precode": "DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType()",
+      "aftercode": "DumpArchiveConstants.SEGMENT_TYPE.DATA == entry.getHeaderType()"
+    },
+    {
+      "id": 11,
+      "reasoning": "The original code checks if the blockBuffer has enough space before resizing it. This mutant removes this check, potentially causing an array index out of bounds exception when datalen is larger than the current blockBuffer size.",
+      "line": 20,
+      "precode": "blockBuffer.length < datalen",
+      "aftercode": "false"
+    },
+    {
+      "id": 12,
+      "reasoning": "The original code continues to process entries even if an EOFException is thrown. This mutant does not catch the EOFException, potentially leading to unexpected behavior or crashes.",
+      "line": 25,
+      "precode": "throw new EOFException();",
+      "aftercode": "// throw new EOFException();"
+    },
+    {
+      "id": 13,
+      "reasoning": "The original code throws an InvalidFormatException if the peeked bytes are not valid. This mutant does not throw any exception when this condition is met, potentially allowing invalid data to be processed.",
+      "line": 77,
+      "precode": "throw new InvalidFormatException();",
+      "aftercode": "// throw new InvalidFormatException();"
+    },
+    {
+      "id": 14,
+      "reasoning": "The original code processes each entry in the pending list. This mutant skips processing the pending list, potentially leaving some entries unprocessed.",
+      "line": 56,
+      "precode": "for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {",
+      "aftercode": "// for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "The original code removes entries from the pending list once they are processed. This mutant incorrectly attempts to remove all entries from the queue, potentially leaving important data in the pending list.",
+      "line": 69,
+      "precode": "for (DumpArchiveEntry e : queue) {",
+      "aftercode": "for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {"
+    }
+  ]
+}

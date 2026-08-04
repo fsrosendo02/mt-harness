@@ -1,0 +1,31 @@
+{
+  "requested_count": 16,
+  "accepted_count": 13,
+  "rejected_count": 2,
+  "rejections": [
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "The original code checks if the primary member is not null before retrieving its raw type. This mutant changes this condition to check for the accessor instead, potentially leading to a mismatched type retrieval.",
+        "line": 33,
+        "precode": "Class<?> rawType = getRawPrimaryType();",
+        "aftercode": "Class<?> rawType = acc.getRawType();",
+        "candidate_code": "    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)\n    {\n        boolean needMerge = true;\n        Nulls valueNulls = null;\n        Nulls contentNulls = null;\n        \n        // Slightly confusing: first, annotations should be accessed via primary member\n        // (mutator); but accessor is needed for actual merge operation. So:\n        AnnotatedMember prim = getPrimaryMember();\n        AnnotatedMember acc = getAccessor();\n\n        if (prim != null) {\n            // Ok, first: does property itself have something to say?\n            if (_annotationIntrospector != null) {\n                if (acc != null) {\n                    Boolean b = _annotationIntrospector.findMergeInfo(prim);\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));\n                        }\n                    }\n                }\n                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);\n                if (setterInfo != null) {\n                    valueNulls = setterInfo.nonDefaultValueNulls();\n                    contentNulls = setterInfo.nonDefaultContentNulls();\n                }\n            }\n            // If not, config override?\n            // 25-Oct-2016, tatu: Either this, or type of accessor...\n            if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n                Class<?> rawType = acc.getRawType();\n                ConfigOverride co = _config.getConfigOverride(rawType);\n                JsonSetter.Value setterInfo = co.getSetterInfo();\n                if (setterInfo != null) {\n                    if (valueNulls == null) {\n                        valueNulls = setterInfo.nonDefaultValueNulls();\n                    }\n                    if (contentNulls == null) {\n                        contentNulls = setterInfo.nonDefaultContentNulls();\n                    }\n                }\n                if (needMerge && (acc != null)) {\n                    Boolean b = co.getMergeable();\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));\n                        }\n                    }\n                }\n            }\n        }\n        if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();\n            if (valueNulls == null) {\n                valueNulls = setterInfo.nonDefaultValueNulls();\n            }\n            if (contentNulls == null) {\n                contentNulls = setterInfo.nonDefaultContentNulls();\n            }\n            if (needMerge) {\n                Boolean b = _config.getDefaultMergeable();\n                if (Boolean.TRUE.equals(b) && (acc != null)) {\n                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));\n                }\n            }\n        }\n        if ((valueNulls != null) || (contentNulls != null)) {\n            metadata = metadata.withNulls(valueNulls, contentNulls);\n        }\n        return metadata;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The original code assigns the value of needMerge based on conditions involving the primary member and accessor. This mutant directly sets needMerge to true, potentially bypassing important conditional logic.",
+        "line": 4,
+        "precode": "boolean needMerge = true;",
+        "aftercode": "boolean needMerge = true;"
+      }
+    }
+  ]
+}

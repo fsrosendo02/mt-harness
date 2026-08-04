@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_7",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_7f_paxHeaders__line233",
+  "file_path": "src/main/java/org/apache/commons/compress/archivers/tar/TarArchiveInputStream.java",
+  "function_name": "paxHeaders",
+  "start_line": 233,
+  "end_line": 302,
+  "mutant_id": "rej15",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 15,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch05__Compress_7__paxHeaders__compress_7f_paxHeaders_line233/generation/raw_response.txt",
+  "payload": {
+    "id": 15,
+    "reasoning": "Violates the property of correctly parsing headers by not properly breaking out of loops.",
+    "line": 30,
+    "precode": "break;",
+    "aftercode": "return; // Mutant: incorrect break statement replaced with return",
+    "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            return; // Mutant: incorrect break statement replaced with return\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+    "resolution_reason": "exact_search_nearest_match"
+  },
+  "log_path": "harness/runs/batch05__Compress_7__paxHeaders__compress_7f_paxHeaders_line233/rejected/rej15.log",
+  "mutant_path": "harness/runs/batch05__Compress_7__paxHeaders__compress_7f_paxHeaders_line233/rejected/rej15.mutant.txt",
+  "original_path": "harness/runs/batch05__Compress_7__paxHeaders__compress_7f_paxHeaders_line233/rejected/original.txt"
+}

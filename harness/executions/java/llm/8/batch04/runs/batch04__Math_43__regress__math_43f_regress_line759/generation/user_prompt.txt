@@ -1,0 +1,95 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public RegressionResults regress(int[] variablesToInclude) throws ModelSpecificationException{
+ 2:         if( variablesToInclude == null || variablesToInclude.length == 0){
+ 3:           throw new MathIllegalArgumentException(LocalizedFormats.ARRAY_ZERO_LENGTH_OR_NULL_NOTALLOWED);
+ 4:         }
+ 5:         if( variablesToInclude.length > 2 || (variablesToInclude.length > 1 && !hasIntercept) ){
+ 6:             throw new ModelSpecificationException(
+ 7:                     LocalizedFormats.ARRAY_SIZE_EXCEEDS_MAX_VARIABLES,
+ 8:                     (variablesToInclude.length > 1 && !hasIntercept) ? 1 : 2);
+ 9:         }
+10: 
+11:         if( hasIntercept ){
+12:             if( variablesToInclude.length == 2 ){
+13:                 if( variablesToInclude[0] == 1 ){
+14:                     throw new ModelSpecificationException(LocalizedFormats.NOT_INCREASING_SEQUENCE);
+15:                 }else if( variablesToInclude[0] != 0 ){
+16:                     throw new OutOfRangeException( variablesToInclude[0], 0,1 );
+17:                 }
+18:                 if( variablesToInclude[1] != 1){
+19:                      throw new OutOfRangeException( variablesToInclude[0], 0,1 );
+20:                 }
+21:                 return regress();
+22:             }else{
+23:                 if( variablesToInclude[0] != 1 && variablesToInclude[0] != 0 ){
+24:                      throw new OutOfRangeException( variablesToInclude[0],0,1 );
+25:                 }
+26:                 final double _mean = sumY * sumY / (n);
+27:                 final double _syy = sumYY + _mean;
+28:                 if( variablesToInclude[0] == 0 ){
+29:                     //just the mean
+30:                     final double[] vcv = new double[]{ sumYY/(((n-1)*n)) };
+31:                     final double[] params = new double[]{ ybar };
+32:                     return new RegressionResults(
+33:                       params, new double[][]{vcv}, true, n, 1,
+34:                       sumY, _syy+_mean, sumYY,true,false);
+35: 
+36:                 }else if( variablesToInclude[0] == 1){
+37:                     //final double _syy = sumYY + sumY * sumY / ((double) n);
+38:                     final double _sxx = sumXX + sumX * sumX / (n);
+39:                     final double _sxy = sumXY + sumX * sumY / (n);
+40:                     final double _sse = FastMath.max(0d, _syy - _sxy * _sxy / _sxx);
+41:                     final double _mse = _sse/((n-1));
+42:                     if( !Double.isNaN(_sxx) ){
+43:                         final double[] vcv = new double[]{ _mse / _sxx };
+44:                         final double[] params = new double[]{ _sxy/_sxx };
+45:                         return new RegressionResults(
+46:                                     params, new double[][]{vcv}, true, n, 1,
+47:                                     sumY, _syy, _sse,false,false);
+48:                     }else{
+49:                         final double[] vcv = new double[]{Double.NaN };
+50:                         final double[] params = new double[]{ Double.NaN };
+51:                         return new RegressionResults(
+52:                                     params, new double[][]{vcv}, true, n, 1,
+53:                                     Double.NaN, Double.NaN, Double.NaN,false,false);
+54:                     }
+55:                 }
+56:             }
+57:         }else{
+58:             if( variablesToInclude[0] != 0 ){
+59:                 throw new OutOfRangeException(variablesToInclude[0],0,0);
+60:             }
+61:             return regress();
+62:         }
+63: 
+64:         return null;
+65:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

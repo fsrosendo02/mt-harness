@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changes the direction of integration",
+      "line": 6,
+      "precode": "forward = interpolator.isForward();",
+      "aftercode": "forward = !interpolator.isForward();"
+    },
+    {
+      "id": 2,
+      "reasoning": "Alters the calculation of n, potentially reducing accuracy",
+      "line": 8,
+      "precode": "final int n = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));",
+      "aftercode": "final int n = Math.min(1, (int) Math.floor(Math.abs(t1 - t0) / maxCheckInterval));"
+    },
+    {
+      "id": 3,
+      "reasoning": "Reduces the step size h, increasing computational cost",
+      "line": 9,
+      "precode": "final double h = (t1 - t0) / n;",
+      "aftercode": "final double h = (t1 - t0) * 2 / n;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Changes the initialization of ta, affecting event detection",
+      "line": 11,
+      "precode": "double ta = t0;",
+      "aftercode": "double ta = t1;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Inverts the logic for gb calculation",
+      "line": 20,
+      "precode": "final double gb = handler.g(tb, interpolator.getInterpolatedState());",
+      "aftercode": "final double gb = -handler.g(tb, interpolator.getInterpolatedState());"
+    },
+    {
+      "id": 6,
+      "reasoning": "Negates the condition for event detection",
+      "line": 22,
+      "precode": "if (g0Positive ^ (gb >= 0)) {",
+      "aftercode": "if (!(g0Positive ^ (gb >= 0))) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "Swaps the comparison for increasing variable",
+      "line": 26,
+      "precode": "increasing = gb >= ga;",
+      "aftercode": "increasing = gb < ga;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Modifies the absolute accuracy in BrentSolver",
+      "line": 41,
+      "precode": "solver.setAbsoluteAccuracy(convergence);",
+      "aftercode": "solver.setAbsoluteAccuracy(convergence * 2);"
+    },
+    {
+      "id": 9,
+      "reasoning": "Reduces the maximal iteration count",
+      "line": 42,
+      "precode": "solver.setMaximalIterationCount(maxIterationCount);",
+      "aftercode": "solver.setMaximalIterationCount(maxIterationCount / 2);"
+    },
+    {
+      "id": 10,
+      "reasoning": "Inverts the logic for root calculation in solver",
+      "line": 45,
+      "precode": "root = (ta <= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);",
+      "aftercode": "root = (ta >= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);"
+    },
+    {
+      "id": 11,
+      "reasoning": "Negates the condition for ignoring root detection",
+      "line": 50,
+      "precode": "if (Double.isNaN(root) || ((Math.abs(root - ta) <= convergence) && (Math.abs(root - previousEventTime) <= convergence))) {",
+      "aftercode": "if (!Double.isNaN(root) && !((Math.abs(root - ta) <= convergence) && (Math.abs(root - previousEventTime) <= convergence))) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "Inverts the condition for setting pending event time",
+      "line": 57,
+      "precode": "if (Double.isNaN(previousEventTime) || (Math.abs(previousEventTime - root) > convergence)) {",
+      "aftercode": "if (!Double.isNaN(previousEventTime) && (Math.abs(previousEventTime - root) <= convergence)) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "Negates the condition for accepting pending event",
+      "line": 59,
+      "precode": "if (pendingEvent && (Math.abs(t1 - pendingEventTime) <= convergence)) {",
+      "aftercode": "if (!pendingEvent || (Math.abs(t1 - pendingEventTime) > convergence)) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Inverts the logic for setting pending event flag",
+      "line": 68,
+      "precode": "pendingEvent = true;",
+      "aftercode": "pendingEvent = false;"
+    },
+    {
+      "id": 15,
+      "reasoning": "Negates the condition for returning true on event detection",
+      "line": 70,
+      "precode": "return true;",
+      "aftercode": "return false;"
+    },
+    {
+      "id": 16,
+      "reasoning": "Inverts the logic for handling no sign change",
+      "line": 73,
+      "precode": "if (g0Positive ^ (gb >= 0)) {",
+      "aftercode": "if (!(g0Positive ^ (gb >= 0))) {"
+    },
+    {
+      "id": 17,
+      "reasoning": "Negates the condition for resetting ta and ga",
+      "line": 74,
+      "precode": "ta = tb;",
+      "aftercode": "ta = t0;"
+    },
+    {
+      "id": 18,
+      "reasoning": "Inverts the logic for returning false on no event",
+      "line": 83,
+      "precode": "return false;",
+      "aftercode": "return true;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Negates the condition for throwing DerivativeException",
+      "line": 87,
+      "precode": "if ((cause != null) && (cause instanceof DerivativeException)) {",
+      "aftercode": "if (!(cause != null) || !(cause instanceof DerivativeException)) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Negates the condition for throwing EventException",
+      "line": 89,
+      "precode": "else if ((cause != null) && (cause instanceof EventException)) {",
+      "aftercode": "else if (!(cause != null) || !(cause instanceof EventException)) {"
+    },
+    {
+      "id": 21,
+      "reasoning": "Inverts the logic for throwing new EventException",
+      "line": 92,
+      "precode": "throw new EventException(e);",
+      "aftercode": "return false;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Changes the initialization of convergence variable",
+      "line": 13,
+      "precode": "final double tb = t0 + (interpolator.isForward() ? convergence : -convergence);",
+      "aftercode": "final double tb = t0 + (interpolator.isForward() ? -convergence : convergence);"
+    },
+    {
+      "id": 23,
+      "reasoning": "Negates the condition for updating ta and ga",
+      "line": 75,
+      "precode": "ga = gb;",
+      "aftercode": "ga = g0;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Inverts the logic for ignoring past event detection",
+      "line": 53,
+      "precode": "ta = tb;",
+      "aftercode": "ta = t0;"
+    },
+    {
+      "id": 25,
+      "reasoning": "Negates the condition for setting pending event time to NaN",
+      "line": 81,
+      "precode": "pendingEventTime = Double.NaN;",
+      "aftercode": "pendingEventTime = t0;"
+    },
+    {
+      "id": 26,
+      "reasoning": "Inverts the logic for returning false on no event detection",
+      "line": 79,
+      "precode": "// no event during the whole step",
+      "aftercode": "return true;"
+    },
+    {
+      "id": 27,
+      "reasoning": "Negates the condition for resetting pendingEvent flag",
+      "line": 80,
+      "precode": "pendingEvent = false;",
+      "aftercode": "pendingEvent = true;"
+    },
+    {
+      "id": 28,
+      "reasoning": "Inverts the logic for handling no sign change in root detection",
+      "line": 54,
+      "precode": "ta = tb;",
+      "aftercode": "ta = t0;"
+    },
+    {
+      "id": 29,
+      "reasoning": "Negates the condition for returning false on event acceptance",
+      "line": 63,
+      "precode": "return false;",
+      "aftercode": "return true;"
+    },
+    {
+      "id": 30,
+      "reasoning": "Inverts the logic for handling no sign change in root detection",
+      "line": 54,
+      "precode": "ta = tb;",
+      "aftercode": "ta = t0;"
+    },
+    {
+      "id": 31,
+      "reasoning": "Negates the condition for returning false on event acceptance",
+      "line": 63,
+      "precode": "return false;",
+      "aftercode": "return true;"
+    },
+    {
+      "id": 32,
+      "reasoning": "Inverts the logic for handling no sign change in root detection",
+      "line": 54,
+      "precode": "ta = tb;",
+      "aftercode": "ta = t0;"
+    }
+  ]
+}

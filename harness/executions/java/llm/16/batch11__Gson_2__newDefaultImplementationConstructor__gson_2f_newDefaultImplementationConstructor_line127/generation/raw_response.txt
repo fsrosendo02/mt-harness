@@ -1,0 +1,102 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method returns null instead of creating a new instance of an appropriate collection when the provided type is a Collection.",
+      "line": 71,
+      "precode": "return null;",
+      "aftercode": "return (T) new ArrayList<Object>();"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method incorrectly returns an ArrayList for EnumSet, violating the assumption that it should return an EnumSet.",
+      "line": 28,
+      "precode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashSet<Object>(); } };",
+      "aftercode": "return new ObjectConstructor<T>() { @SuppressWarnings(\"rawtypes\") public T construct() { if (type instanceof ParameterizedType) { Type elementType = ((ParameterizedType) type).getActualTypeArguments()[0]; if (elementType instanceof Class) { return (T) EnumSet.noneOf((Class)elementType); } else { throw new JsonIOException(\"Invalid EnumSet type: \" + type.toString()); } } else { throw new JsonIOException(\"Invalid EnumSet type: \" + type.toString()); } } };"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method incorrectly returns a LinkedHashSet for Map types, violating the assumption that it should return a LinkedHashMap.",
+      "line": 49,
+      "precode": "return new ObjectConstructor<T>() { public T construct() { return (T) new TreeMap<Object, Object>(); } };",
+      "aftercode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashSet<Object>(); } };"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method does not handle the case where the provided type is a ParameterizedType that is not a Collection or Map, violating the assumption that it should.",
+      "line": 47,
+      "precode": "if (Collection.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (Collection.class.isAssignableFrom(rawType) || rawType instanceof ParameterizedType) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method does not handle the case where the provided type is a generic type that does not match any of the expected types, violating the assumption that it should.",
+      "line": 2,
+      "precode": "@SuppressWarnings(\"unchecked\") // use runtime checks to guarantee that 'T' is what it is",
+      "aftercode": "// @SuppressWarnings(\"unchecked\") // use runtime checks to guarantee that 'T' is what it is"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method returns a TreeSet for SortedSet, violating the assumption that it should return an empty collection of the same type.",
+      "line": 5,
+      "precode": "if (SortedSet.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (rawType == SortedSet.class) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method returns a TreeMap for SortedMap, violating the assumption that it should return an empty collection of the same type.",
+      "line": 49,
+      "precode": "if (SortedMap.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (rawType == SortedMap.class) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method returns a TreeSet for any type that is assignable from Collection, violating the assumption that it should only do so for SortedSet.",
+      "line": 4,
+      "precode": "if (Collection.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (rawType == Collection.class) {"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method returns a TreeMap for any type that is assignable from Map, violating the assumption that it should only do so for SortedMap.",
+      "line": 48,
+      "precode": "if (Map.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (rawType == Map.class) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "The method does not throw an exception when the provided type is not a Collection, Map, or EnumSet, violating the assumption that it should.",
+      "line": 71,
+      "precode": "return null;",
+      "aftercode": "throw new IllegalArgumentException(\"Unsupported type: \" + type.toString());"
+    },
+    {
+      "id": 11,
+      "reasoning": "The method does not throw an exception when the provided type is not a ParameterizedType, violating the assumption that it should.",
+      "line": 16,
+      "precode": "if (type instanceof ParameterizedType) {",
+      "aftercode": "if (type != null && !(type instanceof ParameterizedType)) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method does not handle the case where the provided type is a Collection that is not a SortedSet, violating the assumption that it should.",
+      "line": 4,
+      "precode": "if (Collection.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (rawType == SortedSet.class) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method does not handle the case where the provided type is a Map that is not a SortedMap, violating the assumption that it should.",
+      "line": 48,
+      "precode": "if (Map.class.isAssignableFrom(rawType)) {",
+      "aftercode": "if (rawType == SortedMap.class) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method incorrectly returns a LinkedHashMap for the type Map, violating the assumption that it should return a LinkedTreeMap.",
+      "line": 62,
+      "precode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedTreeMap<String, Object>(); } };",
+      "aftercode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashMap<Object, Object>(); } };"
+    }
+  ]
+}

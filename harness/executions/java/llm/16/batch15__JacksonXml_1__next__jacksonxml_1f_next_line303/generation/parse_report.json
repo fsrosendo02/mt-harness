@@ -1,0 +1,33 @@
+{
+  "requested_count": 16,
+  "accepted_count": 14,
+  "rejected_count": 2,
+  "rejections": [
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "_textValue is not updated when _currentState is XML_END_ELEMENT.",
+        "line": 20,
+        "precode": "_textValue = text;",
+        "aftercode": "_textValue = \"invalid\";",
+        "candidate_code": "    private final int _next() throws XMLStreamException\n    {\n        switch (_currentState) {\n        case XML_ATTRIBUTE_VALUE:\n            ++_nextAttributeIndex;\n            // fall through\n        case XML_START_ELEMENT: // attributes to return?\n            if (_nextAttributeIndex < _attributeCount) {\n                _localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);\n                _namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);\n                _textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);\n                return (_currentState = XML_ATTRIBUTE_NAME);\n            }\n            // otherwise need to find START/END_ELEMENT or text\n            String text = _collectUntilTag();\n            // If it's START_ELEMENT, ignore any text\n            if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {\n                return _initStartElement();\n            }\n            // For END_ELEMENT we will return text, if any\n            if (text != null) {\n                _textValue = \"invalid\";\n                return (_currentState = XML_TEXT);\n            }\n            return _handleEndElement();\n        case XML_ATTRIBUTE_NAME:\n            // if we just returned name, will need to just send value next\n            return (_currentState = XML_ATTRIBUTE_VALUE);\n        case XML_TEXT:\n            // text is always followed by END_ELEMENT\n            return _handleEndElement();\n        case XML_END:\n            return XML_END;\n//            throw new IllegalStateException(\"No more XML tokens available (end of input)\");\n        }\n\n        // Ok: must be END_ELEMENT; see what tag we get (or end)\n        switch (_skipUntilTag()) {\n        case XMLStreamConstants.END_DOCUMENT:\n            return (_currentState = XML_END);\n        case XMLStreamConstants.END_ELEMENT:\n            return _handleEndElement();\n        }\n        // START_ELEMENT...\n        return _initStartElement();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "_handleEndElement() is called when _currentState is XML_TEXT.",
+        "line": 30,
+        "precode": "return _handleEndElement();",
+        "aftercode": "// return _handleEndElement();",
+        "candidate_code": "    private final int _next() throws XMLStreamException\n    {\n        switch (_currentState) {\n        case XML_ATTRIBUTE_VALUE:\n            ++_nextAttributeIndex;\n            // fall through\n        case XML_START_ELEMENT: // attributes to return?\n            if (_nextAttributeIndex < _attributeCount) {\n                _localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);\n                _namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);\n                _textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);\n                return (_currentState = XML_ATTRIBUTE_NAME);\n            }\n            // otherwise need to find START/END_ELEMENT or text\n            String text = _collectUntilTag();\n            // If it's START_ELEMENT, ignore any text\n            if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {\n                return _initStartElement();\n            }\n            // For END_ELEMENT we will return text, if any\n            if (text != null) {\n                _textValue = text;\n                return (_currentState = XML_TEXT);\n            }\n            return _handleEndElement();\n        case XML_ATTRIBUTE_NAME:\n            // if we just returned name, will need to just send value next\n            return (_currentState = XML_ATTRIBUTE_VALUE);\n        case XML_TEXT:\n            // text is always followed by END_ELEMENT\n            // return _handleEndElement();\n        case XML_END:\n            return XML_END;\n//            throw new IllegalStateException(\"No more XML tokens available (end of input)\");\n        }\n\n        // Ok: must be END_ELEMENT; see what tag we get (or end)\n        switch (_skipUntilTag()) {\n        case XMLStreamConstants.END_DOCUMENT:\n            return (_currentState = XML_END);\n        case XMLStreamConstants.END_ELEMENT:\n            return _handleEndElement();\n        }\n        // START_ELEMENT...\n        return _initStartElement();\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    }
+  ]
+}

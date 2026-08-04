@@ -1,0 +1,84 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected void processProperties(Properties properties) throws ParseException
+ 2:     {
+ 3:         if (properties == null)
+ 4:         {
+ 5:             return;
+ 6:         }
+ 7: 
+ 8:         for (Enumeration e = properties.propertyNames(); e.hasMoreElements();)
+ 9:         {
+10:             String option = e.nextElement().toString();
+11:             
+12:             Option opt = options.getOption(option);
+13:             if (opt == null)
+14:             {
+15:                 throw new UnrecognizedOptionException("Default option wasn't defined", option);
+16:             }
+17:             
+18:             // if the option is part of a group, check if another option of the group has been selected
+19:             OptionGroup group = options.getOptionGroup(opt);
+20:             boolean selected = group != null && group.getSelected() != null;
+21:             
+22:             if (!cmd.hasOption(option) && !selected)
+23:             {
+24:                 // get the value from the properties instance
+25:                 String value = properties.getProperty(option);
+26: 
+27:                 if (opt.hasArg())
+28:                 {
+29:                     if (opt.getValues() == null || opt.getValues().length == 0)
+30:                     {
+31:                         try
+32:                         {
+33:                             opt.addValueForProcessing(value);
+34:                         }
+35:                         catch (RuntimeException exp)
+36:                         {
+37:                             // if we cannot add the value don't worry about it
+38:                         }
+39:                     }
+40:                 }
+41:                 else if (!("yes".equalsIgnoreCase(value)
+42:                         || "true".equalsIgnoreCase(value)
+43:                         || "1".equalsIgnoreCase(value)))
+44:                 {
+45:                     // if the value is not yes, true or 1 then don't add the
+46:                     // option to the CommandLine
+47:                     continue;
+48:                 }
+49: 
+50:                 cmd.addOption(opt);
+51:                 updateRequiredOptions(opt);
+52:             }
+53:         }
+54:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

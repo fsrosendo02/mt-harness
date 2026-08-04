@@ -1,0 +1,83 @@
+{
+  "requested_count": 24,
+  "accepted_count": 18,
+  "rejected_count": 6,
+  "rejections": [
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property that a named reference should not be treated as numeric.",
+        "line": 47,
+        "precode": "if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {",
+        "aftercode": "// if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {",
+        "candidate_code": "    Character consumeCharacterReference(Character additionalAllowedCharacter, boolean inAttribute) {\n        if (reader.isEmpty())\n            return null;\n        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())\n            return null;\n        if (reader.matchesAny('\\t', '\\n', '\\r', '\\f', ' ', '<', '&'))\n            return null;\n\n        reader.mark();\n        if (reader.matchConsume(\"#\")) { // numbered\n            boolean isHexMode = reader.matchConsumeIgnoreCase(\"X\");\n            String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();\n            if (numRef.length() == 0) { // didn't match anything\n                characterReferenceError(\"numeric reference with no numerals\");\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            int charval = -1;\n            try {\n                int base = isHexMode ? 16 : 10;\n                charval = Integer.valueOf(numRef, base);\n            } catch (NumberFormatException e) {\n            } // skip\n            if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {\n                characterReferenceError(\"character outside of valid range\");\n                return replacementChar;\n            } else {\n                // todo: implement number replacement table\n                // todo: check for extra illegal unicode points as parse errors\n                return (char) charval;\n            }\n        } else { // named\n            // get as many letters as possible, and look for matching entities.\n            String nameRef = reader.consumeLetterThenDigitSequence();\n            boolean looksLegit = reader.matches(';');\n            // found if a base named entity without a ;, or an extended entity with the ;.\n            boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));\n\n            if (!found) {\n                reader.rewindToMark();\n                if (looksLegit) // named with semicolon\n                    characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));\n                return null;\n            }\n            // if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) { {\n                // don't want that to match\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            return Entities.getCharacterByName(nameRef);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property that a named reference should not be treated as numeric.",
+        "line": 32,
+        "precode": "// todo: check for extra illegal unicode points as parse errors",
+        "aftercode": "if (charval > 0x10FFFF) { characterReferenceError(\"character outside of valid range\"); return replacementChar; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property that a numeric reference should not be treated as named.",
+        "line": 30,
+        "precode": "// todo: implement number replacement table",
+        "aftercode": "charval = -1;",
+        "candidate_code": "    Character consumeCharacterReference(Character additionalAllowedCharacter, boolean inAttribute) {\n        if (reader.isEmpty())\n            return null;\n        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())\n            return null;\n        if (reader.matchesAny('\\t', '\\n', '\\r', '\\f', ' ', '<', '&'))\n            return null;\n\n        reader.mark();\n        if (reader.matchConsume(\"#\")) { // numbered\n            boolean isHexMode = reader.matchConsumeIgnoreCase(\"X\");\n            String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();\n            if (numRef.length() == 0) { // didn't match anything\n                characterReferenceError(\"numeric reference with no numerals\");\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            int charval = -1;\n            try {\n                int base = isHexMode ? 16 : 10;\n                charval = Integer.valueOf(numRef, base);\n            } catch (NumberFormatException e) {\n            } // skip\n            if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {\n                characterReferenceError(\"character outside of valid range\");\n                return replacementChar;\n            } else {\n                charval = -1;// todo: implement number replacement table\n                // todo: check for extra illegal unicode points as parse errors\n                return (char) charval;\n            }\n        } else { // named\n            // get as many letters as possible, and look for matching entities.\n            String nameRef = reader.consumeLetterThenDigitSequence();\n            boolean looksLegit = reader.matches(';');\n            // found if a base named entity without a ;, or an extended entity with the ;.\n            boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));\n\n            if (!found) {\n                reader.rewindToMark();\n                if (looksLegit) // named with semicolon\n                    characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));\n                return null;\n            }\n            if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {\n                // don't want that to match\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            return Entities.getCharacterByName(nameRef);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property that a numeric reference should not be treated as named.",
+        "line": 32,
+        "precode": "// todo: check for extra illegal unicode points as parse errors",
+        "aftercode": "if (charval > 0x10FFFF) { characterReferenceError(\"character outside of valid range\"); return replacementChar; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property that a numeric reference should not be treated as named.",
+        "line": 27,
+        "precode": "return replacementChar;",
+        "aftercode": "// return replacementChar;",
+        "candidate_code": "    Character consumeCharacterReference(Character additionalAllowedCharacter, boolean inAttribute) {\n        if (reader.isEmpty())\n            return null;\n        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())\n            return null;\n        if (reader.matchesAny('\\t', '\\n', '\\r', '\\f', ' ', '<', '&'))\n            return null;\n\n        reader.mark();\n        if (reader.matchConsume(\"#\")) { // numbered\n            boolean isHexMode = reader.matchConsumeIgnoreCase(\"X\");\n            String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();\n            if (numRef.length() == 0) { // didn't match anything\n                characterReferenceError(\"numeric reference with no numerals\");\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            int charval = -1;\n            try {\n                int base = isHexMode ? 16 : 10;\n                charval = Integer.valueOf(numRef, base);\n            } catch (NumberFormatException e) {\n            } // skip\n            if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {\n                characterReferenceError(\"character outside of valid range\");\n                // return replacementChar;\n            } else {\n                // todo: implement number replacement table\n                // todo: check for extra illegal unicode points as parse errors\n                return (char) charval;\n            }\n        } else { // named\n            // get as many letters as possible, and look for matching entities.\n            String nameRef = reader.consumeLetterThenDigitSequence();\n            boolean looksLegit = reader.matches(';');\n            // found if a base named entity without a ;, or an extended entity with the ;.\n            boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));\n\n            if (!found) {\n                reader.rewindToMark();\n                if (looksLegit) // named with semicolon\n                    characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));\n                return null;\n            }\n            if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {\n                // don't want that to match\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            return Entities.getCharacterByName(nameRef);\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property that a numeric reference should not be treated as named.",
+        "line": 30,
+        "precode": "// todo: implement number replacement table",
+        "aftercode": "charval = -1;",
+        "candidate_code": "    Character consumeCharacterReference(Character additionalAllowedCharacter, boolean inAttribute) {\n        if (reader.isEmpty())\n            return null;\n        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())\n            return null;\n        if (reader.matchesAny('\\t', '\\n', '\\r', '\\f', ' ', '<', '&'))\n            return null;\n\n        reader.mark();\n        if (reader.matchConsume(\"#\")) { // numbered\n            boolean isHexMode = reader.matchConsumeIgnoreCase(\"X\");\n            String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();\n            if (numRef.length() == 0) { // didn't match anything\n                characterReferenceError(\"numeric reference with no numerals\");\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            int charval = -1;\n            try {\n                int base = isHexMode ? 16 : 10;\n                charval = Integer.valueOf(numRef, base);\n            } catch (NumberFormatException e) {\n            } // skip\n            if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {\n                characterReferenceError(\"character outside of valid range\");\n                return replacementChar;\n            } else {\n                charval = -1;// todo: implement number replacement table\n                // todo: check for extra illegal unicode points as parse errors\n                return (char) charval;\n            }\n        } else { // named\n            // get as many letters as possible, and look for matching entities.\n            String nameRef = reader.consumeLetterThenDigitSequence();\n            boolean looksLegit = reader.matches(';');\n            // found if a base named entity without a ;, or an extended entity with the ;.\n            boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));\n\n            if (!found) {\n                reader.rewindToMark();\n                if (looksLegit) // named with semicolon\n                    characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));\n                return null;\n            }\n            if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {\n                // don't want that to match\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            return Entities.getCharacterByName(nameRef);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "requested_count": 24,
+  "accepted_count": 16,
+  "rejected_count": 8,
+  "rejections": [
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method incorrectly flattens the options and arguments, not handling them as specified.",
+        "line": 17,
+        "precode": "Arrays.asList(flatten(this.options, arguments, stopAtNonOption))",
+        "aftercode": "// Arrays.asList(null)",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        requiredOptions = options.getRequiredOptions();\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        // Arrays.asList(null)\n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not handle the case where 'stopAtNonOption' is true and an option without a corresponding argument is encountered.",
+        "line": 50,
+        "precode": "{ eatTheRest = true; cmd.addArg(t); }",
+        "aftercode": "// { eatTheRest = true; cmd.addArg(t); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not check if 'options' is null before attempting to process options, potentially leading to a null pointer exception.",
+        "line": 57,
+        "precode": "processOption(t, iterator);",
+        "aftercode": "// processOption(null, null);",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        requiredOptions = options.getRequiredOptions();\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        List tokenList = Arrays.asList(flatten(this.options, \n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    // processOption(null, null);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not check if 'options' is null before attempting to access its required options, potentially leading to a null pointer exception.",
+        "line": 8,
+        "precode": "requiredOptions = options.getRequiredOptions();",
+        "aftercode": "// requiredOptions = null;",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        // requiredOptions = null;\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        List tokenList = Arrays.asList(flatten(this.options, \n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not check if 'options' is null before attempting to add arguments, potentially leading to a null pointer exception.",
+        "line": 43,
+        "precode": "cmd.addArg(t);",
+        "aftercode": "// cmd.addArg(null);",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        requiredOptions = options.getRequiredOptions();\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        List tokenList = Arrays.asList(flatten(this.options, \n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    // cmd.addArg(null);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not check if 'options' is null before attempting to process options, potentially leading to a null pointer exception.",
+        "line": 57,
+        "precode": "processOption(t, iterator);",
+        "aftercode": "// processOption(null, null);",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        requiredOptions = options.getRequiredOptions();\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        List tokenList = Arrays.asList(flatten(this.options, \n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    // processOption(null, null);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not check if 'options' is null before attempting to access its required options, potentially leading to a null pointer exception.",
+        "line": 8,
+        "precode": "requiredOptions = options.getRequiredOptions();",
+        "aftercode": "// requiredOptions = null;",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        // requiredOptions = null;\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        List tokenList = Arrays.asList(flatten(this.options, \n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not check if 'options' is null before attempting to add arguments, potentially leading to a null pointer exception.",
+        "line": 43,
+        "precode": "cmd.addArg(t);",
+        "aftercode": "// cmd.addArg(null);",
+        "candidate_code": "    public CommandLine parse(Options options, String[] arguments, \n                             Properties properties, boolean stopAtNonOption)\n        throws ParseException\n    {\n        // initialise members\n        this.options = options;\n        requiredOptions = options.getRequiredOptions();\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        List tokenList = Arrays.asList(flatten(this.options, \n                                               arguments, \n                                               stopAtNonOption));\n\n        ListIterator iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            String t = (String) iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    // cmd.addArg(null);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !options.hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    String str = (String) iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

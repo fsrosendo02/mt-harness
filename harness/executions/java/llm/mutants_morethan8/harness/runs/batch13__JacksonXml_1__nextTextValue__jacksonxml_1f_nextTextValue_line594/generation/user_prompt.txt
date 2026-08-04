@@ -1,0 +1,125 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     public String nextTextValue() throws IOException
+ 3:     {
+ 4:         _binaryValue = null;
+ 5:         if (_nextToken != null) {
+ 6:             JsonToken t = _nextToken;
+ 7:             _currToken = t;
+ 8:             _nextToken = null;
+ 9: 
+10:             // expected case; yes, got a String
+11:             if (t == JsonToken.VALUE_STRING) {
+12:                 return _currText;
+13:             }
+14:             _updateState(t);
+15:             return null;
+16:         }
+17: 
+18:         int token = _xmlTokens.next();
+19: 
+20:         // mostly copied from 'nextToken()'
+21:         while (token == XmlTokenStream.XML_START_ELEMENT) {
+22:             if (_mayBeLeaf) {
+23:                 _nextToken = JsonToken.FIELD_NAME;
+24:                 _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+25:                 _currToken = JsonToken.START_OBJECT;
+26:                 return null;
+27:             }
+28:             if (_parsingContext.inArray()) {
+29:                 token = _xmlTokens.next();
+30:                 _mayBeLeaf = true;
+31:                 continue;
+32:             }
+33:             String name = _xmlTokens.getLocalName();
+34:             _parsingContext.setCurrentName(name);
+35:             if (_namesToWrap != null && _namesToWrap.contains(name)) {
+36:                 _xmlTokens.repeatStartElement();
+37:             }
+38:             _mayBeLeaf = true;
+39:             _currToken = JsonToken.FIELD_NAME;
+40:             return null;
+41:         }
+42: 
+43:         // Ok; beyond start element, what do we get?
+44:         switch (token) {
+45:         case XmlTokenStream.XML_END_ELEMENT:
+46:             if (_mayBeLeaf) {
+47:                 // NOTE: this is different from nextToken() -- produce "", NOT null
+48:                 _mayBeLeaf = false;
+49:                 _currToken = JsonToken.VALUE_STRING;
+50:                 return (_currText = "");
+51:             }
+52:             _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;
+53:             _parsingContext = _parsingContext.getParent();
+54:             _namesToWrap = _parsingContext.getNamesToWrap();
+55:             break;
+56:             
+57:         case XmlTokenStream.XML_ATTRIBUTE_NAME:
+58:             // If there was a chance of leaf node, no more...
+59:             if (_mayBeLeaf) {
+60:                 _mayBeLeaf = false;
+61:                 _nextToken = JsonToken.FIELD_NAME;
+62:                 _currText = _xmlTokens.getText();
+63:                 _parsingContext = _parsingContext.createChildObjectContext(-1, -1);
+64:                 _currToken = JsonToken.START_OBJECT;
+65:             } else {
+66:                 _parsingContext.setCurrentName(_xmlTokens.getLocalName());
+67:                 _currToken = JsonToken.FIELD_NAME;
+68:             }
+69:             break;
+70:         case XmlTokenStream.XML_ATTRIBUTE_VALUE:
+71:             _currText = _xmlTokens.getText();
+72:             _currToken = JsonToken.VALUE_STRING;
+73:             break;
+74:         case XmlTokenStream.XML_TEXT:
+75:             _currText = _xmlTokens.getText();
+76:             if (_mayBeLeaf) {
+77:                 _mayBeLeaf = false;
+78:                 // Also: must skip following END_ELEMENT
+79:                 _xmlTokens.skipEndElement();
+80: 
+81:                 // NOTE: this is different from nextToken() -- NO work-around
+82:                 // for otherwise empty List/array
+83:                 _currToken = JsonToken.VALUE_STRING;
+84:                 return _currText;
+85:             }
+86:             // If not a leaf, need to transform into property...
+87:             _parsingContext.setCurrentName(_cfgNameForTextElement);
+88:             _nextToken = JsonToken.VALUE_STRING;
+89:             _currToken = JsonToken.FIELD_NAME;
+90:             break;
+91:         case XmlTokenStream.XML_END:
+92:             _currToken = null;
+93:         }
+94:         return null;
+95:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changes the version needed to extract the ZIP entry, potentially making it incompatible with older tools.",
+      "line": 16,
+      "precode": "putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort(versionNeededToExtract(zipMethod, !hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Alters the general purpose bits, which could affect how the file is processed.",
+      "line": 19,
+      "precode": "GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, !encodable && fallbackToUTF8);",
+      "aftercode": "GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, encodable && fallbackToUTF8);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Modifies the compression method, which could lead to incorrect decompression.",
+      "line": 23,
+      "precode": "putShort(zipMethod, buf, LFH_METHOD_OFFSET);",
+      "aftercode": "putShort(zipMethod + 1, buf, LFH_METHOD_OFFSET);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Incorrectly calculates the CRC for the file, leading to potential data corruption.",
+      "line": 29,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "putLong(~ze.getCrc(), buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Changes the compressed size, affecting how the ZIP file is handled by decompression tools.",
+      "line": 45,
+      "precode": "putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(2 * ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Alters the original size, which could lead to incorrect decompression.",
+      "line": 46,
+      "precode": "putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "putLong(2 * ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrectly sets the file name length, potentially causing issues with extracting the ZIP entry.",
+      "line": 55,
+      "precode": "putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);",
+      "aftercode": "putShort(2 * nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Changes the extra field length, which could lead to issues with parsing the ZIP file.",
+      "line": 58,
+      "precode": "putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);",
+      "aftercode": "putShort(2 * extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);"
+    }
+  ]
+}

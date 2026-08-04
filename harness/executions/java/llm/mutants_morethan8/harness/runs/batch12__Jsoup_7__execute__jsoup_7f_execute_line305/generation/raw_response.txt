@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Mutates the null check for the request, allowing null requests to pass.",
+      "line": 2,
+      "precode": "Validate.notNull(req, \"Request must not be null\");",
+      "aftercode": "// Validate.notNull(req, \"Request must not be null\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "Removes the protocol validation, allowing unsupported protocols to pass.",
+      "line": 5,
+      "precode": "Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": "// Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 3,
+      "reasoning": "Changes the method to always serialize the request URL.",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 4,
+      "reasoning": "Changes the method to never serialize the request URL.",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 5,
+      "reasoning": "Removes the connection creation, causing a NullPointerException.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "// HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Changes the method to always write post data.",
+      "line": 12,
+      "precode": "if (req.method() == Connection.Method.POST)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 7,
+      "reasoning": "Changes the method to never write post data.",
+      "line": 12,
+      "precode": "if (req.method() == Connection.Method.POST)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 8,
+      "reasoning": "Removes the response code check, allowing all status codes to pass.",
+      "line": 16,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "// int status = conn.getResponseCode();"
+    },
+    {
+      "id": 9,
+      "reasoning": "Removes the redirect check, causing non-200 responses to throw an exception.",
+      "line": 18,
+      "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+      "aftercode": "// if (status != HttpURLConnection.HTTP_OK) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Changes the redirect check to always redirect.",
+      "line": 20,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 11,
+      "reasoning": "Changes the redirect check to never redirect.",
+      "line": 20,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 12,
+      "reasoning": "Removes the exception for non-200 responses.",
+      "line": 23,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "// throw new IOException(status + \" error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 13,
+      "reasoning": "Changes the response setup to always skip.",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "// res.setupFromConnection(conn);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Removes the redirect handling, causing infinite recursion on redirects.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "// req.url(new URL(res.header(\"Location\")));"
+    },
+    {
+      "id": 15,
+      "reasoning": "Changes the input stream handling to always use GZIP.",
+      "line": 34,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?",
+      "aftercode": "inStream = new BufferedInputStream(new GZIPInputStream(conn.getInputStream()));"
+    },
+    {
+      "id": 16,
+      "reasoning": "Changes the input stream handling to never use GZIP.",
+      "line": 34,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?",
+      "aftercode": "inStream = new BufferedInputStream(conn.getInputStream());"
+    },
+    {
+      "id": 17,
+      "reasoning": "Removes the byte data reading, causing null byte data in response.",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "// res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 18,
+      "reasoning": "Removes the charset extraction, causing null charset in response.",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "// res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 19,
+      "reasoning": "Changes the stream closing to always skip.",
+      "line": 40,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": "// if (inStream != null) inStream.close();"
+    },
+    {
+      "id": 20,
+      "reasoning": "Changes the executed flag to always be false.",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "res.executed = false;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Removes the response object creation, causing null response return.",
+      "line": 25,
+      "precode": "Response res = new Response();",
+      "aftercode": "// Response res = new Response();"
+    },
+    {
+      "id": 22,
+      "reasoning": "Changes the recursive call to always skip on redirects.",
+      "line": 30,
+      "precode": "return execute(req);",
+      "aftercode": "return null;"
+    },
+    {
+      "id": 23,
+      "reasoning": "Removes the content type check for GZIP, causing potential decompression errors.",
+      "line": 34,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?",
+      "aftercode": "inStream = new BufferedInputStream(new GZIPInputStream(conn.getInputStream()));"
+    },
+    {
+      "id": 24,
+      "reasoning": "Removes the HTTP connection setup, causing a NullPointerException on response code.",
+      "line": 11,
+      "precode": "conn.connect();",
+      "aftercode": "// conn.connect();"
+    }
+  ]
+}

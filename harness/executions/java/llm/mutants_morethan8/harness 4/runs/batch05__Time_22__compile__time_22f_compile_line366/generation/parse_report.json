@@ -1,0 +1,134 @@
+{
+  "requested_count": 40,
+  "accepted_count": 29,
+  "rejected_count": 11,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "Fails to close BufferedReader, leading to resource leaks.",
+        "line": 6,
+        "precode": "in.close();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "Skips parsing data files, violating data processing logic.",
+        "line": 5,
+        "precode": "parseDataFile(in);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "Fails to write data to output stream, violating file writing logic.",
+        "line": 39,
+        "precode": "builder.writeTo(zone.iName, out);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Fails to close output stream, leading to resource leaks.",
+        "line": 40,
+        "precode": "out.close();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "Fails to close input stream, leading to resource leaks.",
+        "line": 45,
+        "precode": "in.close();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "Omits writing ZoneInfoMap file, violating output logic.",
+        "line": 78,
+        "precode": "OutputStream out = new FileOutputStream(file);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "Omits creating parent directories for ZoneInfoMap, violating file system logic.",
+        "line": 75,
+        "precode": "file.getParentFile().mkdirs();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Fails to close DataOutputStream, leading to resource leaks.",
+        "line": 84,
+        "precode": "dout.close();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "Omits closing output stream in ZoneInfoMap writing, violating resource management.",
+        "line": 80,
+        "precode": "DataOutputStream dout = new DataOutputStream(out);",
+        "aftercode": "DataOutputStream dout = null;",
+        "candidate_code": "    public Map<String, DateTimeZone> compile(File outputDir, File[] sources) throws IOException {\n        if (sources != null) {\n            for (int i=0; i<sources.length; i++) {\n                BufferedReader in = new BufferedReader(new FileReader(sources[i]));\n                parseDataFile(in);\n                in.close();\n            }\n        }\n\n        if (outputDir != null) {\n            if (!outputDir.exists()) {\n                throw new IOException(\"Destination directory doesn't exist: \" + outputDir);\n            }\n            if (!outputDir.isDirectory()) {\n                throw new IOException(\"Destination is not a directory: \" + outputDir);\n            }\n        }\n\n        Map<String, DateTimeZone> map = new TreeMap<String, DateTimeZone>();\n\n        System.out.println(\"Writing zoneinfo files\");\n        for (int i=0; i<iZones.size(); i++) {\n            Zone zone = iZones.get(i);\n            DateTimeZoneBuilder builder = new DateTimeZoneBuilder();\n            zone.addToBuilder(builder, iRuleSets);\n            final DateTimeZone original = builder.toDateTimeZone(zone.iName, true);\n            DateTimeZone tz = original;\n            if (test(tz.getID(), tz)) {\n                map.put(tz.getID(), tz);\n                if (outputDir != null) {\n                    if (ZoneInfoCompiler.verbose()) {\n                        System.out.println(\"Writing \" + tz.getID());\n                    }\n                    File file = new File(outputDir, tz.getID());\n                    if (!file.getParentFile().exists()) {\n                        file.getParentFile().mkdirs();\n                    }\n                    OutputStream out = new FileOutputStream(file);\n                    builder.writeTo(zone.iName, out);\n                    out.close();\n\n                    // Test if it can be read back.\n                    InputStream in = new FileInputStream(file);\n                    DateTimeZone tz2 = DateTimeZoneBuilder.readFrom(in, tz.getID());\n                    in.close();\n\n                    if (!original.equals(tz2)) {\n                        System.out.println(\"*e* Error in \" + tz.getID() +\n                                           \": Didn't read properly from file\");\n                    }\n                }\n            }\n        }\n\n        for (int pass=0; pass<2; pass++) {\n            for (int i=0; i<iLinks.size(); i += 2) {\n                String id = iLinks.get(i);\n                String alias = iLinks.get(i + 1);\n                DateTimeZone tz = map.get(id);\n                if (tz == null) {\n                    if (pass > 0) {\n                        System.out.println(\"Cannot find time zone '\" + id +\n                                           \"' to link alias '\" + alias + \"' to\");\n                    }\n                } else {\n                    map.put(alias, tz);\n                }\n            }\n        }\n\n        if (outputDir != null) {\n            System.out.println(\"Writing ZoneInfoMap\");\n            File file = new File(outputDir, \"ZoneInfoMap\");\n            if (!file.getParentFile().exists()) {\n                file.getParentFile().mkdirs();\n            }\n\n            OutputStream out = new FileOutputStream(file);\n            DataOutputStream dout = null;\n            // Sort and filter out any duplicates that match case.\n            Map<String, DateTimeZone> zimap = new TreeMap<String, DateTimeZone>(String.CASE_INSENSITIVE_ORDER);\n            zimap.putAll(map);\n            writeZoneInfoMap(dout, zimap);\n            dout.close();\n        }\n\n        return map;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Fails to process alias in second pass, violating alias logic.",
+        "line": 61,
+        "precode": "if (pass > 0)",
+        "aftercode": "if (pass < 0)",
+        "candidate_code": "    public Map<String, DateTimeZone> compile(File outputDir, File[] sources) throws IOException {\n        if (sources != null) {\n            for (int i=0; i<sources.length; i++) {\n                BufferedReader in = new BufferedReader(new FileReader(sources[i]));\n                parseDataFile(in);\n                in.close();\n            }\n        }\n\n        if (outputDir != null) {\n            if (!outputDir.exists()) {\n                throw new IOException(\"Destination directory doesn't exist: \" + outputDir);\n            }\n            if (!outputDir.isDirectory()) {\n                throw new IOException(\"Destination is not a directory: \" + outputDir);\n            }\n        }\n\n        Map<String, DateTimeZone> map = new TreeMap<String, DateTimeZone>();\n\n        System.out.println(\"Writing zoneinfo files\");\n        for (int i=0; i<iZones.size(); i++) {\n            Zone zone = iZones.get(i);\n            DateTimeZoneBuilder builder = new DateTimeZoneBuilder();\n            zone.addToBuilder(builder, iRuleSets);\n            final DateTimeZone original = builder.toDateTimeZone(zone.iName, true);\n            DateTimeZone tz = original;\n            if (test(tz.getID(), tz)) {\n                map.put(tz.getID(), tz);\n                if (outputDir != null) {\n                    if (ZoneInfoCompiler.verbose()) {\n                        System.out.println(\"Writing \" + tz.getID());\n                    }\n                    File file = new File(outputDir, tz.getID());\n                    if (!file.getParentFile().exists()) {\n                        file.getParentFile().mkdirs();\n                    }\n                    OutputStream out = new FileOutputStream(file);\n                    builder.writeTo(zone.iName, out);\n                    out.close();\n\n                    // Test if it can be read back.\n                    InputStream in = new FileInputStream(file);\n                    DateTimeZone tz2 = DateTimeZoneBuilder.readFrom(in, tz.getID());\n                    in.close();\n\n                    if (!original.equals(tz2)) {\n                        System.out.println(\"*e* Error in \" + tz.getID() +\n                                           \": Didn't read properly from file\");\n                    }\n                }\n            }\n        }\n\n        for (int pass=0; pass<2; pass++) {\n            for (int i=0; i<iLinks.size(); i += 2) {\n                String id = iLinks.get(i);\n                String alias = iLinks.get(i + 1);\n                DateTimeZone tz = map.get(id);\n                if (tz == null) {\n                    if (pass < 0) {\n                        System.out.println(\"Cannot find time zone '\" + id +\n                                           \"' to link alias '\" + alias + \"' to\");\n                    }\n                } else {\n                    map.put(alias, tz);\n                }\n            }\n        }\n\n        if (outputDir != null) {\n            System.out.println(\"Writing ZoneInfoMap\");\n            File file = new File(outputDir, \"ZoneInfoMap\");\n            if (!file.getParentFile().exists()) {\n                file.getParentFile().mkdirs();\n            }\n\n            OutputStream out = new FileOutputStream(file);\n            DataOutputStream dout = new DataOutputStream(out);\n            // Sort and filter out any duplicates that match case.\n            Map<String, DateTimeZone> zimap = new TreeMap<String, DateTimeZone>(String.CASE_INSENSITIVE_ORDER);\n            zimap.putAll(map);\n            writeZoneInfoMap(dout, zimap);\n            dout.close();\n        }\n\n        return map;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Fails to read from input stream, violating round-trip verification.",
+        "line": 44,
+        "precode": "DateTimeZone tz2 = DateTimeZoneBuilder.readFrom(in, tz.getID());",
+        "aftercode": "DateTimeZone tz2 = null;",
+        "candidate_code": "    public Map<String, DateTimeZone> compile(File outputDir, File[] sources) throws IOException {\n        if (sources != null) {\n            for (int i=0; i<sources.length; i++) {\n                BufferedReader in = new BufferedReader(new FileReader(sources[i]));\n                parseDataFile(in);\n                in.close();\n            }\n        }\n\n        if (outputDir != null) {\n            if (!outputDir.exists()) {\n                throw new IOException(\"Destination directory doesn't exist: \" + outputDir);\n            }\n            if (!outputDir.isDirectory()) {\n                throw new IOException(\"Destination is not a directory: \" + outputDir);\n            }\n        }\n\n        Map<String, DateTimeZone> map = new TreeMap<String, DateTimeZone>();\n\n        System.out.println(\"Writing zoneinfo files\");\n        for (int i=0; i<iZones.size(); i++) {\n            Zone zone = iZones.get(i);\n            DateTimeZoneBuilder builder = new DateTimeZoneBuilder();\n            zone.addToBuilder(builder, iRuleSets);\n            final DateTimeZone original = builder.toDateTimeZone(zone.iName, true);\n            DateTimeZone tz = original;\n            if (test(tz.getID(), tz)) {\n                map.put(tz.getID(), tz);\n                if (outputDir != null) {\n                    if (ZoneInfoCompiler.verbose()) {\n                        System.out.println(\"Writing \" + tz.getID());\n                    }\n                    File file = new File(outputDir, tz.getID());\n                    if (!file.getParentFile().exists()) {\n                        file.getParentFile().mkdirs();\n                    }\n                    OutputStream out = new FileOutputStream(file);\n                    builder.writeTo(zone.iName, out);\n                    out.close();\n\n                    // Test if it can be read back.\n                    InputStream in = new FileInputStream(file);\n                    DateTimeZone tz2 = null;\n                    in.close();\n\n                    if (!original.equals(tz2)) {\n                        System.out.println(\"*e* Error in \" + tz.getID() +\n                                           \": Didn't read properly from file\");\n                    }\n                }\n            }\n        }\n\n        for (int pass=0; pass<2; pass++) {\n            for (int i=0; i<iLinks.size(); i += 2) {\n                String id = iLinks.get(i);\n                String alias = iLinks.get(i + 1);\n                DateTimeZone tz = map.get(id);\n                if (tz == null) {\n                    if (pass > 0) {\n                        System.out.println(\"Cannot find time zone '\" + id +\n                                           \"' to link alias '\" + alias + \"' to\");\n                    }\n                } else {\n                    map.put(alias, tz);\n                }\n            }\n        }\n\n        if (outputDir != null) {\n            System.out.println(\"Writing ZoneInfoMap\");\n            File file = new File(outputDir, \"ZoneInfoMap\");\n            if (!file.getParentFile().exists()) {\n                file.getParentFile().mkdirs();\n            }\n\n            OutputStream out = new FileOutputStream(file);\n            DataOutputStream dout = new DataOutputStream(out);\n            // Sort and filter out any duplicates that match case.\n            Map<String, DateTimeZone> zimap = new TreeMap<String, DateTimeZone>(String.CASE_INSENSITIVE_ORDER);\n            zimap.putAll(map);\n            writeZoneInfoMap(dout, zimap);\n            dout.close();\n        }\n\n        return map;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

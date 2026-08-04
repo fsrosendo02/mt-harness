@@ -1,0 +1,165 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Allows empty input when not empty",
+      "line": 2,
+      "precode": "if (reader.isEmpty())",
+      "aftercode": "if (!reader.isEmpty())"
+    },
+    {
+      "id": 2,
+      "reasoning": "Ignores additional allowed character",
+      "line": 4,
+      "precode": "if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())",
+      "aftercode": "if (additionalAllowedCharacter == null || additionalAllowedCharacter != reader.current())"
+    },
+    {
+      "id": 3,
+      "reasoning": "Allows whitespace and special characters when they should be ignored",
+      "line": 6,
+      "precode": "if (reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&'))",
+      "aftercode": "if (!reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&'))"
+    },
+    {
+      "id": 4,
+      "reasoning": "Does not mark the reader position",
+      "line": 9,
+      "precode": "reader.mark();",
+      "aftercode": "// reader.mark();"
+    },
+    {
+      "id": 5,
+      "reasoning": "Consumes '#' when it should not",
+      "line": 10,
+      "precode": "if (reader.matchConsume("#")) { // numbered",
+      "aftercode": "if (!reader.matchConsume("#")) { // numbered"
+    },
+    {
+      "id": 6,
+      "reasoning": "Does not consume 'X' for hex mode",
+      "line": 11,
+      "precode": "boolean isHexMode = reader.matchConsumeIgnoreCase("X");",
+      "aftercode": "boolean isHexMode = !reader.matchConsumeIgnoreCase("X");"
+    },
+    {
+      "id": 7,
+      "reasoning": "Does not consume hex sequence when in hex mode",
+      "line": 12,
+      "precode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();",
+      "aftercode": "String numRef = !isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();"
+    },
+    {
+      "id": 8,
+      "reasoning": "Allows empty numeric reference",
+      "line": 13,
+      "precode": "if (numRef.length() == 0) { // didn't match anything",
+      "aftercode": "if (numRef.length() != 0) { // didn't match anything"
+    },
+    {
+      "id": 9,
+      "reasoning": "Does not report error for empty numeric reference",
+      "line": 14,
+      "precode": "characterReferenceError("numeric reference with no numerals");",
+      "aftercode": "// characterReferenceError("numeric reference with no numerals");"
+    },
+    {
+      "id": 10,
+      "reasoning": "Does not rewind to mark for empty numeric reference",
+      "line": 15,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "// reader.rewindToMark();"
+    },
+    {
+      "id": 11,
+      "reasoning": "Allows missing semicolon in numeric reference",
+      "line": 18,
+      "precode": "if (!reader.matchConsume(";"))",
+      "aftercode": "if (reader.matchConsume(";"))"
+    },
+    {
+      "id": 12,
+      "reasoning": "Does not handle NumberFormatException",
+      "line": 25,
+      "precode": "catch (NumberFormatException e) { // skip }",
+      "aftercode": "catch (NumberFormatException e) { throw e; }"
+    },
+    {
+      "id": 13,
+      "reasoning": "Allows character outside valid range",
+      "line": 26,
+      "precode": "if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {",
+      "aftercode": "if (!(charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF)) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Does not report error for character outside valid range",
+      "line": 27,
+      "precode": "characterReferenceError("character outside of valid range");",
+      "aftercode": "// characterReferenceError("character outside of valid range");"
+    },
+    {
+      "id": 15,
+      "reasoning": "Returns replacementChar instead of the actual character",
+      "line": 29,
+      "precode": "return replacementChar;",
+      "aftercode": "return (char) charval;"
+    },
+    {
+      "id": 16,
+      "reasoning": "Does not handle named reference without semicolon",
+      "line": 35,
+      "precode": "// get as many letters as possible, and look for matching entities.",
+      "aftercode": "reader.consumeLetterThenDigitSequence(); return null;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Allows any name reference",
+      "line": 39,
+      "precode": "boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));",
+      "aftercode": "boolean found = true;"
+    },
+    {
+      "id": 18,
+      "reasoning": "Does not rewind to mark for invalid named reference",
+      "line": 42,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "// reader.rewindToMark();"
+    },
+    {
+      "id": 19,
+      "reasoning": "Does not report error for invalid named reference with semicolon",
+      "line": 44,
+      "precode": "characterReferenceError(String.format("invalid named referenece '%s'", nameRef));",
+      "aftercode": "// characterReferenceError(String.format("invalid named referenece '%s'", nameRef));"
+    },
+    {
+      "id": 20,
+      "reasoning": "Allows invalid character in attribute reference",
+      "line": 47,
+      "precode": "if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {",
+      "aftercode": "if (!inAttribute || !(reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {"
+    },
+    {
+      "id": 21,
+      "reasoning": "Does not rewind to mark for invalid character in attribute reference",
+      "line": 49,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "// reader.rewindToMark();"
+    },
+    {
+      "id": 22,
+      "reasoning": "Allows missing semicolon in named reference",
+      "line": 52,
+      "precode": "if (!reader.matchConsume(";"))",
+      "aftercode": "if (reader.matchConsume(";"))"
+    },
+    {
+      "id": 23,
+      "reasoning": "Does not return character for valid named reference",
+      "line": 54,
+      "precode": "return Entities.getCharacterByName(nameRef);",
+      "aftercode": "return null;"
+    }
+  ]
+}

@@ -1,0 +1,577 @@
+{
+  "requested_count": 48,
+  "accepted_count": 1,
+  "rejected_count": 47,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method does not check if the bean description is null before accessing its property definitions.",
+        "line": 8,
+        "precode": "for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {",
+        "aftercode": "if (beanDesc != null && !beanDesc.getPropertyDefinitions().isEmpty()) {\n\tfor (int i = 0, propCount = beanDesc.getPropertyDefinitions().size(); i < propCount; ++i) {",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        if (beanDesc != null && !beanDesc.getPropertyDefinitions().isEmpty()) {\n\tfor (int i = 0, propCount = beanDesc.getPropertyDefinitions().size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method does not check if the property definition is null before accessing its primary member.",
+        "line": 10,
+        "precode": "BeanPropertyDefinition prop = propDefs.get(i);",
+        "aftercode": "if (prop != null) {\n\tBeanPropertyDefinition prop = propDefs.get(i);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method does not check if the annotation introspector is null before accessing its methods.",
+        "line": 20,
+        "precode": "Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);",
+        "aftercode": "if (intr != null) {\n\tBoolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method does not handle the case where the property name is an empty string.",
+        "line": 23,
+        "precode": "BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);",
+        "aftercode": "if (!_cfgNameForTextValue.isEmpty()) {\n\tBeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method does not check if the wrapper name is null before accessing its simple name.",
+        "line": 32,
+        "precode": "if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "aftercode": "if (wrapperName instanceof PropertyName) {\n\tif (wrapperName.getSimpleName() != null)",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName instanceof PropertyName) {\n\tif (wrapperName.getSimpleName() != null) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not check if the local name is null before accessing its length.",
+        "line": 34,
+        "precode": "String localName = wrapperName.getSimpleName();",
+        "aftercode": "if (localName != null) {\n\tString localName = wrapperName.getSimpleName();",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method does not check if the property name is empty before setting the new simple name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop.getName().isEmpty()) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not check if the new simple name is different from the original before setting it.",
+        "line": 38,
+        "precode": "propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": "if (newProp.getSimpleName().equals(prop.getSimpleName())) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not check if the changed variable is zero before creating a copy of the property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": "if (changed > 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not check if the property definition is null before setting its simple name.",
+        "line": 40,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": "if (prop != null) {\n\tif (changed == 0) {\n\t\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not check if the changed variable is greater than zero before setting the simple name.",
+        "line": 40,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not check if the property definition is null before getting its primary member.",
+        "line": 12,
+        "precode": "if (acc == null) {",
+        "aftercode": "if (prop != null) {\n\tif (acc == null) {",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (prop != null) {\n\tif (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method does not check if the annotation introspector is null before accessing its methods.",
+        "line": 20,
+        "precode": "Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);",
+        "aftercode": "if (intr != null) {\n\tBoolean b = AnnotationUtil.findIsTextAnnotation(intr, acc;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method does not check if the property definition is null before getting its simple name.",
+        "line": 23,
+        "precode": "BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);",
+        "aftercode": "if (prop != null) {\n\tBeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not check if the changed variable is zero before setting the new simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": "if (changed > 0) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not check if the property definition is null before getting its wrapper name.",
+        "line": 32,
+        "precode": "if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "aftercode": "if (prop != null) {\n\tif (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (prop != null) {\n\tif (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not check if the changed variable is greater than zero before setting the new simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not check if the property definition is null before getting its name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop != null) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not check if the wrapper name is null before getting its simple name.",
+        "line": 34,
+        "precode": "String localName = wrapperName.getSimpleName();",
+        "aftercode": "if (wrapperName != null) {\n\tString localName = wrapperName.getSimpleName;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not check if the property name is empty before getting its simple name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop.getName().isEmpty()) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not check if the changed variable is zero before creating a new list of property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed > 0) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not check if the property definition is null before getting its simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (prop != null) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not check if the changed variable is greater than zero before creating a new list of property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not check if the property definition is null before getting its primary member.",
+        "line": 10,
+        "precode": "BeanPropertyDefinition prop = propDefs.get(i);",
+        "aftercode": "if (prop != null) {\n\tBeanPropertyDefinition prop = propDefs.get(i;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not check if the annotation introspector is null before accessing its methods.",
+        "line": 20,
+        "precode": "Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);",
+        "aftercode": "if (intr != null) {\n\tBoolean b = AnnotationUtil.findIsTextAnnotation(intr, acc;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not check if the property definition is null before getting its simple name.",
+        "line": 23,
+        "precode": "BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);",
+        "aftercode": "if (prop != null) {\n\tBeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method does not check if the changed variable is zero before setting the new simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed > 0) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not check if the property definition is null before getting its wrapper name.",
+        "line": 32,
+        "precode": "if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "aftercode": "if (prop != null) {\n\tif (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (prop != null) {\n\tif (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method does not check if the changed variable is greater than zero before setting the new simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method does not check if the property definition is null before getting its name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop != null) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method does not check if the wrapper name is null before getting its simple name.",
+        "line": 34,
+        "precode": "String localName = wrapperName.getSimpleName();",
+        "aftercode": "if (wrapperName != null) {\n\tString localName = wrapperName.getSimpleName;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method does not check if the property name is empty before getting its simple name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop.getName().isEmpty()) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method does not check if the changed variable is zero before creating a new list of property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed > 0) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method does not check if the property definition is null before getting its simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (prop != null) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method does not check if the changed variable is greater than zero before creating a new list of property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method does not check if the property definition is null before getting its primary member.",
+        "line": 10,
+        "precode": "BeanPropertyDefinition prop = propDefs.get(i);",
+        "aftercode": "if (prop != null) {\n\tBeanPropertyDefinition prop = propDefs.get(i;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method does not check if the annotation introspector is null before accessing its methods.",
+        "line": 20,
+        "precode": "Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);",
+        "aftercode": "if (intr != null) {\n\tBoolean b = AnnotationUtil.findIsTextAnnotation(intr, acc;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method does not check if the property definition is null before getting its simple name.",
+        "line": 23,
+        "precode": "BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);",
+        "aftercode": "if (prop != null) {\n\tBeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method does not check if the changed variable is zero before setting the new simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed > 0) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 41,
+        "reasoning": "The method does not check if the property definition is null before getting its wrapper name.",
+        "line": 32,
+        "precode": "if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "aftercode": "if (prop != null) {\n\tif (wrapperName != null && wrapperName != PropertyName.NO_NAME) {",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (prop != null) {\n\tif (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 42,
+        "reasoning": "The method does not check if the changed variable is greater than zero before setting the new simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 43,
+        "reasoning": "The method does not check if the property definition is null before getting its name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop != null) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 44,
+        "reasoning": "The method does not check if the wrapper name is null before getting its simple name.",
+        "line": 34,
+        "precode": "String localName = wrapperName.getSimpleName();",
+        "aftercode": "if (wrapperName != null) {\n\tString localName = wrapperName.getSimpleName;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 45,
+        "reasoning": "The method does not check if the property name is empty before getting its simple name.",
+        "line": 36,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": "if (prop.getName().isEmpty()) {\n\tif ((localName != null && localName.length() > 0)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 46,
+        "reasoning": "The method does not check if the changed variable is zero before creating a new list of property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed > 0) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 47,
+        "reasoning": "The method does not check if the property definition is null before getting its simple name.",
+        "line": 25,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (prop != null) {\n\tif (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 48,
+        "reasoning": "The method does not check if the changed variable is greater than zero before creating a new list of property definitions.",
+        "line": 38,
+        "precode": "if (changed == 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "aftercode": "if (changed <= 0) {\n\tpropDefs = new ArrayList<BeanPropertyDefinition>(propDefs;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

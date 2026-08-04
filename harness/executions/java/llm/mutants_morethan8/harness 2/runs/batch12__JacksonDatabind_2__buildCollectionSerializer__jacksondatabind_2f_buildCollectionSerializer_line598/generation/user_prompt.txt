@@ -1,0 +1,93 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,
+ 2:             CollectionType type, BeanDescription beanDesc, boolean staticTyping,
+ 3:             TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) 
+ 4:         throws JsonMappingException
+ 5:     {
+ 6:         JsonSerializer<?> ser = null;
+ 7:         // Module-provided custom collection serializers?
+ 8:         for (Serializers serializers : customSerializers()) {
+ 9:             ser = serializers.findCollectionSerializer(config,
+10:                     type, beanDesc, elementTypeSerializer, elementValueSerializer);
+11:             if (ser != null) {
+12:                 break;
+13:             }
+14:         }
+15: 
+16:         if (ser == null) {
+17:             // We may also want to use serialize Collections "as beans", if (and only if)
+18:             // this is specified with `@JsonFormat(shape=Object)`
+19:             JsonFormat.Value format = beanDesc.findExpectedFormat(null);
+20:             if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {
+21:                 return null;
+22:             }
+23:             Class<?> raw = type.getRawClass();
+24:             if (EnumSet.class.isAssignableFrom(raw)) {
+25:                 // this may or may not be available (Class doesn't; type of field/method does)
+26:                 JavaType enumType = type.getContentType();
+27:                 // and even if nominally there is something, only use if it really is enum
+28:                 if (!enumType.isEnumType()) {
+29:                     enumType = null;
+30:                 }
+31:                 ser = buildEnumSetSerializer(enumType);
+32:             } else {
+33:                 Class<?> elementRaw = type.getContentType().getRawClass();
+34:                 if (isIndexedList(raw)) {
+35:                     if (elementRaw == String.class) {
+36:                         // [JACKSON-829] Must NOT use if we have custom serializer
+37:                         if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {
+38:                             ser = IndexedStringListSerializer.instance;
+39:                         }
+40:                     } else {
+41:                         ser = buildIndexedListSerializer(type.getContentType(), staticTyping,
+42:                             elementTypeSerializer, elementValueSerializer);
+43:                     }
+44:                 } else if (elementRaw == String.class) {
+45:                     // [JACKSON-829] Must NOT use if we have custom serializer
+46:                     if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {
+47:                         ser = StringCollectionSerializer.instance;
+48:                     }
+49:                 }
+50:                 if (ser == null) {
+51:                     ser = buildCollectionSerializer(type.getContentType(), staticTyping,
+52:                             elementTypeSerializer, elementValueSerializer);
+53:                 }
+54:             }
+55:         }
+56:         // [Issue#120]: Allow post-processing
+57:         if (_factoryConfig.hasSerializerModifiers()) {
+58:             for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {
+59:                 ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);
+60:             }
+61:         }
+62:         return ser;
+63:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

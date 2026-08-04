@@ -1,0 +1,72 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   @Override public JsonToken peek() throws IOException {
+ 2:     if (stack.isEmpty()) {
+ 3:       return JsonToken.END_DOCUMENT;
+ 4:     }
+ 5: 
+ 6:     Object o = peekStack();
+ 7:     if (o instanceof Iterator) {
+ 8:       boolean isObject = stack.get(stack.size() - 2) instanceof JsonObject;
+ 9:       Iterator<?> iterator = (Iterator<?>) o;
+10:       if (iterator.hasNext()) {
+11:         if (isObject) {
+12:           return JsonToken.NAME;
+13:         } else {
+14:           stack.add(iterator.next());
+15:           return peek();
+16:         }
+17:       } else {
+18:         return isObject ? JsonToken.END_OBJECT : JsonToken.END_ARRAY;
+19:       }
+20:     } else if (o instanceof JsonObject) {
+21:       return JsonToken.BEGIN_OBJECT;
+22:     } else if (o instanceof JsonArray) {
+23:       return JsonToken.BEGIN_ARRAY;
+24:     } else if (o instanceof JsonPrimitive) {
+25:       JsonPrimitive primitive = (JsonPrimitive) o;
+26:       if (primitive.isString()) {
+27:         return JsonToken.STRING;
+28:       } else if (primitive.isBoolean()) {
+29:         return JsonToken.BOOLEAN;
+30:       } else if (primitive.isNumber()) {
+31:         return JsonToken.NUMBER;
+32:       } else {
+33:         throw new AssertionError();
+34:       }
+35:     } else if (o instanceof JsonNull) {
+36:       return JsonToken.NULL;
+37:     } else if (o == SENTINEL_CLOSED) {
+38:       throw new IllegalStateException("JsonReader is closed");
+39:     } else {
+40:       throw new AssertionError();
+41:     }
+42:   }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

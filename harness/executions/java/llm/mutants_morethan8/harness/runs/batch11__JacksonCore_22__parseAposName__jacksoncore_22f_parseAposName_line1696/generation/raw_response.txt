@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Fails to report invalid EOF when parsing field name",
+      "line": 5,
+      "precode": "            _reportInvalidEOF(\"\": was expecting closing '\'' for field name\", JsonToken.FIELD_NAME);",
+      "aftercode": "            // _reportInvalidEOF(\"\": was expecting closing '\'' for field name\", JsonToken.FIELD_NAME);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Incorrectly returns non-empty string for empty field name",
+      "line": 10,
+      "precode": "                return _fieldComplete(\"\");",
+      "aftercode": "                return _fieldComplete(\"invalid\");"
+    },
+    {
+      "id": 3,
+      "reasoning": "Fails to terminate parsing loop on closing quote",
+      "line": 24,
+      "precode": "                    break;",
+      "aftercode": "                    // break;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Incorrectly processes double quotes in field name",
+      "line": 26,
+      "precode": "                if (ch != '\"' && codes[ch] != 0) {",
+      "aftercode": "                if (ch != '\"' || codes[ch] != 0) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Fails to reject unquoted whitespace",
+      "line": 29,
+      "precode": "                    _throwUnquotedSpace(ch, \"name\");",
+      "aftercode": "                    // _throwUnquotedSpace(ch, \"name\");"
+    },
+    {
+      "id": 6,
+      "reasoning": "Uses incorrect escape sequence decoding method",
+      "line": 32,
+      "precode": "                    ch = _decodeCharEscape();",
+      "aftercode": "                    ch = _decodeInvalidEscape();"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrectly processes Unicode characters >127",
+      "line": 34,
+      "precode": "                    if (ch > 127) {",
+      "aftercode": "                    if (ch <= 127) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "Incorrectly encodes 2-byte Unicode sequences",
+      "line": 45,
+      "precode": "                            currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));",
+      "aftercode": "                            currQuad = (currQuad << 8) | (0x80 | (ch >> 6));"
+    },
+    {
+      "id": 9,
+      "reasoning": "Incorrectly encodes 3-byte Unicode sequences",
+      "line": 49,
+      "precode": "                            currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));",
+      "aftercode": "                            currQuad = (currQuad << 8) | (0x80 | (ch >> 12));"
+    },
+    {
+      "id": 10,
+      "reasoning": "Fails to manage quad buffer when processing Unicode",
+      "line": 52,
+      "precode": "                            if (currQuadBytes >= 4) {",
+      "aftercode": "                            if (currQuadBytes <= 4) {"
+    },
+    {
+      "id": 11,
+      "reasoning": "Incorrectly resets quad buffer state",
+      "line": 57,
+      "precode": "                                currQuad = 0;",
+      "aftercode": "                                currQuad = 1;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Incorrectly encodes third byte of 3-byte Unicode",
+      "line": 60,
+      "precode": "                            currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));",
+      "aftercode": "                            currQuad = (currQuad << 8) | (0x40 | ((ch >> 6) & 0x3f));"
+    },
+    {
+      "id": 13,
+      "reasoning": "Incorrectly calculates final byte of Unicode sequence",
+      "line": 64,
+      "precode": "                        ch = 0x80 | (ch & 0x3f);",
+      "aftercode": "                        ch = 0x40 | (ch & 0x3f);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Fails to increment quad byte counter",
+      "line": 69,
+      "precode": "                    ++currQuadBytes;",
+      "aftercode": "                    // ++currQuadBytes;"
+    },
+    {
+      "id": 15,
+      "reasoning": "Incorrectly shifts and combines bytes for quad buffer",
+      "line": 70,
+      "precode": "                currQuad = (currQuad << 8) | ch;",
+      "aftercode": "                currQuad = (currQuad >> 8) | ch;"
+    },
+    {
+      "id": 16,
+      "reasoning": "Fails to manage quad buffer overflow",
+      "line": 75,
+      "precode": "                currQuad = ch;",
+      "aftercode": "                currQuad = 0;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Incorrectly tracks quad byte count",
+      "line": 78,
+      "precode": "                currQuadBytes = 1;",
+      "aftercode": "                currQuadBytes = 0;"
+    },
+    {
+      "id": 18,
+      "reasoning": "Fails to grow quad buffer when needed",
+      "line": 89,
+      "precode": "                _quadBuffer = quads = growArrayBy(quads, quads.length);",
+      "aftercode": "                _quadBuffer = quads = new int[quads.length];"
+    },
+    {
+      "id": 19,
+      "reasoning": "Incorrectly pads last quad for Unicode",
+      "line": 91,
+      "precode": "                quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);",
+      "aftercode": "                quads[qlen++] = _padLastQuad(currQuad, 0);"
+    },
+    {
+      "id": 20,
+      "reasoning": "Fails to find existing name in symbol table",
+      "line": 93,
+      "precode": "                String name = _symbols.findName(quads, qlen);",
+      "aftercode": "                String name = null;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Incorrectly adds new name to symbol table",
+      "line": 95,
+      "precode": "                name = _addName(quads, qlen, currQuadBytes);",
+      "aftercode": "                name = _addName(quads, 0, 0);"
+    },
+    {
+      "id": 22,
+      "reasoning": "Fails to check for EOF before reading input",
+      "line": 3,
+      "precode": "        if (_inputPtr >= _inputEnd) {",
+      "aftercode": "        if (_inputPtr < _inputEnd) {"
+    },
+    {
+      "id": 23,
+      "reasoning": "Fails to advance input pointer when reading character",
+      "line": 8,
+      "precode": "            int ch = _inputBuffer[_inputPtr++] & 0xFF;",
+      "aftercode": "            int ch = _inputBuffer[_inputPtr] & 0xFF;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Incorrectly initializes quad buffer length counter",
+      "line": 14,
+      "precode": "        int qlen = 0;",
+      "aftercode": "        int qlen = 1;"
+    }
+  ]
+}

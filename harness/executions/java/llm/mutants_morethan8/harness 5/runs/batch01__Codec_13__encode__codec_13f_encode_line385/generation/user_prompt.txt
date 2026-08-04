@@ -1,0 +1,115 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public String encode(String input, final Languages.LanguageSet languageSet) {
+ 2:         final Map<String, List<Rule>> rules = Rule.getInstanceMap(this.nameType, RuleType.RULES, languageSet);
+ 3:         // rules common across many (all) languages
+ 4:         final Map<String, List<Rule>> finalRules1 = Rule.getInstanceMap(this.nameType, this.ruleType, "common");
+ 5:         // rules that apply to a specific language that may be ambiguous or wrong if applied to other languages
+ 6:         final Map<String, List<Rule>> finalRules2 = Rule.getInstanceMap(this.nameType, this.ruleType, languageSet);
+ 7: 
+ 8:         // tidy the input
+ 9:         // lower case is a locale-dependent operation
+10:         input = input.toLowerCase(Locale.ENGLISH).replace('-', ' ').trim();
+11: 
+12:         if (this.nameType == NameType.GENERIC) {
+13:             if (input.length() >= 2 && input.substring(0, 2).equals("d'")) { // check for d'
+14:                 final String remainder = input.substring(2);
+15:                 final String combined = "d" + remainder;
+16:                 return "(" + encode(remainder) + ")-(" + encode(combined) + ")";
+17:             }
+18:             for (final String l : NAME_PREFIXES.get(this.nameType)) {
+19:                 // handle generic prefixes
+20:                 if (input.startsWith(l + " ")) {
+21:                     // check for any prefix in the words list
+22:                     final String remainder = input.substring(l.length() + 1); // input without the prefix
+23:                     final String combined = l + remainder; // input with prefix without space
+24:                     return "(" + encode(remainder) + ")-(" + encode(combined) + ")";
+25:                 }
+26:             }
+27:         }
+28: 
+29:         final List<String> words = Arrays.asList(input.split("\\s+"));
+30:         final List<String> words2 = new ArrayList<String>();
+31: 
+32:         // special-case handling of word prefixes based upon the name type
+33:         switch (this.nameType) {
+34:         case SEPHARDIC:
+35:             for (final String aWord : words) {
+36:                 final String[] parts = aWord.split("'");
+37:                 final String lastPart = parts[parts.length - 1];
+38:                 words2.add(lastPart);
+39:             }
+40:             words2.removeAll(NAME_PREFIXES.get(this.nameType));
+41:             break;
+42:         case ASHKENAZI:
+43:             words2.addAll(words);
+44:             words2.removeAll(NAME_PREFIXES.get(this.nameType));
+45:             break;
+46:         case GENERIC:
+47:             words2.addAll(words);
+48:             break;
+49:         default:
+50:             throw new IllegalStateException("Unreachable case: " + this.nameType);
+51:         }
+52: 
+53:         if (this.concat) {
+54:             // concat mode enabled
+55:             input = join(words2, " ");
+56:         } else if (words2.size() == 1) {
+57:             // not a multi-word name
+58:             input = words.iterator().next();
+59:         } else {
+60:             // encode each word in a multi-word name separately (normally used for approx matches)
+61:             final StringBuilder result = new StringBuilder();
+62:             for (final String word : words2) {
+63:                 result.append("-").append(encode(word));
+64:             }
+65:             // return the result without the leading "-"
+66:             return result.substring(1);
+67:         }
+68: 
+69:         PhonemeBuilder phonemeBuilder = PhonemeBuilder.empty(languageSet);
+70: 
+71:         // loop over each char in the input - we will handle the increment manually
+72:         for (int i = 0; i < input.length();) {
+73:             final RulesApplication rulesApplication =
+74:                     new RulesApplication(rules, input, phonemeBuilder, i, maxPhonemes).invoke();
+75:             i = rulesApplication.getI();
+76:             phonemeBuilder = rulesApplication.getPhonemeBuilder();
+77:         }
+78: 
+79:         // Apply the general rules
+80:         phonemeBuilder = applyFinalRules(phonemeBuilder, finalRules1);
+81:         // Apply the language-specific rules
+82:         phonemeBuilder = applyFinalRules(phonemeBuilder, finalRules2);
+83: 
+84:         return phonemeBuilder.makeString();
+85:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static void copy(SummaryStatistics source, SummaryStatistics dest)
+ 2:         throws NullArgumentException {
+ 3:         MathUtils.checkNotNull(source);
+ 4:         MathUtils.checkNotNull(dest);
+ 5:         dest.maxImpl = source.maxImpl.copy();
+ 6:         dest.minImpl = source.minImpl.copy();
+ 7:         dest.sumImpl = source.sumImpl.copy();
+ 8:         dest.sumLogImpl = source.sumLogImpl.copy();
+ 9:         dest.sumsqImpl = source.sumsqImpl.copy();
+10:         dest.secondMoment = source.secondMoment.copy();
+11:         dest.n = source.n;
+12: 
+13:         // Keep commons-math supplied statistics with embedded moments in synch
+14:         if (source.getVarianceImpl() instanceof Variance) {
+15:             dest.varianceImpl = new Variance(dest.secondMoment);
+16:         } else {
+17:             dest.varianceImpl = source.varianceImpl.copy();
+18:         }
+19:         if (source.meanImpl instanceof Mean) {
+20:             dest.meanImpl = new Mean(dest.secondMoment);
+21:         } else {
+22:             dest.meanImpl = source.meanImpl.copy();
+23:         }
+24:         if (source.getGeoMeanImpl() instanceof GeometricMean) {
+25:             dest.geoMeanImpl = new GeometricMean((SumOfLogs) dest.sumLogImpl);
+26:         } else {
+27:             dest.geoMeanImpl = source.geoMeanImpl.copy();
+28:         }
+29: 
+30:         // Make sure that if stat == statImpl in source, same
+31:         // holds in dest; otherwise copy stat
+32:         if (source.geoMean == source.geoMeanImpl) {
+33:             dest.geoMean = (GeometricMean) dest.geoMeanImpl;
+34:         } else {
+35:             GeometricMean.copy(source.geoMean, dest.geoMean);
+36:         }
+37:         if (source.max == source.maxImpl) {
+38:             dest.max = (Max) dest.maxImpl;
+39:         } else {
+40:             Max.copy(source.max, dest.max);
+41:         }
+42:         if (source.mean == source.meanImpl) {
+43:             dest.mean = (Mean) dest.meanImpl;
+44:         } else {
+45:             Mean.copy(source.mean, dest.mean);
+46:         }
+47:         if (source.min == source.minImpl) {
+48:             dest.min = (Min) dest.minImpl;
+49:         } else {
+50:             Min.copy(source.min, dest.min);
+51:         }
+52:         if (source.sum == source.sumImpl) {
+53:             dest.sum = (Sum) dest.sumImpl;
+54:         } else {
+55:             Sum.copy(source.sum, dest.sum);
+56:         }
+57:         if (source.variance == source.varianceImpl) {
+58:             dest.variance = (Variance) dest.varianceImpl;
+59:         } else {
+60:             Variance.copy(source.variance, dest.variance);
+61:         }
+62:         if (source.sumLog == source.sumLogImpl) {
+63:             dest.sumLog = (SumOfLogs) dest.sumLogImpl;
+64:         } else {
+65:             SumOfLogs.copy(source.sumLog, dest.sumLog);
+66:         }
+67:         if (source.sumsq == source.sumsqImpl) {
+68:             dest.sumsq = (SumOfSquares) dest.sumsqImpl;
+69:         } else {
+70:             SumOfSquares.copy(source.sumsq, dest.sumsq);
+71:         }
+72:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

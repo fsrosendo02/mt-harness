@@ -1,0 +1,104 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected int round(int n) {
+ 2:         boolean inc = false;
+ 3:         switch (field.getRoundingMode()) {
+ 4:             case ROUND_DOWN:
+ 5:                 inc = false;
+ 6:                 break;
+ 7: 
+ 8:             case ROUND_UP:
+ 9:                 inc = n != 0;       // round up if n!=0
+10:                 break;
+11: 
+12:             case ROUND_HALF_UP:
+13:                 inc = n >= 5000;  // round half up
+14:                 break;
+15: 
+16:             case ROUND_HALF_DOWN:
+17:                 inc = n > 5000;  // round half down
+18:                 break;
+19: 
+20:             case ROUND_HALF_EVEN:
+21:                 inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even
+22:                 break;
+23: 
+24:             case ROUND_HALF_ODD:
+25:                 inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd
+26:                 break;
+27: 
+28:             case ROUND_CEIL:
+29:                 inc = sign == 1 && n != 0;  // round ceil
+30:                 break;
+31: 
+32:             case ROUND_FLOOR:
+33:             default:
+34:                 inc = sign == -1 && n != 0;  // round floor
+35:                 break;
+36:         }
+37: 
+38:         if (inc) {
+39:             // increment if necessary
+40:             int rh = 1;
+41:             for (int i = 0; i < mant.length; i++) {
+42:                 final int r = mant[i] + rh;
+43:                 rh = r / RADIX;
+44:                 mant[i] = r - rh * RADIX;
+45:             }
+46: 
+47:             if (rh != 0) {
+48:                 shiftRight();
+49:                 mant[mant.length-1] = rh;
+50:             }
+51:         }
+52: 
+53:         // check for exceptional cases and raise signals if necessary
+54:         if (exp < MIN_EXP) {
+55:             // Gradual Underflow
+56:             field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);
+57:             return DfpField.FLAG_UNDERFLOW;
+58:         }
+59: 
+60:         if (exp > MAX_EXP) {
+61:             // Overflow
+62:             field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);
+63:             return DfpField.FLAG_OVERFLOW;
+64:         }
+65: 
+66:         if (n != 0) {
+67:             // Inexact
+68:             field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);
+69:             return DfpField.FLAG_INEXACT;
+70:         }
+71: 
+72:         return 0;
+73: 
+74:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

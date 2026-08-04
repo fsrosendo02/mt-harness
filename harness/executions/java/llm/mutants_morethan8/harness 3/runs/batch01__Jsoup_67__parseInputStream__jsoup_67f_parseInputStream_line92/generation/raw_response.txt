@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the null check behavior of InputStream. It should not always return a new Document if InputStream is null.",
+      "line": 2,
+      "precode": "return new Document(baseUri);",
+      "aftercode": "// empty body"
+    },
+    {
+      "id": 2,
+      "reasoning": "Modifies the condition to incorrectly check for non-null input. This could lead to incorrect parsing behavior when InputStream is not null.",
+      "line": 2,
+      "precode": "if (input == null)",
+      "aftercode": "if (input != null)"
+    },
+    {
+      "id": 3,
+      "reasoning": "Changes the way the buffer size for wrapping the input stream is set. This could lead to unexpected behavior when reading from the stream.",
+      "line": 4,
+      "precode": "input = ConstrainableInputStream.wrap(input, bufferSize, 0);",
+      "aftercode": "input = ConstrainableInputStream.wrap(input, 0, bufferSize);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Removes the mark and reset operations on the input stream, which might affect the ability to re-read part of the stream.",
+      "line": 10,
+      "precode": "input.mark(firstReadBufferSize);",
+      "aftercode": "// input.mark(firstReadBufferSize);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Introduces a redundant read operation to check if the stream is fully read, which could lead to incorrect handling of empty streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() == -1;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Skips setting the charsetName to a default value if it is null, which might lead to subsequent operations using an incorrect or unspecified character set.",
+      "line": 22,
+      "precode": "charsetName = defaultCharset;",
+      "aftercode": "// charsetName = defaultCharset;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Modifies the detection of the BOM charset to always return null, bypassing any potential BOM-based charset detection.",
+      "line": 16,
+      "precode": "BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);",
+      "aftercode": "BomCharset bomCharset = null;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Changes the condition to always skip re-decoding based on the charset found in the document metadata. This could lead to incorrect parsing of documents with different character sets.",
+      "line": 46,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 9,
+      "reasoning": "Removes the closing of the input stream after parsing. This could lead to resource leaks.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": "// input.close();"
+    },
+    {
+      "id": 10,
+      "reasoning": "Modifies the condition to always re-decode the document data using the default charset, bypassing any potential charset detection from metadata.",
+      "line": 24,
+      "precode": "doc = parser.parseInput(docData, baseUri);",
+      "aftercode": "doc = parser.parseInput(Charset.forName(defaultCharset).decode(firstBytes).toString(), baseUri);"
+    },
+    {
+      "id": 11,
+      "reasoning": "Changes the way charset validation is performed, potentially allowing invalid character sets to be used in subsequent operations.",
+      "line": 44,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = null;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Modifies the charsetName validation check, allowing empty or invalid charset names to be used.",
+      "line": 53,
+      "precode": "Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");",
+      "aftercode": "// Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");"
+    },
+    {
+      "id": 13,
+      "reasoning": "Changes the way meta elements are selected from the document, potentially leading to incorrect detection of character sets.",
+      "line": 27,
+      "precode": "Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\");",
+      "aftercode": "// Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\");"
+    },
+    {
+      "id": 14,
+      "reasoning": "Modifies the way XML declarations are handled, potentially leading to incorrect charset detection in XML documents.",
+      "line": 39,
+      "precode": "if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration)",
+      "aftercode": "// if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration)"
+    },
+    {
+      "id": 15,
+      "reasoning": "Changes the way the first bytes are read into a ByteBuffer, potentially leading to incorrect detection of BOMs or metacharsets.",
+      "line": 11,
+      "precode": "ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1);",
+      "aftercode": "ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize + 1);"
+    },
+    {
+      "id": 16,
+      "reasoning": "Modifies the way character sets are validated and used in re-decoding operations, potentially leading to incorrect parsing.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll(\"[\\\"\\']\", \"\");",
+      "aftercode": "// foundCharset = null;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Removes the check for fullyRead after resetting the input stream, potentially leading to incorrect handling of partially read streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() != -1;"
+    },
+    {
+      "id": 18,
+      "reasoning": "Changes the way charsetName is set after re-decoding, potentially leading to incorrect character set usage.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = defaultCharset;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Introduces an additional check for fullyRead after resetting the input stream, which could lead to incorrect handling of partially read streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "if (!fullyRead) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Modifies the condition to always skip re-decoding based on the charset found in the document metadata, bypassing any potential charset detection from metadata.",
+      "line": 46,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 21,
+      "reasoning": "Modifies the way character sets are validated and used in re-decoding operations, potentially leading to incorrect parsing.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll(\"[\\\"\\']\", \"\");",
+      "aftercode": "// foundCharset = null;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Removes the check for fullyRead after resetting the input stream, potentially leading to incorrect handling of partially read streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() != -1;"
+    },
+    {
+      "id": 23,
+      "reasoning": "Changes the way charsetName is set after re-decoding, potentially leading to incorrect character set usage.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = defaultCharset;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Introduces an additional check for fullyRead after resetting the input stream, which could lead to incorrect handling of partially read streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "if (!fullyRead) {"
+    },
+    {
+      "id": 25,
+      "reasoning": "Modifies the way character sets are validated and used in re-decoding operations, potentially leading to incorrect parsing.",
+      "line": 46,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 26,
+      "reasoning": "Changes the way charsetName is set after re-decoding, potentially leading to incorrect character set usage.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = defaultCharset;"
+    },
+    {
+      "id": 27,
+      "reasoning": "Introduces an additional check for fullyRead after resetting the input stream, which could lead to incorrect handling of partially read streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "if (!fullyRead) {"
+    },
+    {
+      "id": 28,
+      "reasoning": "Modifies the way character sets are validated and used in re-decoding operations, potentially leading to incorrect parsing.",
+      "line": 46,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 29,
+      "reasoning": "Changes the way charsetName is set after re-decoding, potentially leading to incorrect character set usage.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = defaultCharset;"
+    },
+    {
+      "id": 30,
+      "reasoning": "Introduces an additional check for fullyRead after resetting the input stream, which could lead to incorrect handling of partially read streams.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "if (!fullyRead) {"
+    },
+    {
+      "id": 31,
+      "reasoning": "Modifies the way character sets are validated and used in re-decoding operations, potentially leading to incorrect parsing.",
+      "line": 46,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 32,
+      "reasoning": "Changes the way charsetName is set after re-decoding, potentially leading to incorrect character set usage.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = defaultCharset;"
+    }
+  ]
+}

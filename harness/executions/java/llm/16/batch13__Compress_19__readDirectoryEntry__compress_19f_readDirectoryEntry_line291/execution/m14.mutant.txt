@@ -1,0 +1,84 @@
+    private void readDirectoryEntry(DumpArchiveEntry entry)
+        throws IOException {
+        long size = entry.getEntrySize();
+        boolean first = true;
+
+        while (first ||
+                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {
+            // read the header that we just peeked at.
+            if (!first) {
+                raw.readRecord();
+            }
+
+            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&
+                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {
+                pending.put(Integer.valueOf(entry.getIno()), entry);
+            }
+
+            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();
+
+            if (blockBuffer.length < datalen) {
+                blockBuffer = new byte[datalen];
+            }
+
+            if (raw.read(blockBuffer, 0, datalen) != datalen) {
+                throw new EOFException();
+            }
+
+            int reclen = 0;
+
+            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));
+                    i += reclen) {
+                int ino = DumpArchiveUtil.convert32(blockBuffer, i);
+                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);
+
+                byte type = blockBuffer[i + 6];
+
+                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?
+
+                if (".".equals(name) || "..".equals(name)) {
+                    // do nothing...
+                    continue;
+                }
+
+                Dirent d = new Dirent(entry.getIno(), entry.getIno(), type, name);
+
+                /*
+                if ((type == 4) && names.containsKey(ino)) {
+                    System.out.println("we already have ino: " +
+                                       names.get(ino));
+                }
+                */
+
+                names.put(Integer.valueOf(ino), d);
+
+                // check whether this allows us to fill anything in the pending list.
+                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {
+                    String path = getPath(e.getValue());
+
+                    if (path != null) {
+                        e.getValue().setName(path);
+                        e.getValue()
+                         .setSimpleName(names.get(e.getKey()).getName());
+                        queue.add(e.getValue());
+                    }
+                }
+
+                // remove anything that we found. (We can't do it earlier
+                // because of concurrent modification exceptions.)
+                for (DumpArchiveEntry e : queue) {
+                    pending.remove(Integer.valueOf(e.getIno()));
+                }
+            }
+
+            byte[] peekBytes = raw.peek();
+
+            if (!DumpArchiveUtil.verify(peekBytes)) {
+                throw new InvalidFormatException();
+            }
+
+            entry = DumpArchiveEntry.parse(peekBytes);
+            first = false;
+            size -= DumpArchiveConstants.TP_SIZE;
+        }
+    }

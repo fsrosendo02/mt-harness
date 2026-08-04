@@ -1,0 +1,175 @@
+{
+  "requested_count": 24,
+  "accepted_count": 10,
+  "rejected_count": 14,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "The null creator is not checked for EnumMaps.",
+        "line": 4,
+        "precode": "// null -> no ObjectIdReader for EnumMaps",
+        "aftercode": "// null -> no EnumMapCreator"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 9,
+        "precode": "keyName = p.nextFieldName();",
+        "aftercode": "if (creator != null) { keyName = p.nextFieldName(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 11,
+        "precode": "keyName = p.getCurrentName();",
+        "aftercode": "if (creator != null) { keyName = p.getCurrentName(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 25,
+        "precode": "try { result = (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "aftercode": "if (creator != null) try { result = (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 70,
+        "precode": "try { return (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "aftercode": "if (creator != null) try { return (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "The property buffer is not checked for being null before use.",
+        "line": 32,
+        "precode": "// other property? needs buffering",
+        "aftercode": "// other property? needs non-null buffering"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 13,
+        "reasoning": "The key deserializer is not checked for returning a null value.",
+        "line": 35,
+        "precode": "Enum<?> key = (Enum<?>) _keyDeserializer.deserializeKey(keyName, ctxt);",
+        "aftercode": "Enum<?> key = (_keyDeserializer.deserializeKey(keyName, ctxt) != null ? (Enum<?>) _keyDeserializer.deserializeKey(keyName, ctxt) : null;",
+        "candidate_code": "    public EnumMap<?,?> _deserializeUsingProperties(JsonParser p, DeserializationContext ctxt) throws IOException\n    {\n        final PropertyBasedCreator creator = _propertyBasedCreator;\n        // null -> no ObjectIdReader for EnumMaps\n        PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, null);\n\n        String keyName;\n        if (p.isExpectedStartObjectToken()) {\n            keyName = p.nextFieldName();\n        } else if (p.hasToken(JsonToken.FIELD_NAME)) {\n            keyName = p.getCurrentName();\n        } else {\n            keyName = null;\n        }\n\n        for (; keyName != null; keyName = p.nextFieldName()) {\n            JsonToken t = p.nextToken(); // to get to value\n            // creator property?\n            SettableBeanProperty prop = creator.findCreatorProperty(keyName);\n            if (prop != null) {\n                // Last property to set?\n                if (buffer.assignParameter(prop, prop.deserialize(p, ctxt))) {\n                    EnumMap<?,?> result;\n                    try {\n                        result = (EnumMap<?,?>)creator.build(ctxt, buffer);\n                    } catch (Exception e) {\n                        return wrapAndThrow(e, _containerType.getRawClass(), keyName);\n                    }\n                    return deserialize(p, ctxt, result);\n                }\n                continue;\n            }\n            // other property? needs buffering\n            // but we need to let key deserializer handle it separately, nonetheless\n            Enum<?> key = (_keyDeserializer.deserializeKey(keyName, ctxt) != null ? (Enum<?>) _keyDeserializer.deserializeKey(keyName, ctxt) : null;\n            if (key == null) {\n                if (!ctxt.isEnabled(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)) {\n                    return (EnumMap<?,?>) ctxt.handleWeirdStringValue(_enumClass, keyName,\n                            \"value not one of declared Enum instance names for %s\",\n                            _containerType.getKeyType());\n                }\n                // 24-Mar-2012, tatu: Null won't work as a key anyway, so let's\n                //  just skip the entry then. But we must skip the value as well, if so.\n                p.nextToken();\n                p.skipChildren();\n                continue;\n            }\n            Object value; \n\n            try {\n                if (t == JsonToken.VALUE_NULL) {\n                    if (_skipNullValues) {\n                        continue;\n                    }\n                    value = _nullProvider.getNullValue(ctxt);\n                } else if (_valueTypeDeserializer == null) {\n                    value = _valueDeserializer.deserialize(p, ctxt);\n                } else {\n                    value = _valueDeserializer.deserializeWithType(p, ctxt, _valueTypeDeserializer);\n                }\n            } catch (Exception e) {\n                wrapAndThrow(e, _containerType.getRawClass(), keyName);\n                return null;\n            }\n            buffer.bufferMapProperty(key, value);\n        }\n        // end of JSON object?\n        // if so, can just construct and leave...\n        try {\n            return (EnumMap<?,?>)creator.build(ctxt, buffer);\n        } catch (Exception e) {\n            wrapAndThrow(e, _containerType.getRawClass(), keyName);\n            return null;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The value deserializer is not checked for being null before use.",
+        "line": 57,
+        "precode": "value = _valueDeserializer.deserialize(p, ctxt);",
+        "aftercode": "if (_valueDeserializer != null) { value = _valueDeserializer.deserialize(p, ctxt); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "The value deserializer is not checked for being null before use.",
+        "line": 60,
+        "precode": "value = _valueDeserializer.deserializeWithType(p, ctxt, _valueTypeDeserializer);",
+        "aftercode": "if (_valueDeserializer != null) { value = _valueDeserializer.deserializeWithType(p, ctxt, _valueTypeDeserializer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 25,
+        "precode": "try { result = (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "aftercode": "if (creator != null) try { result = (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 70,
+        "precode": "try { return (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "aftercode": "if (creator != null) try { return (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 25,
+        "precode": "try { result = (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "aftercode": "if (creator != null && !buffer.isEmpty()) try { result = (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 70,
+        "precode": "try { return (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "aftercode": "if (creator != null && !buffer.isEmpty()) try { return (EnumMap<?,?>)creator.build(ctxt, buffer); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The property creator is not checked for being null before use.",
+        "line": 28,
+        "precode": "return wrapAndThrow(e, _containerType.getRawClass(), keyName);",
+        "aftercode": "if (creator != null) return wrapAndThrow(e, _containerType.getRawClass(), keyName);",
+        "candidate_code": "    public EnumMap<?,?> _deserializeUsingProperties(JsonParser p, DeserializationContext ctxt) throws IOException\n    {\n        final PropertyBasedCreator creator = _propertyBasedCreator;\n        // null -> no ObjectIdReader for EnumMaps\n        PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, null);\n\n        String keyName;\n        if (p.isExpectedStartObjectToken()) {\n            keyName = p.nextFieldName();\n        } else if (p.hasToken(JsonToken.FIELD_NAME)) {\n            keyName = p.getCurrentName();\n        } else {\n            keyName = null;\n        }\n\n        for (; keyName != null; keyName = p.nextFieldName()) {\n            JsonToken t = p.nextToken(); // to get to value\n            // creator property?\n            SettableBeanProperty prop = creator.findCreatorProperty(keyName);\n            if (prop != null) {\n                // Last property to set?\n                if (buffer.assignParameter(prop, prop.deserialize(p, ctxt))) {\n                    EnumMap<?,?> result;\n                    try {\n                        result = (EnumMap<?,?>)creator.build(ctxt, buffer);\n                    } catch (Exception e) {\n                        if (creator != null) return wrapAndThrow(e, _containerType.getRawClass(), keyName);\n                    }\n                    return deserialize(p, ctxt, result);\n                }\n                continue;\n            }\n            // other property? needs buffering\n            // but we need to let key deserializer handle it separately, nonetheless\n            Enum<?> key = (Enum<?>) _keyDeserializer.deserializeKey(keyName, ctxt);\n            if (key == null) {\n                if (!ctxt.isEnabled(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)) {\n                    return (EnumMap<?,?>) ctxt.handleWeirdStringValue(_enumClass, keyName,\n                            \"value not one of declared Enum instance names for %s\",\n                            _containerType.getKeyType());\n                }\n                // 24-Mar-2012, tatu: Null won't work as a key anyway, so let's\n                //  just skip the entry then. But we must skip the value as well, if so.\n                p.nextToken();\n                p.skipChildren();\n                continue;\n            }\n            Object value; \n\n            try {\n                if (t == JsonToken.VALUE_NULL) {\n                    if (_skipNullValues) {\n                        continue;\n                    }\n                    value = _nullProvider.getNullValue(ctxt);\n                } else if (_valueTypeDeserializer == null) {\n                    value = _valueDeserializer.deserialize(p, ctxt);\n                } else {\n                    value = _valueDeserializer.deserializeWithType(p, ctxt, _valueTypeDeserializer);\n                }\n            } catch (Exception e) {\n                wrapAndThrow(e, _containerType.getRawClass(), keyName);\n                return null;\n            }\n            buffer.bufferMapProperty(key, value);\n        }\n        // end of JSON object?\n        // if so, can just construct and leave...\n        try {\n            return (EnumMap<?,?>)creator.build(ctxt, buffer);\n        } catch (Exception e) {\n            wrapAndThrow(e, _containerType.getRawClass(), keyName);\n            return null;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

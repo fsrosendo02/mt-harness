@@ -1,0 +1,614 @@
+{
+  "requested_count": 48,
+  "accepted_count": 0,
+  "rejected_count": 48,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 1,
+        "reasoning": "The mutation changes the condition from checking if the map is null to checking if it is not empty, which violates the behavior of printing null when a null map is encountered.",
+        "line": 10,
+        "precode": "if (map == null) {",
+        "aftercode": "if (!map.isEmpty()) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (!map.isEmpty()) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 2,
+        "reasoning": "The mutation changes the condition of the entry set to check if it contains a key, not necessarily if it's a map instance. This violates the behavior of recursively printing maps.",
+        "line": 31,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (map.containsKey(childKey) && childValue instanceof Map) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (map.containsKey(childKey) && childValue instanceof Map) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 3,
+        "reasoning": "The mutation changes the condition to check if the lineage index is less than or equal to zero, instead of checking for -1. This violates the behavior of identifying circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex <= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex <= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.print('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The mutation removes the check for circular references, allowing the method to print maps that contain themselves. This violates the expected behavior of avoiding infinite recursion.",
+        "line": 31,
+        "precode": "&& !lineage.contains(childValue)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 6,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex > 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex > 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.print('(this Map)'); } else { out.println(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 9,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "true",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            true {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 10,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 12,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 13,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 15,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 16,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 18,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 19,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 21,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 22,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 24,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 25,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 27,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 28,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 30,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 31,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 33,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 34,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 36,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 37,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 38,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 39,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 40,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 41,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 42,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 43,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 44,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 45,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 46,
+        "reasoning": "The mutation changes the condition to check if the lineage index is greater than or equal to zero, instead of checking for -1. This violates the behavior of identifying non-circular references.",
+        "line": 44,
+        "precode": "if (lineageIndex == -1) {",
+        "aftercode": "if (lineageIndex >= 0) {",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex >= 0) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 47,
+        "reasoning": "The mutation changes the condition to check if the lineage size minus one equals the index, instead of checking for equality with the last index. This violates the behavior of identifying the current map in the lineage.",
+        "line": 45,
+        "precode": "out.print(childValue);",
+        "aftercode": "if (lineage.size() - 1 == lineageIndex) { out.println('(this Map)'); } else { out.print(childValue); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 48,
+        "reasoning": "The mutation changes the condition to check if the child value is an instance of Map, but then ignores this by continuing with the else block. This violates the behavior of distinguishing between maps and other types.",
+        "line": 31,
+        "precode": "childValue instanceof Map",
+        "aftercode": "false",
+        "candidate_code": "    private static void verbosePrintInternal(\n        final PrintStream out,\n        final Object label,\n        final Map<?, ?> map,\n        final ArrayStack<Map<?, ?>> lineage,\n        final boolean debug) {\n\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (Map.Entry<?, ?> entry : map.entrySet()) {\n            Object childKey = entry.getKey();\n            Object childValue = entry.getValue();\n            false {\n                verbosePrintInternal(\n                    out,\n                    (childKey == null ? \"null\" : childKey),\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

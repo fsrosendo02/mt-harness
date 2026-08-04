@@ -1,0 +1,66 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private Map<String, Integer> initializeHeader() throws IOException {
+ 2:         Map<String, Integer> hdrMap = null;
+ 3:         final String[] formatHeader = this.format.getHeader();
+ 4:         if (formatHeader != null) {
+ 5:             hdrMap = new LinkedHashMap<String, Integer>();
+ 6: 
+ 7:             String[] headerRecord = null;
+ 8:             if (formatHeader.length == 0) {
+ 9:                 // read the header from the first line of the file
+10:                 final CSVRecord nextRecord = this.nextRecord();
+11:                 if (nextRecord != null) {
+12:                     headerRecord = nextRecord.values();
+13:                 }
+14:             } else {
+15:                 if (this.format.getSkipHeaderRecord()) {
+16:                     this.nextRecord();
+17:                 }
+18:                 headerRecord = formatHeader;
+19:             }
+20: 
+21:             // build the name to index mappings
+22:             if (headerRecord != null) {
+23:                 for (int i = 0; i < headerRecord.length; i++) {
+24:                     final String header = headerRecord[i];
+25:                     final boolean containsHeader = hdrMap.containsKey(header);
+26:                     final boolean emptyHeader = header == null || header.trim().isEmpty();
+27:                     if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {
+28:                         throw new IllegalArgumentException("The header contains a duplicate name: \"" + header +
+29:                                 "\" in " + Arrays.toString(headerRecord));
+30:                     }
+31:                     hdrMap.put(header, Integer.valueOf(i));
+32:                 }
+33:             }
+34:         }
+35:         return hdrMap;
+36:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

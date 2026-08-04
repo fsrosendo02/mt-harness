@@ -1,0 +1,284 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the property of handling HTTP errors",
+      "line": 15,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK) throw new IOException(status + \" error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the property of handling HTTP redirects",
+      "line": 19,
+      "precode": "// java url connection will follow redirects on same protocol, but not switch between http & https, so do that here",
+      "aftercode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER) needsRedirect = true;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the property of handling HTTPS protocol",
+      "line": 5,
+      "precode": "Validate .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": "if (!protocol.equals(\"http\") && !protocol.equals(\"https\")) throw new IOException(\"Invalid protocol: \" + protocol);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the property of handling null requests",
+      "line": 2,
+      "precode": "Validate.notNull(req, \"Request must not be null\");",
+      "aftercode": "if (req == null) throw new NullPointerException(\"Request cannot be null\");"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the property of handling empty requests",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (!req.isEmpty()) serialiseRequestUrl(req);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the property of handling requests with invalid methods",
+      "line": 14,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "if (req.method() != Connection.Method.POST) writePost(req.data(), conn.getOutputStream());"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the property of handling requests with invalid URLs",
+      "line": 15,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "if (!req.url().isValid()) throw new MalformedURLException(\"Invalid URL: \" + req.url());"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the property of handling requests with invalid query strings",
+      "line": 9,
+      "precode": "serialiseRequestUrl(req); // appends query string",
+      "aftercode": "if (req.url().getQuery() != null) serialiseRequestUrl(req);"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the property of handling requests with invalid content types",
+      "line": 34,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidContentType(res.contentType)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the property of handling requests with invalid charset",
+      "line": 37,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "if (res.charset != null) inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the property of handling requests with invalid data",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.data != null) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the property of handling requests with invalid status codes",
+      "line": 15,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK && status != HttpURLConnection.HTTP_MOVED_TEMP && status != HttpURLConnection.HTTP_MOVED_PERM && status != HttpURLConnection.HTTP_SEE_OTHER) throw new IOException(status + \" error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the property of handling requests with invalid headers",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "if (res.headers != null) res.setupFromConnection(conn);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the property of handling requests with invalid connection objects",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (conn != null) HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the property of handling requests with invalid request objects",
+      "line": 2,
+      "precode": "Validate.notNull(req, \"Request must not be null\");",
+      "aftercode": "if (req != null) Validate.notNull(req, \"Request must not be null\");"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the property of handling requests with invalid request methods",
+      "line": 9,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() != null) if (req.method() == Connection.Method.GET && req.data().size() > 0)"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the property of handling requests with invalid request data",
+      "line": 9,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (!req.data().isEmpty()) serialiseRequestUrl(req);"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the property of handling requests with invalid request content type",
+      "line": 34,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidContentType(res.contentType)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the property of handling requests with invalid request content length",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.contentLength != -1) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the property of handling requests with invalid request input stream",
+      "line": 37,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "if (inStream != null) inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the property of handling requests with invalid response objects",
+      "line": 40,
+      "precode": "res.executed = true;",
+      "aftercode": "if (res != null) res.executed = true;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the property of handling requests with invalid response status codes",
+      "line": 15,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK) throw new IOException(status + \" error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the property of handling requests with invalid response headers",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "if (res.headers != null) res.setupFromConnection(conn);"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the property of handling requests with invalid response content type",
+      "line": 34,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidContentType(res.contentType)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 25,
+      "reasoning": "Violates the property of handling requests with invalid response content length",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.contentLength != -1) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 26,
+      "reasoning": "Violates the property of handling requests with invalid response input stream",
+      "line": 37,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "if (inStream != null) inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());"
+    },
+    {
+      "id": 27,
+      "reasoning": "Violates the property of handling requests with invalid response data",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.data != null) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 28,
+      "reasoning": "Violates the property of handling requests with invalid response charset",
+      "line": 39,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidCharset(res.charset)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 29,
+      "reasoning": "Violates the property of handling requests with invalid response status code",
+      "line": 15,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK) throw new IOException(status + \" error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 30,
+      "reasoning": "Violates the property of handling requests with invalid response headers",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "if (res.headers != null) res.setupFromConnection(conn);"
+    },
+    {
+      "id": 31,
+      "reasoning": "Violates the property of handling requests with invalid response content type",
+      "line": 34,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidContentType(res.contentType)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 32,
+      "reasoning": "Violates the property of handling requests with invalid response content length",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.contentLength != -1) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 33,
+      "reasoning": "Violates the property of handling requests with invalid response input stream",
+      "line": 37,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "if (inStream != null) inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());"
+    },
+    {
+      "id": 34,
+      "reasoning": "Violates the property of handling requests with invalid response data",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.data != null) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 35,
+      "reasoning": "Violates the property of handling requests with invalid response charset",
+      "line": 39,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidCharset(res.charset)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 36,
+      "reasoning": "Violates the property of handling requests with invalid response status code",
+      "line": 15,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK) throw new IOException(status + \" error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 37,
+      "reasoning": "Violates the property of handling requests with invalid response headers",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "if (res.headers != null) res.setupFromConnection(conn);"
+    },
+    {
+      "id": 38,
+      "reasoning": "Violates the property of handling requests with invalid response content type",
+      "line": 34,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it",
+      "aftercode": "if (DataUtil.isValidContentType(res.contentType)) res.charset = DataUtil.getCharsetFromContentType(res.contentType);"
+    },
+    {
+      "id": 39,
+      "reasoning": "Violates the property of handling requests with invalid response content length",
+      "line": 38,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "if (res.contentLength != -1) res.byteData = DataUtil.readToByteBuffer(inStream);"
+    },
+    {
+      "id": 40,
+      "reasoning": "Violates the property of handling requests with invalid response input stream",
+      "line": 37,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "if (inStream != null) inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());"
+    }
+  ]
+}

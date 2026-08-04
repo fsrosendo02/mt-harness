@@ -1,0 +1,104 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     public void resolve(SerializerProvider provider)
+ 3:         throws JsonMappingException
+ 4:     {
+ 5:         int filteredCount = (_filteredProps == null) ? 0 : _filteredProps.length;
+ 6:         for (int i = 0, len = _props.length; i < len; ++i) {
+ 7:             BeanPropertyWriter prop = _props[i];
+ 8:             // let's start with null serializer resolution actually
+ 9:             if (!prop.willSuppressNulls() && !prop.hasNullSerializer()) {
+10:                 JsonSerializer<Object> nullSer = provider.findNullValueSerializer(prop);
+11:                 if (nullSer != null) {
+12:                     prop.assignNullSerializer(nullSer);
+13:                     // also: remember to replace filtered property too? (see [JACKSON-364])
+14:                     if (i < filteredCount) {
+15:                         BeanPropertyWriter w2 = _filteredProps[i];
+16:                         if (w2 != null) {
+17:                             w2.assignNullSerializer(nullSer);
+18:                         }
+19:                     }
+20:                 }
+21:             }
+22:             
+23:             if (prop.hasSerializer()) {
+24:                 continue;
+25:             }
+26:             // [Issue#124]: allow use of converters
+27:             JsonSerializer<Object> ser = findConvertingSerializer(provider, prop);
+28:             if (ser == null) {
+29:                 // Was the serialization type hard-coded? If so, use it
+30:                 JavaType type = prop.getSerializationType();
+31:                 
+32:                 // It not, we can use declared return type if and only if declared type is final:
+33:                 // if not, we don't really know the actual type until we get the instance.
+34:                 if (type == null) {
+35:                     type = provider.constructType(prop.getGenericPropertyType());
+36:                     if (!type.isFinal()) {
+37:                         if (type.isContainerType() || type.containedTypeCount() > 0) {
+38:                             prop.setNonTrivialBaseType(type);
+39:                         }
+40:                         continue;
+41:                     }
+42:                 }
+43:                 ser = provider.findValueSerializer(type, prop);
+44:                 /* 04-Feb-2010, tatu: We may have stashed type serializer for content types
+45:                  *   too, earlier; if so, it's time to connect the dots here:
+46:                  */
+47:                 if (type.isContainerType()) {
+48:                     TypeSerializer typeSer = type.getContentType().getTypeHandler();
+49:                     if (typeSer != null) {
+50:                         // for now, can do this only for standard containers...
+51:                         if (ser instanceof ContainerSerializer<?>) {
+52:                             // ugly casts... but necessary
+53:                             @SuppressWarnings("unchecked")
+54:                             JsonSerializer<Object> ser2 = (JsonSerializer<Object>)((ContainerSerializer<?>) ser).withValueTypeSerializer(typeSer);
+55:                             ser = ser2;
+56:                         }
+57:                     }
+58:                 }
+59:             }
+60:             prop.assignSerializer(ser);
+61:             // and maybe replace filtered property too? (see [JACKSON-364])
+62:             if (i < filteredCount) {
+63:                 BeanPropertyWriter w2 = _filteredProps[i];
+64:                 if (w2 != null) {
+65:                     w2.assignSerializer(ser);
+66:                 }
+67:             }
+68:         }
+69: 
+70:         // also, any-getter may need to be resolved
+71:         if (_anyGetterWriter != null) {
+72:             _anyGetterWriter.resolve(provider);
+73:         }
+74:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

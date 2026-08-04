@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The variable `t1` is not checked for being negative.",
+      "line": 8,
+      "precode": "final double t1 = interpolator.getCurrentTime();",
+      "aftercode": "final double t1 = -interpolator.getCurrentTime();"
+    },
+    {
+      "id": 2,
+      "reasoning": "The value of `n` is not checked for being greater than the maximum allowed.",
+      "line": 8,
+      "precode": "final int n = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));",
+      "aftercode": "final int n = Math.min(100, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval))"
+    },
+    {
+      "id": 3,
+      "reasoning": "The value of `h` is not checked for being zero.",
+      "line": 9,
+      "precode": "final double h = (t1 - t0) / n;",
+      "aftercode": "final double h = Math.max(1e-10, (t1 - t0) / n);"
+    },
+    {
+      "id": 4,
+      "reasoning": "The values of `ta` and `tb` are not checked for being equal.",
+      "line": 11,
+      "precode": "double ta = t0;",
+      "aftercode": "double ta = -t0;"
+    },
+    {
+      "id": 5,
+      "reasoning": "The value of `ga` is not updated correctly when an event occurs.",
+      "line": 12,
+      "precode": "double ga = g0;",
+      "aftercode": "double ga = -g0;"
+    },
+    {
+      "id": 6,
+      "reasoning": "The value of `tb` is not updated correctly when an event occurs.",
+      "line": 13,
+      "precode": "final double tb = t0 + (interpolator.isForward() ? convergence : -convergence);",
+      "aftercode": "final double tb = t0;"
+    },
+    {
+      "id": 7,
+      "reasoning": "The loop condition is not checked correctly.",
+      "line": 14,
+      "precode": "for (int i = 0; i < n; ++i) {",
+      "aftercode": "for (int i = 0; i > n; --i) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "The value of `h` is not updated correctly in each iteration.",
+      "line": 16,
+      "precode": "tb += h;",
+      "aftercode": "tb -= h;"
+    },
+    {
+      "id": 9,
+      "reasoning": "The interpolated time is not set correctly after an event occurs.",
+      "line": 18,
+      "precode": "interpolator.setInterpolatedTime(tb);",
+      "aftercode": "interpolator.setInterpolatedTime(-tb);"
+    },
+    {
+      "id": 10,
+      "reasoning": "The value of `gb` is not updated correctly when an event occurs.",
+      "line": 19,
+      "precode": "final double gb = handler.g(tb, interpolator.getInterpolatedState());",
+      "aftercode": "final double gb = -handler.g(tb, interpolator.getInterpolatedState());"
+    },
+    {
+      "id": 11,
+      "reasoning": "The condition for checking events is not correct.",
+      "line": 22,
+      "precode": "if (g0Positive ^ (gb >= 0)) {",
+      "aftercode": "if (g0Positive & (gb >= 0)) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "The value of `increasing` is not updated correctly when an event occurs.",
+      "line": 26,
+      "precode": "final boolean increasing = gb >= ga;",
+      "aftercode": "final boolean increasing = gb < ga;"
+    },
+    {
+      "id": 13,
+      "reasoning": "The `UnivariateRealFunction` is not created correctly.",
+      "line": 28,
+      "precode": "final UnivariateRealFunction f = new UnivariateRealFunction() {",
+      "aftercode": "final UnivariateRealFunction f = null;"
+    },
+    {
+      "id": 14,
+      "reasoning": "The `BrentSolver` is not created correctly.",
+      "line": 40,
+      "precode": "final BrentSolver solver = new BrentSolver();",
+      "aftercode": "final BrentSolver solver = null;"
+    },
+    {
+      "id": 15,
+      "reasoning": "The absolute accuracy of the solver is not set correctly.",
+      "line": 41,
+      "precode": "solver.setAbsoluteAccuracy(convergence);",
+      "aftercode": "solver.setAbsoluteAccuracy(0.0);"
+    },
+    {
+      "id": 16,
+      "reasoning": "The maximal iteration count of the solver is not set correctly.",
+      "line": 42,
+      "precode": "solver.setMaximalIterationCount(maxIterationCount);",
+      "aftercode": "solver.setMaximalIterationCount(0);"
+    },
+    {
+      "id": 17,
+      "reasoning": "The root of the function is not checked correctly.",
+      "line": 45,
+      "precode": "double root = (ta <= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);",
+      "aftercode": "double root = -solver.solve(f, ta, tb);"
+    },
+    {
+      "id": 18,
+      "reasoning": "The pending event time is not updated correctly when an event occurs.",
+      "line": 58,
+      "precode": "pendingEventTime = root;",
+      "aftercode": "pendingEventTime = -root;"
+    },
+    {
+      "id": 19,
+      "reasoning": "The pending event flag is not updated correctly when an event occurs.",
+      "line": 59,
+      "precode": "pendingEvent = true;",
+      "aftercode": "pendingEvent = false;"
+    },
+    {
+      "id": 20,
+      "reasoning": "The return value of the function is not correct when an event occurs.",
+      "line": 70,
+      "precode": "return true;",
+      "aftercode": "return false;"
+    },
+    {
+      "id": 21,
+      "reasoning": "The pending event flag is not reset correctly at the end of each step.",
+      "line": 80,
+      "precode": "pendingEvent = false;",
+      "aftercode": "pendingEvent = true;"
+    },
+    {
+      "id": 22,
+      "reasoning": "The pending event time is not reset correctly at the end of each step.",
+      "line": 81,
+      "precode": "pendingEventTime = Double.NaN;",
+      "aftercode": "pendingEventTime = -Double.NaN;"
+    },
+    {
+      "id": 23,
+      "reasoning": "The return value of the function is not correct when no event occurs.",
+      "line": 83,
+      "precode": "return false;",
+      "aftercode": "return true;"
+    },
+    {
+      "id": 24,
+      "reasoning": "The exception is not caught correctly.",
+      "line": 85,
+      "precode": "catch (FunctionEvaluationException e) {",
+      "aftercode": "catch (DerivativeException e) {"
+    },
+    {
+      "id": 25,
+      "reasoning": "The cause of the exception is not handled correctly.",
+      "line": 87,
+      "precode": "final Throwable cause = e.getCause();",
+      "aftercode": "final Throwable cause = null;"
+    },
+    {
+      "id": 26,
+      "reasoning": "The type of exception is not handled correctly.",
+      "line": 89,
+      "precode": "if ((cause != null) && (cause instanceof DerivativeException)) {",
+      "aftercode": "if ((cause != null) && (cause instanceof EventException)) {"
+    },
+    {
+      "id": 27,
+      "reasoning": "The exception is not thrown correctly.",
+      "line": 91,
+      "precode": "throw new EventException(e);",
+      "aftercode": "throw new DerivativeException(e);"
+    },
+    {
+      "id": 28,
+      "reasoning": "The `forward` flag is not updated correctly.",
+      "line": 6,
+      "precode": "final boolean forward = interpolator.isForward();",
+      "aftercode": "final boolean forward = !interpolator.isForward();"
+    },
+    {
+      "id": 29,
+      "reasoning": "The `t0` variable is not updated correctly.",
+      "line": 6,
+      "precode": "final double t1 = interpolator.getCurrentTime();",
+      "aftercode": "final double t1 = -interpolator.getCurrentTime();"
+    },
+    {
+      "id": 30,
+      "reasoning": "The `g0` variable is not updated correctly.",
+      "line": 6,
+      "precode": "final double g0 = handler.g(t0, interpolator.getInterpolatedState());",
+      "aftercode": "final double g0 = -handler.g(t0, interpolator.getInterpolatedState());"
+    },
+    {
+      "id": 31,
+      "reasoning": "The `convergence` variable is not updated correctly.",
+      "line": 6,
+      "precode": "final double convergence = handler.getConvergence();",
+      "aftercode": "final double convergence = -handler.getConvergence();"
+    },
+    {
+      "id": 32,
+      "reasoning": "The `maxCheckInterval` variable is not updated correctly.",
+      "line": 6,
+      "precode": "final double maxCheckInterval = handler.getMaxCheckInterval();",
+      "aftercode": "final double maxCheckInterval = -handler.getMaxCheckInterval();"
+    },
+    {
+      "id": 33,
+      "reasoning": "The `maxIterationCount` variable is not updated correctly.",
+      "line": 6,
+      "precode": "final int maxIterationCount = handler.getMaxIterationCount();",
+      "aftercode": "final int maxIterationCount = -handler.getMaxIterationCount();"
+    },
+    {
+      "id": 34,
+      "reasoning": "The `t0` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double t1 = interpolator.getCurrentTime();",
+      "aftercode": "final double t1 = t0;"
+    },
+    {
+      "id": 35,
+      "reasoning": "The `g0` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double g0 = handler.g(t0, interpolator.getInterpolatedState());",
+      "aftercode": "final double g0 = -handler.g(t0, interpolator.getInterpolatedState());"
+    },
+    {
+      "id": 36,
+      "reasoning": "The `convergence` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double convergence = handler.getConvergence();",
+      "aftercode": "final double convergence = -handler.getConvergence();"
+    },
+    {
+      "id": 37,
+      "reasoning": "The `maxCheckInterval` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double maxCheckInterval = handler.getMaxCheckInterval();",
+      "aftercode": "final double maxCheckInterval = -handler.getMaxCheckInterval();"
+    },
+    {
+      "id": 38,
+      "reasoning": "The `maxIterationCount` variable is not used correctly.",
+      "line": 8,
+      "precode": "final int maxIterationCount = handler.getMaxIterationCount();",
+      "aftercode": "final int maxIterationCount = -handler.getMaxIterationCount();"
+    },
+    {
+      "id": 39,
+      "reasoning": "The `forward` flag is not used correctly.",
+      "line": 6,
+      "precode": "final boolean forward = interpolator.isForward();",
+      "aftercode": "final boolean forward = !interpolator.isForward();"
+    },
+    {
+      "id": 40,
+      "reasoning": "The `t1` variable is not used correctly.",
+      "line": 6,
+      "precode": "final double t1 = interpolator.getCurrentTime();",
+      "aftercode": "final double t1 = -interpolator.getCurrentTime();"
+    },
+    {
+      "id": 41,
+      "reasoning": "The `g0` variable is not used correctly.",
+      "line": 6,
+      "precode": "final double g0 = handler.g(t0, interpolator.getInterpolatedState());",
+      "aftercode": "final double g0 = -handler.g(t0, interpolator.getInterpolatedState());"
+    },
+    {
+      "id": 42,
+      "reasoning": "The `convergence` variable is not used correctly.",
+      "line": 6,
+      "precode": "final double convergence = handler.getConvergence();",
+      "aftercode": "final double convergence = -handler.getConvergence();"
+    },
+    {
+      "id": 43,
+      "reasoning": "The `maxCheckInterval` variable is not used correctly.",
+      "line": 6,
+      "precode": "final double maxCheckInterval = handler.getMaxCheckInterval();",
+      "aftercode": "final double maxCheckInterval = -handler.getMaxCheckInterval();"
+    },
+    {
+      "id": 44,
+      "reasoning": "The `maxIterationCount` variable is not used correctly.",
+      "line": 6,
+      "precode": "final int maxIterationCount = handler.getMaxIterationCount();",
+      "aftercode": "final int maxIterationCount = -handler.getMaxIterationCount();"
+    },
+    {
+      "id": 45,
+      "reasoning": "The `t0` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double t1 = interpolator.getCurrentTime();",
+      "aftercode": "final double t1 = t0;"
+    },
+    {
+      "id": 46,
+      "reasoning": "The `g0` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double g0 = handler.g(t0, interpolator.getInterpolatedState());",
+      "aftercode": "final double g0 = -handler.g(t0, interpolator.getInterpolatedState());"
+    },
+    {
+      "id": 47,
+      "reasoning": "The `convergence` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double convergence = handler.getConvergence();",
+      "aftercode": "final double convergence = -handler.getConvergence();"
+    },
+    {
+      "id": 48,
+      "reasoning": "The `maxCheckInterval` variable is not used correctly.",
+      "line": 8,
+      "precode": "final double maxCheckInterval = handler.getMaxCheckInterval();",
+      "aftercode": "final double maxCheckInterval = -handler.getMaxCheckInterval();"
+    }
+  ]
+}

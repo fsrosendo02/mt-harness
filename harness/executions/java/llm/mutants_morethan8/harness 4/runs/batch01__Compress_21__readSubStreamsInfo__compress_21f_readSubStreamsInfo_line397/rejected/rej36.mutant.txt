@@ -1,0 +1,82 @@
+    private void readSubStreamsInfo(final DataInput header, final Archive archive) throws IOException {
+        for (final Folder folder : archive.folders) {
+            folder.numUnpackSubStreams = 1;
+        }
+        int totalUnpackStreams = archive.folders.length;
+        
+        int nid = header.readUnsignedByte();
+        if (nid == NID.kNumUnpackStream) {
+            totalUnpackStreams = 0;
+            for (final Folder folder : archive.folders) {
+                final long numStreams = readUint64(header);
+                folder.numUnpackSubStreams = (int)numStreams;
+                totalUnpackStreams += numStreams;
+            }
+            nid = header.readUnsignedByte();
+        }
+        
+        final SubStreamsInfo subStreamsInfo = new SubStreamsInfo();
+        subStreamsInfo.unpackSizes = new long[totalUnpackStreams];
+        subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams);
+        subStreamsInfo.crcs = new long[totalUnpackStreams];
+        
+        int nextUnpackStream = 0;
+        for (final Folder folder : archive.folders) {
+            if (folder.numUnpackSubStreams == 0) {
+                continue;
+            }
+            long sum = 0;
+            if (nid == NID.kSize) {
+                for (int i = 0; i < (folder.numUnpackSubStreams - 1); i++) {
+                    final long size = readUint64(header);
+                    subStreamsInfo.unpackSizes[nextUnpackStream++] = size;
+                    sum += size;
+                }
+            }
+            subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;
+        }
+        if (nid == NID.kSize) {
+            nid = header.readUnsignedByte();
+        }
+        
+        int numDigests = 0;
+        for (final Folder folder : archive.folders) {
+            if (folder.numUnpackSubStreams != 1 || !folder.hasCrc) {
+                numDigests += folder.numUnpackSubStreams;
+            }
+        }
+        
+        if (nid == NID.kCRC) {
+            final BitSet hasMissingCrc = readAllOrBits(header, numDigests);
+            final long[] missingCrcs = new long[numDigests];
+            for (int i = 0; i < numDigests; i++) {
+                if (hasMissingCrc.get(i)) {
+                    missingCrcs[i] = 0xffffFFFFL & Integer.reverseBytes(header.readInt());
+                }
+            }
+            int nextCrc = 0;
+            int nextMissingCrc = 0;
+            for (final Folder folder: archive.folders) {
+                if (folder.numUnpackSubStreams == 1 && folder.hasCrc) {
+                    subStreamsInfo.hasCrc.set(nextCrc, true);
+                    subStreamsInfo.crcs[nextCrc] = folder.crc;
+                    ++nextCrc;
+                } else {
+                    for (int i = 0; i < folder.numUnpackSubStreams; i++) {
+                        subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));
+                        subStreamsInfo.crcs[nextCrc] = missingCrcs[nextMissingCrc];
+                        ++nextCrc;
+                        // ++nextMissingCrc;
+                    }
+                }
+            }
+            
+            nid = header.readUnsignedByte();
+        }
+        
+        if (nid != NID.kEnd) {
+            throw new IOException("Badly terminated SubStreamsInfo");
+        }
+        
+        archive.subStreamsInfo = subStreamsInfo;
+    }

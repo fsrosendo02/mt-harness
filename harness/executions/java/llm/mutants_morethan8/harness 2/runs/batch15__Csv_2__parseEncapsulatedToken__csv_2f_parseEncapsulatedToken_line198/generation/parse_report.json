@@ -1,0 +1,130 @@
+{
+  "requested_count": 16,
+  "accepted_count": 6,
+  "rejected_count": 10,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violation of the 'end of file' condition: EOF reached before end of token",
+        "line": 36,
+        "precode": "else if (isEndOfFile(c)) {",
+        "aftercode": "else if (false) {",
+        "candidate_code": "    private Token parseEncapsulatedToken(final Token tkn) throws IOException {\n        // save current line number in case needed for IOE\n        final long startLineNumber = getLineNumber();\n        int c;\n        while (true) {\n            c = in.read();\n\n            if (isEscape(c)) {\n                tkn.content.append((char) readEscape());\n            } else if (isQuoteChar(c)) {\n                if (isQuoteChar(in.lookAhead())) {\n                    // double or escaped encapsulator -> add single encapsulator to token\n                    c = in.read();\n                    tkn.content.append((char) c);\n                } else {\n                    // token finish mark (encapsulator) reached: ignore whitespace till delimiter\n                    while (true) {\n                        c = in.read();\n                        if (isDelimiter(c)) {\n                            tkn.type = TOKEN;\n                            return tkn;\n                        } else if (isEndOfFile(c)) {\n                            tkn.type = EOF;\n                            tkn.isReady = true; // There is data at EOF\n                            return tkn;\n                        } else if (readEndOfLine(c)) {\n                            tkn.type = EORECORD;\n                            return tkn;\n                        } else if (!isWhitespace(c)) {\n                            // error invalid char between token and next delimiter\n                            throw new IOException(\"(line \" + getLineNumber() +\n                                    \") invalid char between encapsulated token and delimiter\");\n                        }\n                    }\n                }\n            else if (false) {\n                // error condition (end of file before end of token)\n                throw new IOException(\"(startline \" + startLineNumber +\n                        \") EOF reached before encapsulated token finished\");\n            } else {\n                // consume character\n                tkn.content.append((char) c);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violation of the 'content accumulation' property: invalid character appended to token",
+        "line": 42,
+        "precode": "else { tkn.content.append((char) c); }",
+        "aftercode": "else { tkn.content.append(''); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violation of the 'escape sequence handling' property: escaped character not properly read",
+        "line": 9,
+        "precode": "if (isEscape(c)) { tkn.content.append((char) readEscape()); }",
+        "aftercode": "if (isEscape(c)) { tkn.content.append(''); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violation of the 'quote character handling' property: double quote not treated as escaped",
+        "line": 11,
+        "precode": "else if (isQuoteChar(c)) { ... }",
+        "aftercode": "else if (!isQuoteChar(c)) { ... }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violation of the 'delimiter detection' property: incorrect delimiter handling",
+        "line": 23,
+        "precode": "if (isEndOfFile(c)) { tkn.type = EOF; ... }",
+        "aftercode": "if (isDelimiter(c)) { tkn.type = TOKEN; ... }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violation of the 'end of line handling' property: end of record reached before delimiter",
+        "line": 27,
+        "precode": "else if (readEndOfLine(c)) { tkn.type = EORECORD; ... }",
+        "aftercode": "else if (isDelimiter(c)) { tkn.type = TOKEN; ... }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violation of the 'read-ahead' property: missing read-ahead operation for lookahead",
+        "line": 12,
+        "precode": "if (isQuoteChar(in.lookAhead())) { c = in.read(); ... }",
+        "aftercode": "if (isQuoteChar(c)) { c = in.read(); ... }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violation of the 'end of record handling' property: incorrect end-of-record handling for whitespace character",
+        "line": 29,
+        "precode": "else if (readEndOfLine(c)) { ... }",
+        "aftercode": "else if (!isWhitespace(c) && !isDelimiter(c)) { ... }",
+        "candidate_code": "    private Token parseEncapsulatedToken(final Token tkn) throws IOException {\n        // save current line number in case needed for IOE\n        final long startLineNumber = getLineNumber();\n        int c;\n        while (true) {\n            c = in.read();\n\n            if (isEscape(c)) {\n                tkn.content.append((char) readEscape());\n            } else if (isQuoteChar(c)) {\n                if (isQuoteChar(in.lookAhead())) {\n                    // double or escaped encapsulator -> add single encapsulator to token\n                    c = in.read();\n                    tkn.content.append((char) c);\n                } else {\n                    // token finish mark (encapsulator) reached: ignore whitespace till delimiter\n                    while (true) {\n                        c = in.read();\n                        if (isDelimiter(c)) {\n                            tkn.type = TOKEN;\n                            return tkn;\n                        } else if (isEndOfFile(c)) {\n                            tkn.type = EOF;\n                            tkn.isReady = true; // There is data at EOF\n                            return tkn;\n                        } else if (readEndOfLine(c)) {\n                            tkn.type = EORECORD;\n                            return tkn;\n                        else if (!isWhitespace(c) && !isDelimiter(c)) { ... } {\n                            // error invalid char between token and next delimiter\n                            throw new IOException(\"(line \" + getLineNumber() +\n                                    \") invalid char between encapsulated token and delimiter\");\n                        }\n                    }\n                }\n            } else if (isEndOfFile(c)) {\n                // error condition (end of file before end of token)\n                throw new IOException(\"(startline \" + startLineNumber +\n                        \") EOF reached before encapsulated token finished\");\n            } else {\n                // consume character\n                tkn.content.append((char) c);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violation of the 'content handling' property: missing content append operation for whitespace character",
+        "line": 41,
+        "precode": "if (isEndOfFile(c)) { throw new IOException(\"...\"); } else { tkn.content.append((char) c); }",
+        "aftercode": "if (isEndOfFile(c)) { ... }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violation of the 'delimiter handling' property: wrong delimiter handling for escaped quote character",
+        "line": 22,
+        "precode": "tkn.type = TOKEN; return tkn;",
+        "aftercode": "throw new IOException(\"(delimiter expected, but not found)\");",
+        "candidate_code": "    private Token parseEncapsulatedToken(final Token tkn) throws IOException {\n        // save current line number in case needed for IOE\n        final long startLineNumber = getLineNumber();\n        int c;\n        while (true) {\n            c = in.read();\n\n            if (isEscape(c)) {\n                tkn.content.append((char) readEscape());\n            } else if (isQuoteChar(c)) {\n                if (isQuoteChar(in.lookAhead())) {\n                    // double or escaped encapsulator -> add single encapsulator to token\n                    c = in.read();\n                    tkn.content.append((char) c);\n                } else {\n                    // token finish mark (encapsulator) reached: ignore whitespace till delimiter\n                    while (true) {\n                        c = in.read();\n                        if (isDelimiter(c)) {\n                            tkn.type = TOKEN;\n                            return tkn;\n                        throw new IOException(\"(delimiter expected, but not found)\"); {\n                            tkn.type = EOF;\n                            tkn.isReady = true; // There is data at EOF\n                            return tkn;\n                        } else if (readEndOfLine(c)) {\n                            tkn.type = EORECORD;\n                            return tkn;\n                        } else if (!isWhitespace(c)) {\n                            // error invalid char between token and next delimiter\n                            throw new IOException(\"(line \" + getLineNumber() +\n                                    \") invalid char between encapsulated token and delimiter\");\n                        }\n                    }\n                }\n            } else if (isEndOfFile(c)) {\n                // error condition (end of file before end of token)\n                throw new IOException(\"(startline \" + startLineNumber +\n                        \") EOF reached before encapsulated token finished\");\n            } else {\n                // consume character\n                tkn.content.append((char) c);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

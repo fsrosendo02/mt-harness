@@ -1,0 +1,131 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+  1:     public void serialize(JsonGenerator jgen)
+  2:         throws IOException, JsonGenerationException
+  3:     {
+  4:         Segment segment = _first;
+  5:         int ptr = -1;
+  6: 
+  7:         while (true) {
+  8:             if (++ptr >= Segment.TOKENS_PER_SEGMENT) {
+  9:                 ptr = 0;
+ 10:                 segment = segment.next();
+ 11:                 if (segment == null) break;
+ 12:             }
+ 13:             JsonToken t = segment.type(ptr);
+ 14:             if (t == null) break;
+ 15: 
+ 16:             // Note: copied from 'copyCurrentEvent'...
+ 17:             switch (t) {
+ 18:             case START_OBJECT:
+ 19:                 jgen.writeStartObject();
+ 20:                 break;
+ 21:             case END_OBJECT:
+ 22:                 jgen.writeEndObject();
+ 23:                 break;
+ 24:             case START_ARRAY:
+ 25:                 jgen.writeStartArray();
+ 26:                 break;
+ 27:             case END_ARRAY:
+ 28:                 jgen.writeEndArray();
+ 29:                 break;
+ 30:             case FIELD_NAME:
+ 31:             {
+ 32:                 // 13-Dec-2010, tatu: Maybe we should start using different type tokens to reduce casting?
+ 33:                 Object ob = segment.get(ptr);
+ 34:                 if (ob instanceof SerializableString) {
+ 35:                     jgen.writeFieldName((SerializableString) ob);
+ 36:                 } else {
+ 37:                     jgen.writeFieldName((String) ob);
+ 38:                 }
+ 39:             }
+ 40:                 break;
+ 41:             case VALUE_STRING:
+ 42:                 {
+ 43:                     Object ob = segment.get(ptr);
+ 44:                     if (ob instanceof SerializableString) {
+ 45:                         jgen.writeString((SerializableString) ob);
+ 46:                     } else {
+ 47:                         jgen.writeString((String) ob);
+ 48:                     }
+ 49:                 }
+ 50:                 break;
+ 51:             case VALUE_NUMBER_INT:
+ 52:                 {
+ 53:                     Object n = segment.get(ptr);
+ 54:                     if (n instanceof Integer) {
+ 55:                         jgen.writeNumber((Integer) n);
+ 56:                     } else if (n instanceof BigInteger) {
+ 57:                         jgen.writeNumber((BigInteger) n);
+ 58:                     } else if (n instanceof Long) {
+ 59:                         jgen.writeNumber((Long) n);
+ 60:                     } else if (n instanceof Short) {
+ 61:                         jgen.writeNumber((Short) n);
+ 62:                     } else {
+ 63:                         jgen.writeNumber(((Number) n).intValue());
+ 64:                     }
+ 65:                 }
+ 66:                 break;
+ 67:             case VALUE_NUMBER_FLOAT:
+ 68:                 {
+ 69:                     Object n = segment.get(ptr);
+ 70:                     if (n instanceof Double) {
+ 71:                         jgen.writeNumber(((Double) n).doubleValue());
+ 72:                     } else if (n instanceof BigDecimal) {
+ 73:                         jgen.writeNumber((BigDecimal) n);
+ 74:                     } else if (n instanceof Float) {
+ 75:                         jgen.writeNumber(((Float) n).floatValue());
+ 76:                     } else if (n == null) {
+ 77:                         jgen.writeNull();
+ 78:                     } else if (n instanceof String) {
+ 79:                         jgen.writeNumber((String) n);
+ 80:                     } else {
+ 81:                         throw new JsonGenerationException("Unrecognized value type for VALUE_NUMBER_FLOAT: "+n.getClass().getName()+", can not serialize");
+ 82:                     }
+ 83:                 }
+ 84:                 break;
+ 85:             case VALUE_TRUE:
+ 86:                 jgen.writeBoolean(true);
+ 87:                 break;
+ 88:             case VALUE_FALSE:
+ 89:                 jgen.writeBoolean(false);
+ 90:                 break;
+ 91:             case VALUE_NULL:
+ 92:                 jgen.writeNull();
+ 93:                 break;
+ 94:             case VALUE_EMBEDDED_OBJECT:
+ 95:                 jgen.writeObject(segment.get(ptr));
+ 96:                 break;
+ 97:             default:
+ 98:                 throw new RuntimeException("Internal error: should never end up through this code path");
+ 99:             }
+100:         }
+101:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

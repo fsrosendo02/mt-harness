@@ -1,0 +1,365 @@
+{
+  "requested_count": 40,
+  "accepted_count": 11,
+  "rejected_count": 29,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the property of handling options correctly by not checking if an option has arguments before processing them.",
+        "line": 60,
+        "precode": "String opt = t.substring(0, pos);",
+        "aftercode": "if (options.getOption(t).acceptsArg()) { String opt = t.substring(0, pos); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the property of correctly identifying and handling long options with an equal sign by not checking for the presence of '='.",
+        "line": 58,
+        "precode": "String opt = t.substring(0, pos);",
+        "aftercode": "if (t.contains(\"=\")) { String opt = t.substring(0, t.indexOf('=')); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the property of handling unknown tokens by not correctly identifying when a token is unknown.",
+        "line": 15,
+        "precode": "handleUnknownToken(token);",
+        "aftercode": "if (!options.hasShortOption(t) && !options.getMatchingOptions(t).isEmpty()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of handling concatenated options by not correctly processing multiple short options.",
+        "line": 50,
+        "precode": "handleConcatenatedOptions(token);",
+        "aftercode": "String[] opts = t.split(\"S\"); for (String opt : opts) { if (options.hasShortOption(opt)) handleOption(options.getOption(opt)); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly handling long options without an equal sign by not checking for valid long option prefix.",
+        "line": 25,
+        "precode": "handleLongOptionWithoutEqual(token);",
+        "aftercode": "if (options.getMatchingOptions(t).isEmpty()) { handleLongOptionWithoutEqual(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly handling options with arguments by not checking if an option accepts arguments before processing them.",
+        "line": 64,
+        "precode": "handleOption(option);",
+        "aftercode": "if (option.acceptsArg()) { handleOption(option); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of handling unknown tokens by not correctly identifying when a token is unknown.",
+        "line": 72,
+        "precode": "handleUnknownToken(token);",
+        "aftercode": "if (!options.hasShortOption(t) && !options.getMatchingOptions(t).isEmpty() && t.length() > 1) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly identifying Java properties by not checking if the option starts with a lowercase 'd'.",
+        "line": 41,
+        "precode": "if (isJavaProperty(t))",
+        "aftercode": "if (isJavaProperty(t) && t.startsWith(\"d\"))",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                if (isJavaProperty(t) && t.startsWith(\"d\"))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of handling concatenated options by not correctly processing multiple short options.",
+        "line": 50,
+        "precode": "handleConcatenatedOptions(token);",
+        "aftercode": "String[] opts = t.split(\"S\"); for (String opt : opts) { if (options.hasShortOption(opt)) handleOption(options.getOption(opt)); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly identifying and handling long options without an equal sign by not checking for valid long option prefix.",
+        "line": 25,
+        "precode": "handleLongOptionWithoutEqual(token);",
+        "aftercode": "if (options.getMatchingOptions(t).isEmpty()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly handling options with arguments by not checking if an option accepts arguments before processing them.",
+        "line": 64,
+        "precode": "handleOption(option);",
+        "aftercode": "if (!option.acceptsArg()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of handling unknown tokens by not correctly identifying when a token is unknown.",
+        "line": 72,
+        "precode": "handleUnknownToken(token);",
+        "aftercode": "if (!options.hasShortOption(t) && !options.getMatchingOptions(t).isEmpty() && t.length() > 1) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly identifying Java properties by not checking if the option starts with a lowercase 'd'.",
+        "line": 41,
+        "precode": "if (isJavaProperty(t))",
+        "aftercode": "if (isJavaProperty(t) && t.startsWith(\"d\"))",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                if (isJavaProperty(t) && t.startsWith(\"d\"))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of handling concatenated options by not correctly processing multiple short options.",
+        "line": 50,
+        "precode": "handleConcatenatedOptions(token);",
+        "aftercode": "String[] opts = t.split(\"S\"); for (String opt : opts) { if (options.hasShortOption(opt)) handleOption(options.getOption(opt)); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly identifying and handling long options without an equal sign by not checking for valid long option prefix.",
+        "line": 25,
+        "precode": "handleLongOptionWithoutEqual(token);",
+        "aftercode": "if (options.getMatchingOptions(t).isEmpty()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly handling options with arguments by not checking if an option accepts arguments before processing them.",
+        "line": 64,
+        "precode": "handleOption(option);",
+        "aftercode": "if (!option.acceptsArg()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly identifying and handling options by not checking for valid short option prefix.",
+        "line": 63,
+        "precode": "if (option != null && option.acceptsArg())",
+        "aftercode": "if (t.length() == 1 && t.startsWith('-') && option != null && option.acceptsArg())",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                else if (isJavaProperty(t))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (t.length() == 1 && t.startsWith('-') && option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of handling unknown tokens by not correctly identifying when a token is unknown.",
+        "line": 72,
+        "precode": "handleUnknownToken(token);",
+        "aftercode": "if (!options.hasShortOption(t) && !options.getMatchingOptions(t).isEmpty() && t.length() > 1) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly identifying and handling short options by not checking for valid single character without hyphens.",
+        "line": 7,
+        "precode": "if (t.length() == 1)",
+        "aftercode": "if (t.length() > 0 && !t.startsWith('-') && t.endsWith('S'))",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() > 0 && !t.startsWith('-') && t.endsWith('S'))\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                else if (isJavaProperty(t))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly handling long options with an equal sign by not checking for the presence of '='.",
+        "line": 34,
+        "precode": "if (opt != null && options.getOption(opt).acceptsArg())",
+        "aftercode": "if (opt != null && t.contains(\"=\") && !options.getMatchingOptions(t).isEmpty())",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && t.contains(\"=\") && !options.getMatchingOptions(t).isEmpty())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                else if (isJavaProperty(t))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly identifying Java properties by not checking if the option starts with a lowercase 'd'.",
+        "line": 41,
+        "precode": "if (isJavaProperty(t))",
+        "aftercode": "if (isJavaProperty(t) && t.startsWith(\"d\"))",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                if (isJavaProperty(t) && t.startsWith(\"d\"))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of handling concatenated options by not correctly processing multiple short options.",
+        "line": 50,
+        "precode": "handleConcatenatedOptions(token);",
+        "aftercode": "String[] opts = t.split(\"S\"); for (String opt : opts) { if (options.hasShortOption(opt)) handleOption(options.getOption(opt)); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of correctly identifying and handling long options without an equal sign by not checking for valid long option prefix.",
+        "line": 25,
+        "precode": "handleLongOptionWithoutEqual(token);",
+        "aftercode": "if (options.getMatchingOptions(t).isEmpty()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly handling options with arguments by not checking if an option accepts arguments before processing them.",
+        "line": 64,
+        "precode": "handleOption(option);",
+        "aftercode": "if (!option.acceptsArg()) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly identifying and handling options by not checking for valid short option prefix.",
+        "line": 63,
+        "precode": "if (option != null && option.acceptsArg())",
+        "aftercode": "if (t.length() == 1 && t.startsWith('-') && option != null && option.acceptsArg())",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                else if (isJavaProperty(t))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (t.length() == 1 && t.startsWith('-') && option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of handling unknown tokens by not correctly identifying when a token is unknown.",
+        "line": 72,
+        "precode": "handleUnknownToken(token);",
+        "aftercode": "if (!options.hasShortOption(t) && !options.getMatchingOptions(t).isEmpty() && t.length() > 1) { handleUnknownToken(token); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of correctly identifying and handling short options by not checking for valid single character without hyphens.",
+        "line": 7,
+        "precode": "if (t.length() == 1)",
+        "aftercode": "if (t.length() > 0 && !t.startsWith('-') && t.endsWith('S'))",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() > 0 && !t.startsWith('-') && t.endsWith('S'))\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                else if (isJavaProperty(t))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of correctly handling long options with an equal sign by not checking for the presence of '='.",
+        "line": 34,
+        "precode": "if (opt != null && options.getOption(opt).acceptsArg())",
+        "aftercode": "if (opt != null && t.contains(\"=\") && !options.getMatchingOptions(t).isEmpty())",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && t.contains(\"=\") && !options.getMatchingOptions(t).isEmpty())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                else if (isJavaProperty(t))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly identifying Java properties by not checking if the option starts with a lowercase 'd'.",
+        "line": 41,
+        "precode": "if (isJavaProperty(t))",
+        "aftercode": "if (isJavaProperty(t) && t.startsWith(\"d\"))",
+        "candidate_code": "    private void handleShortAndLongOption(String token) throws ParseException\n    {\n        String t = Util.stripLeadingHyphens(token);\n        \n        int pos = t.indexOf('=');\n        \n        if (t.length() == 1)\n        {\n            // -S\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else\n            {\n                handleUnknownToken(token);\n            }\n        }\n        else if (pos == -1)\n        {\n            if (options.hasShortOption(t))\n            {\n                handleOption(options.getOption(t));\n            }\n            else if (!options.getMatchingOptions(t).isEmpty())\n            {\n                // -L or -l\n                handleLongOptionWithoutEqual(token);\n            }\n            else\n            {\n                // look for a long prefix (-Xmx512m)\n                String opt = getLongPrefix(t);\n                \n                if (opt != null && options.getOption(opt).acceptsArg())\n                {\n                    handleOption(options.getOption(opt));\n                    currentOption.addValueForProcessing(t.substring(opt.length()));\n                    currentOption = null;\n                }\n                if (isJavaProperty(t) && t.startsWith(\"d\"))\n                {\n                    // -SV1 (-Dflag)\n                    handleOption(options.getOption(t.substring(0, 1)));\n                    currentOption.addValueForProcessing(t.substring(1));\n                    currentOption = null;\n                }\n                else\n                {\n                    // -S1S2S3 or -S1S2V\n                    handleConcatenatedOptions(token);\n                }\n            }\n        }\n        else\n        {\n            String opt = t.substring(0, pos);\n            String value = t.substring(pos + 1);\n            \n            if (opt.length() == 1)\n            {\n                // -S=V\n                Option option = options.getOption(opt);\n                if (option != null && option.acceptsArg())\n                {\n                    handleOption(option);\n                    currentOption.addValueForProcessing(value);\n                    currentOption = null;\n                }\n                else\n                {\n                    handleUnknownToken(token);\n                }\n            }\n            else if (isJavaProperty(opt))\n            {\n                // -SV1=V2 (-Dkey=value)\n                handleOption(options.getOption(opt.substring(0, 1)));\n                currentOption.addValueForProcessing(opt.substring(1));\n                currentOption.addValueForProcessing(value);\n                currentOption = null;\n            }\n            else\n            {\n                // -L=V or -l=V\n                handleLongOptionWithEqual(token);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

@@ -1,0 +1,515 @@
+{
+  "requested_count": 48,
+  "accepted_count": 4,
+  "rejected_count": 44,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the property of correctly handling unquoted white space by skipping over it without throwing an error.",
+        "line": 23,
+        "precode": "_throwUnquotedSpace(ch, \"name\");",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 40,
+        "precode": "quads = growArrayBy(quads, quads.length);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 21,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) break;"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 50,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xe0 | (ch >> 12)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly handling escape sequences by not properly decoding escaped characters.",
+        "line": 26,
+        "precode": "_decodeCharEscape();",
+        "aftercode": "_decodeCharEscape(); return -1;",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    _decodeCharEscape(); return -1;\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly parsing JSON tokens by not properly setting a token when finished.",
+        "line": 95,
+        "precode": "_fieldComplete(name);",
+        "aftercode": "_fieldComplete(\"\");",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        _fieldComplete(\"\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly handling escape sequences by not properly decoding escaped characters.",
+        "line": 26,
+        "precode": "_decodeCharEscape();",
+        "aftercode": "_decodeCharEscape(); return -1;",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    _decodeCharEscape(); return -1;\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly parsing JSON tokens by not properly setting a token when finished.",
+        "line": 95,
+        "precode": "_fieldComplete(name);",
+        "aftercode": "_fieldComplete(\"\");",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        _fieldComplete(\"\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly handling escape sequences by not properly decoding escaped characters.",
+        "line": 26,
+        "precode": "_decodeCharEscape();",
+        "aftercode": "_decodeCharEscape(); return -1;",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    _decodeCharEscape(); return -1;\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly parsing JSON tokens by not properly setting a token when finished.",
+        "line": 95,
+        "precode": "_fieldComplete(name);",
+        "aftercode": "_fieldComplete(\"\");",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        _fieldComplete(\"\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly handling escape sequences by not properly decoding escaped characters.",
+        "line": 26,
+        "precode": "_decodeCharEscape();",
+        "aftercode": "_decodeCharEscape(); return -1;",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    _decodeCharEscape(); return -1;\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly parsing JSON tokens by not properly setting a token when finished.",
+        "line": 95,
+        "precode": "_fieldComplete(name);",
+        "aftercode": "_fieldComplete(\"\");",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        _fieldComplete(\"\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of correctly handling escape sequences by not properly decoding escaped characters.",
+        "line": 26,
+        "precode": "_decodeCharEscape();",
+        "aftercode": "_decodeCharEscape(); return -1;",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    _decodeCharEscape(); return -1;\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 41,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 42,
+        "reasoning": "Violates the property of correctly parsing JSON tokens by not properly setting a token when finished.",
+        "line": 95,
+        "precode": "_fieldComplete(name);",
+        "aftercode": "_fieldComplete(\"\");",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        _fieldComplete(\"\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 43,
+        "reasoning": "Violates the property of correctly managing state transitions by not setting a new state after breaking from the loop.",
+        "line": 17,
+        "precode": "",
+        "aftercode": "break; _minorState = MINOR_FIELD_APOS_NAME;"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 44,
+        "reasoning": "Violates the property of correctly handling escape sequences by not properly decoding escaped characters.",
+        "line": 26,
+        "precode": "_decodeCharEscape();",
+        "aftercode": "_decodeCharEscape(); return -1;",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    _decodeCharEscape(); return -1;\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 45,
+        "reasoning": "Violates the property of correctly handling multi-byte characters by not properly shifting and combining bytes.",
+        "line": 47,
+        "precode": "",
+        "aftercode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6)); ++currQuadBytes; currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 46,
+        "reasoning": "Violates the property of correctly managing memory allocation for quad buffers by not allocating more space when needed.",
+        "line": 54,
+        "precode": "",
+        "aftercode": "if (currQuadBytes >= 3) { quads = growArrayBy(quads, quads.length); }"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 47,
+        "reasoning": "Violates the property of correctly handling unexpected input by not breaking on unquoted white space.",
+        "line": 20,
+        "precode": "",
+        "aftercode": "if (ch != '\"' && codes[ch] == 0) continue;"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "Violates the property of correctly parsing JSON tokens by not properly setting a token when finished.",
+        "line": 95,
+        "precode": "_fieldComplete(name);",
+        "aftercode": "_fieldComplete(\"\");",
+        "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_NAME_ESCAPE;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        _fieldComplete(\"\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Math_45",
+  "language": "java",
+  "version": "f",
+  "target_id": "math_45f_scalb__line3036",
+  "file_path": "src/main/java/org/apache/commons/math/util/FastMath.java",
+  "function_name": "scalb",
+  "start_line": 3036,
+  "end_line": 3112,
+  "mutant_id": "rej40",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 40,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch05__Math_45__scalb__math_45f_scalb_line3036/generation/raw_response.txt",
+  "payload": {
+    "id": 40,
+    "reasoning": "Incorrect mantissa mask in positive scaling",
+    "line": 62,
+    "precode": "                mantissa = mantissa & 0x000fffffffffffffL;",
+    "aftercode": "                mantissa = mantissa & 0x0000ffffffffffffL;",
+    "candidate_code": "    public static double scalb(final double d, final int n) {\n\n        // first simple and fast handling when 2^n can be represented using normal numbers\n        if ((n > -1023) && (n < 1024)) {\n            return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);\n        }\n\n        // handle special cases\n        if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {\n            return d;\n        }\n        if (n < -2098) {\n            return (d > 0) ? 0.0 : -0.0;\n        }\n        if (n > 2097) {\n            return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n        }\n\n        // decompose d\n        final long bits = Double.doubleToLongBits(d);\n        final long sign = bits & 0x8000000000000000L;\n        int  exponent   = ((int) (bits >>> 52)) & 0x7ff;\n        long mantissa   = bits & 0x000fffffffffffffL;\n\n        // compute scaled exponent\n        int scaledExponent = exponent + n;\n\n        if (n < 0) {\n            // we are really in the case n <= -1023\n            if (scaledExponent > 0) {\n                // both the input and the result are normal numbers, we only adjust the exponent\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else if (scaledExponent > -53) {\n                // the input is a normal number and the result is a subnormal number\n\n                // recover the hidden mantissa bit\n                mantissa = mantissa | (1L << 52);\n\n                // scales down complete mantissa, hence losing least significant bits\n                final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));\n                mantissa = mantissa >>> (1 - scaledExponent);\n                if (mostSignificantLostBit != 0) {\n                    // we need to add 1 bit to round up the result\n                    mantissa++;\n                }\n                return Double.longBitsToDouble(sign | mantissa);\n\n            } else {\n                // no need to compute the mantissa, the number scales down to 0\n                return (sign == 0L) ? 0.0 : -0.0;\n            }\n        } else {\n            // we are really in the case n >= 1024\n            if (exponent == 0) {\n\n                // the input number is subnormal, normalize it\n                while ((mantissa >>> 52) != 1) {\n                    mantissa = mantissa << 1;\n                    --scaledExponent;\n                }\n                ++scaledExponent;\n                mantissa = mantissa & 0x0000ffffffffffffL;\n\n                if (scaledExponent < 2047) {\n                    return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n                } else {\n                    return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n                }\n\n            } else if (scaledExponent < 2047) {\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else {\n                return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n            }\n        }\n\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch05__Math_45__scalb__math_45f_scalb_line3036/rejected/rej40.log",
+  "mutant_path": "harness/runs/batch05__Math_45__scalb__math_45f_scalb_line3036/rejected/rej40.mutant.txt",
+  "original_path": "harness/runs/batch05__Math_45__scalb__math_45f_scalb_line3036/rejected/original.txt"
+}

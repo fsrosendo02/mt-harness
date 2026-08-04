@@ -1,0 +1,42 @@
+Here are 8 mutants that violate different behavioral properties:
+
+1. `ClassCastException` when trying to cast an object to a class other than its declared type.
+Reasoning: The method does not check the runtime type of the object before casting it, which can lead to a `ClassCastException`.
+Line: 10-12
+Precode: `if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...`
+Aftercode: `if ((cls.isInstance(value)) && (value instanceof EnumSet<?>)) { // Regular- and JumboEnumSet...`
+2. Incorrect deserialization of enum values when the enum is not defined in the type factory.
+Reasoning: The method does not check if the enum value is present in the type factory before attempting to construct it, which can lead to incorrect deserialization.
+Line: 15-17
+Precode: `if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...`
+Aftercode: `if (typeFactory.isKnownEnumType(cls) && (value instanceof EnumSet<?>)) { // Regular- and JumboEnumSet...`
+3. Incorrect deserialization of enum maps when the key or value types are not defined in the type factory.
+Reasoning: The method does not check if the key or value types are present in the type factory before attempting to construct them, which can lead to incorrect deserialization.
+Line: 21-23
+Precode: `if (value instanceof EnumMap<?,?>) {`
+Aftercode: `if (typeFactory.isKnownEnumType(cls) && (value instanceof EnumMap<?,?>)) {`
+4. Incorrect deserialization of collections when the element type is not defined in the type factory.
+Reasoning: The method does not check if the element type is present in the type factory before attempting to construct it, which can lead to incorrect deserialization.
+Line: 19-20
+Precode: `str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();`
+Aftercode: `if (typeFactory.isKnownElementType(enumClass) && (value instanceof EnumSet<?>)) { // Regular- and JumboEnumSet...`
+5. Incorrect deserialization of maps when the key or value types are not defined in the type factory.
+Reasoning: The method does not check if the key or value types are present in the type factory before attempting to construct them, which can lead to incorrect deserialization.
+Line: 24-25
+Precode: `str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();`
+Aftercode: `if (typeFactory.isKnownKeyType(enumClass) && typeFactory.isKnownValueType(valueClass)) { // Regular- and JumboEnumSet...`
+6. Incorrect deserialization of arrays when the element type is not defined in the type factory.
+Reasoning: The method does not check if the element type is present in the type factory before attempting to construct it, which can lead to incorrect deserialization.
+Line: 28-30
+Precode: `// 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()``
+Aftercode: `if (typeFactory.isKnownElementType(cls) && (value instanceof EnumSet<?>)) { // Regular- and JumboEnumSet...`
+7. Incorrect deserialization of classes with inner classes when the outer class is not defined in the type factory.
+Reasoning: The method does not check if the outer class is present in the type factory before attempting to construct it, which can lead to incorrect deserialization.
+Line: 31-32
+Precode: `// Other special handling may be needed for inner classes,`
+Aftercode: `if (typeFactory.isKnownOuterClass(cls) && (value instanceof EnumSet<?>)) { // Regular- and JumboEnumSet...`
+8. Incorrect deserialization of non-static classes when the outer class is not defined in the type factory.
+Reasoning: The method does not check if the outer class is present in the type factory before attempting to construct it, which can lead to incorrect deserialization.
+Line: 36-38
+Precode: `Class<?> staticType = _baseType.getRawClass();`
+Aftercode: `if (typeFactory.isKnownOuterClass(staticType) && (value instanceof EnumSet<?>)) { // Regular- and JumboEnumSet...`

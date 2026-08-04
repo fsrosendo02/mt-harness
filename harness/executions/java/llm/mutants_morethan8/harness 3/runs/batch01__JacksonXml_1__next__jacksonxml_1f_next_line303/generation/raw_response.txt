@@ -1,0 +1,42 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method returns XML_END when it encounters an END_ELEMENT but does not check if there is any text to return before moving to the next state. This could lead to incorrect handling of END_ELEMENT.",
+      "line": 25,
+      "precode": "return _handleEndElement();",
+      "aftercode": "// Return XML_END, ignoring potential text
+                     return (_currentState = XML_END);"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method increments the attribute index only if it is less than the attribute count. This could lead to a `NullPointerException` when accessing attributes if there are more indices accessed than available.",
+      "line": 8,
+      "precode": "if (_nextAttributeIndex < _attributeCount)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method sets the current state to XML_ATTRIBUTE_VALUE immediately after setting up the attribute name and namespace. This could lead to the next call of `_next()` assuming an attribute value is available without checking if there is one.",
+      "line": 12,
+      "precode": "return (_currentState = XML_ATTRIBUTE_NAME);",
+      "aftercode": "// Skip directly to XML_ATTRIBUTE_VALUE
+                     return (_currentState = XML_ATTRIBUTE_VALUE);"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method falls through from XML_ATTRIBUTE_VALUE to XML_START_ELEMENT without checking if the next attribute index is within bounds, leading to potential array out of bounds exceptions.",
+      "line": 6,
+      "precode": "// fall through",
+      "aftercode": "break;"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method does not check the event type when collecting text. This could lead to incorrect handling of START_ELEMENT or END_ELEMENT tags within the collected text.",
+      "line": 15,
+      "precode": "String text = _collectUntilTag();",
+      "aftercode": "// Collect until a tag, without checking its type
+                     String text = _collectAnyTag();"
+    }
+  ]
+}

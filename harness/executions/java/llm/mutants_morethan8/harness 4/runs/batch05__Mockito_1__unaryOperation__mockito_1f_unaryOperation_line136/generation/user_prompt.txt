@@ -1,0 +1,117 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public Value unaryOperation(final AbstractInsnNode insn, final Value value)
+ 2:             throws AnalyzerException
+ 3:     {
+ 4:         switch (insn.getOpcode()) {
+ 5:             case INEG:
+ 6:             case IINC:
+ 7:             case L2I:
+ 8:             case F2I:
+ 9:             case D2I:
+10:             case I2B:
+11:             case I2C:
+12:             case I2S:
+13:                 return BasicValue.INT_VALUE;
+14:             case FNEG:
+15:             case I2F:
+16:             case L2F:
+17:             case D2F:
+18:                 return BasicValue.FLOAT_VALUE;
+19:             case LNEG:
+20:             case I2L:
+21:             case F2L:
+22:             case D2L:
+23:                 return BasicValue.LONG_VALUE;
+24:             case DNEG:
+25:             case I2D:
+26:             case L2D:
+27:             case F2D:
+28:                 return BasicValue.DOUBLE_VALUE;
+29:             case IFEQ:
+30:             case IFNE:
+31:             case IFLT:
+32:             case IFGE:
+33:             case IFGT:
+34:             case IFLE:
+35:             case TABLESWITCH:
+36:             case LOOKUPSWITCH:
+37:             case IRETURN:
+38:             case LRETURN:
+39:             case FRETURN:
+40:             case DRETURN:
+41:             case ARETURN:
+42:             case PUTSTATIC:
+43:                 return null;
+44:             case GETFIELD:
+45:                 return newValue(Type.getType(((FieldInsnNode) insn).desc));
+46:             case NEWARRAY:
+47:                 switch (((IntInsnNode) insn).operand) {
+48:                     case T_BOOLEAN:
+49:                         return newValue(Type.getType("[Z"));
+50:                     case T_CHAR:
+51:                         return newValue(Type.getType("[C"));
+52:                     case T_BYTE:
+53:                         return newValue(Type.getType("[B"));
+54:                     case T_SHORT:
+55:                         return newValue(Type.getType("[S"));
+56:                     case T_INT:
+57:                         return newValue(Type.getType("[I"));
+58:                     case T_FLOAT:
+59:                         return newValue(Type.getType("[F"));
+60:                     case T_DOUBLE:
+61:                         return newValue(Type.getType("[D"));
+62:                     case T_LONG:
+63:                         return newValue(Type.getType("[J"));
+64:                     default:
+65:                         throw new AnalyzerException("Invalid array type");
+66:                 }
+67:             case ANEWARRAY:
+68:                 String desc = ((TypeInsnNode) insn).desc;
+69:                 return newValue(Type.getType("[" + Type.getObjectType(desc)));
+70:             case ARRAYLENGTH:
+71:                 return BasicValue.INT_VALUE;
+72:             case ATHROW:
+73:                 return null;
+74:             case CHECKCAST:
+75:                 desc = ((TypeInsnNode) insn).desc;
+76:                 return newValue(Type.getObjectType(desc));
+77:             case INSTANCEOF:
+78:                 return BasicValue.INT_VALUE;
+79:             case MONITORENTER:
+80:             case MONITOREXIT:
+81:             case IFNULL:
+82:             case IFNONNULL:
+83:                 return null;
+84:             default:
+85:                 throw new Error("Internal error.");
+86:         }
+87:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

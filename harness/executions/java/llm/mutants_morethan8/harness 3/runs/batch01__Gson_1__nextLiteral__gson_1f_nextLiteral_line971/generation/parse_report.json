@@ -1,0 +1,291 @@
+{
+  "requested_count": 32,
+  "accepted_count": 8,
+  "rejected_count": 24,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 1,
+        "reasoning": "A return statement is missing which causes the method to enter an infinite loop.",
+        "line": 4,
+        "precode": "StringBuilder builder = null;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The loop does not reinitialize the builder after a full buffer read, leading to incorrect results.",
+        "line": 38,
+        "precode": "",
+        "aftercode": "builder = null;"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "Removing the decrement of pos could result in an infinite loop or incorrect character processing.",
+        "line": 27,
+        "precode": "pos--;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The checkLenient() method is not called, potentially allowing leniency in parsing JSON that should be strictly enforced.",
+        "line": 14,
+        "precode": "checkLenient(); // fall-through",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The loop does not continue after appending to the builder, potentially missing some characters to process.",
+        "line": 43,
+        "precode": "do { ... } while (fillBuffer(1));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not handle new lines correctly, potentially leading to incorrect parsing.",
+        "\nline": 24,
+        "precode": "'\n'",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not handle the buffer being filled up correctly, potentially leading to incorrect processing of JSON literals.",
+        "line": 39,
+        "precode": "",
+        "aftercode": "return \"error!\";"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method does not handle tabs correctly, potentially leading to incorrect parsing.",
+        "\nline": 23,
+        "precode": "'\t'",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not handle form feeds correctly, potentially leading to incorrect parsing.",
+        "\nline": 25,
+        "precode": "'\f'",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not handle carriage returns correctly, potentially leading to incorrect parsing.",
+        "\nline": 26,
+        "precode": "'\r'",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method returns the string representation of the buffer without considering the current position, potentially returning incomplete literals.",
+        "line": 31,
+        "precode": "return new String(buffer, start, pos - start);",
+        "aftercode": "return new String(buffer, start, limit - (pos-start));",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, limit - (pos-start));\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method returns a constant string instead of the processed result, breaking its contract to return a literal.",
+        "line": 45,
+        "precode": "return builder.toString();",
+        "aftercode": "return \"constant\";",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return \"constant\";\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method does not handle spaces correctly, potentially leading to incorrect parsing.",
+        "\nline": 22,
+        "precode": "' '",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method returns the string representation of the buffer without considering the current position, potentially returning incomplete literals.",
+        "line": 31,
+        "precode": "return new String(buffer, start, pos - start);",
+        "aftercode": "return new String(buffer, start, limit - (pos-start));",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, limit - (pos-start));\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method returns a constant string instead of the processed result, breaking its contract to return a literal.",
+        "line": 45,
+        "precode": "return builder.toString();",
+        "aftercode": "return \"constant\";",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return \"constant\";\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not handle colons correctly, potentially leading to incorrect parsing.",
+        "\nline": 20,
+        "precode": "':'",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method returns the string representation of the buffer without considering the current position, potentially returning incomplete literals.",
+        "line": 31,
+        "precode": "return new String(buffer, start, pos - start);",
+        "aftercode": "return new String(buffer, start, limit - (pos-start));",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, limit - (pos-start));\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method returns a constant string instead of the processed result, breaking its contract to return a literal.",
+        "line": 45,
+        "precode": "return builder.toString();",
+        "aftercode": "return \"constant\";",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return \"constant\";\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not handle commas correctly, potentially leading to incorrect parsing.",
+        "\nline": 21,
+        "precode": "','",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method returns the string representation of the buffer without considering the current position, potentially returning incomplete literals.",
+        "line": 31,
+        "precode": "return new String(buffer, start, pos - start);",
+        "aftercode": "return new String(buffer, start, limit - (pos-start));",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, limit - (pos-start));\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method returns a constant string instead of the processed result, breaking its contract to return a literal.",
+        "line": 45,
+        "precode": "return builder.toString();",
+        "aftercode": "return \"constant\";",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return \"constant\";\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_line",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method does not handle braces correctly, potentially leading to incorrect parsing.",
+        "\nline": 17,
+        "precode": "'{'",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method returns the string representation of the buffer without considering the current position, potentially returning incomplete literals.",
+        "line": 31,
+        "precode": "return new String(buffer, start, pos - start);",
+        "aftercode": "return new String(buffer, start, limit - (pos-start));",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, limit - (pos-start));\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method returns a constant string instead of the processed result, breaking its contract to return a literal.",
+        "line": 45,
+        "precode": "return builder.toString();",
+        "aftercode": "return \"constant\";",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return \"constant\";\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

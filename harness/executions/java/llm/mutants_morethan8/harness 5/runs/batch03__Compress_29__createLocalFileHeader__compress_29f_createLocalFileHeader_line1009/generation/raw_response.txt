@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition for nameLen calculation.",
+      "line": 4,
+      "precode": "final int nameLen = name.limit() - name.position();",
+      "aftercode": "final int nameLen = name.limit() + name.position();"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the boundary condition for buffer length calculation.",
+      "line": 5,
+      "precode": "int len= LFH_FILENAME_OFFSET + nameLen + extra.length;",
+      "aftercode": "int len= LFH_FILENAME_OFFSET - nameLen - extra.length;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the initialization of buffer length.",
+      "line": 6,
+      "precode": "byte[] buf = new byte[len];",
+      "aftercode": "byte[] buf = new byte[0];"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the copying of LFH signature.",
+      "line": 8,
+      "precode": "System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);",
+      "aftercode": "System.arraycopy(LFH_SIG,  1, buf, LFH_SIG_OFFSET, WORD);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the storage of zip method.",
+      "line": 12,
+      "precode": "final int zipMethod = ze.getMethod();",
+      "aftercode": "final int zipMethod = -ze.getMethod();"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the condition for phased mode.",
+      "line": 13,
+      "precode": "if (phased &&  !isZip64Required(entry.entry, zip64Mode)){",
+      "aftercode": "if (!phased || isZip64Required(entry.entry, zip64Mode)){"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the version number for phased mode.",
+      "line": 14,
+      "precode": "putShort(INITIAL_VERSION, buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort(0, buf, LFH_VERSION_NEEDED_OFFSET);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the version number for non-phased mode.",
+      "line": 16,
+      "precode": "putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort(-versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the creation of general purpose bits.",
+      "line": 19,
+      "precode": "GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, !encodable && fallbackToUTF8);",
+      "aftercode": "GeneralPurposeBit generalPurposeBit = new GeneralPurposeBit();"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the encoding of general purpose bits.",
+      "line": 20,
+      "precode": "generalPurposeBit.encode(buf, LFH_GPB_OFFSET);",
+      "aftercode": "generalPurposeBit.encode(buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the storage of compression method.",
+      "line": 23,
+      "precode": "putShort(zipMethod, buf, LFH_METHOD_OFFSET);",
+      "aftercode": "putShort(-zipMethod, buf, LFH_METHOD_OFFSET);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the conversion of time to DOS format.",
+      "line": 25,
+      "precode": "ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);",
+      "aftercode": "ZipUtil.toDosTime(null, ze.getTime(), buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the storage of CRC for phased mode.",
+      "line": 29,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "putLong(-ze.getCrc(), buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the storage of CRC for DEFLATED method.",
+      "line": 30,
+      "precode": "System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);",
+      "aftercode": "System.arraycopy(LZERO, 1, buf, LFH_CRC_OFFSET, WORD);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the storage of CRC for other methods.",
+      "line": 34,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "putLong(-ze.getCrc(), buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the storage of compressed size for ZIP64 mode.",
+      "line": 42,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the storage of original size for ZIP64 mode.",
+      "line": 43,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the storage of compressed size for phased mode.",
+      "line": 45,
+      "precode": "putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(-ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the storage of original size for phased mode.",
+      "line": 46,
+      "precode": "putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "putLong(-ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the storage of compressed size for DEFLATED method.",
+      "line": 47,
+      "precode": "System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);",
+      "aftercode": "System.arraycopy(LZERO, 1, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the storage of original size for DEFLATED method.",
+      "line": 49,
+      "precode": "System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);",
+      "aftercode": "System.arraycopy(LZERO, 1, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the storage of compressed size for Stored method.",
+      "line": 51,
+      "precode": "putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(-ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the storage of original size for Stored method.",
+      "line": 52,
+      "precode": "putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "putLong(-ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the storage of file name length.",
+      "line": 55,
+      "precode": "putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);",
+      "aftercode": "putShort(-nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);"
+    },
+    {
+      "id": 25,
+      "reasoning": "Violates the storage of extra field length.",
+      "line": 58,
+      "precode": "putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);",
+      "aftercode": "putShort(-extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);"
+    },
+    {
+      "id": 26,
+      "reasoning": "Violates the copying of file name.",
+      "line": 61,
+      "precode": "System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);",
+      "aftercode": "System.arraycopy( name.array(), name.arrayOffset() + 1, buf, LFH_FILENAME_OFFSET, nameLen);"
+    },
+    {
+      "id": 27,
+      "reasoning": "Violates the copying of extra field.",
+      "line": 63,
+      "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+      "aftercode": "System.arraycopy(extra, 1, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);"
+    },
+    {
+      "id": 28,
+      "reasoning": "Violates the initialization of phased flag.",
+      "line": 13,
+      "precode": "if (phased &&  !isZip64Required(entry.entry, zip64Mode)){",
+      "aftercode": "if (!phased && isZip64Required(entry.entry, zip64Mode)){"
+    },
+    {
+      "id": 29,
+      "reasoning": "Violates the initialization of encodable flag.",
+      "line": 19,
+      "precode": "GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, !encodable && fallbackToUTF8);",
+      "aftercode": "GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, encodable && fallbackToUTF8);"
+    },
+    {
+      "id": 30,
+      "reasoning": "Violates the initialization of zip64 mode.",
+      "line": 16,
+      "precode": "putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort(versionNeededToExtract(zipMethod, !hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);"
+    },
+    {
+      "id": 31,
+      "reasoning": "Violates the initialization of raf flag.",
+      "line": 30,
+      "precode": "System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);",
+      "aftercode": "if (raf == null) System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);"
+    },
+    {
+      "id": 32,
+      "reasoning": "Violates the initialization of zip method for phased mode.",
+      "line": 45,
+      "precode": "putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(0, buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 33,
+      "reasoning": "Violates the initialization of zip method for DEFLATED mode.",
+      "line": 47,
+      "precode": "System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);",
+      "aftercode": "if (zipMethod != DEFLATED) System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);"
+    },
+    {
+      "id": 34,
+      "reasoning": "Violates the initialization of zip method for Stored mode.",
+      "line": 51,
+      "precode": "putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(0, buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 35,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 42,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 36,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 43,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    },
+    {
+      "id": 37,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 51,
+      "precode": "putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 38,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 52,
+      "precode": "putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    },
+    {
+      "id": 39,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 25,
+      "precode": "ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 40,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 29,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 41,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 31,
+      "precode": "System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);",
+      "aftercode": "if (zipMethod == DEFLATED || raf != null) System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);"
+    },
+    {
+      "id": 42,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 34,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 43,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 58,
+      "precode": "putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);"
+    },
+    {
+      "id": 44,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 55,
+      "precode": "putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);"
+    },
+    {
+      "id": 45,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 63,
+      "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);"
+    },
+    {
+      "id": 46,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 61,
+      "precode": "System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);"
+    },
+    {
+      "id": 47,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 51,
+      "precode": "putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 48,
+      "reasoning": "Violates the initialization of ZIP64 mode.",
+      "line": 52,
+      "precode": "putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "if (!hasZip64Extra(entry.entry)) putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    }
+  ]
+}

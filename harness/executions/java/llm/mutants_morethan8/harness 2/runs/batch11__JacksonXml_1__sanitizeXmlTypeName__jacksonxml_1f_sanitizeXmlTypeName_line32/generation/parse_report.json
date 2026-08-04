@@ -1,0 +1,55 @@
+{
+  "requested_count": 16,
+  "accepted_count": 11,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method appends 's' to names ending with 's'. The mutation alters the pluralization logic, appending 'es' instead of 's', which violates the intended behavior.",
+        "line": 15,
+        "precode": "sb.append(\"es\");",
+        "aftercode": "sb.append(\"es\"); // original"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method appends 's' to names not ending with 's'. The mutation alters the pluralization logic by appending 's' instead of 'es', which violates the intended behavior.",
+        "line": 16,
+        "precode": "sb.append('s');",
+        "aftercode": "sb.append('s\"); // original",
+        "candidate_code": "    public static String sanitizeXmlTypeName(String name)\n    {\n        StringBuilder sb;\n        int changes = 0;\n        // First things first: remove array types' trailing[]...\n        if (name.endsWith(\"[]\")) {\n            do {\n                name = name.substring(0, name.length() - 2);\n                ++changes;\n            } while (name.endsWith(\"[]\"));\n            sb = new StringBuilder(name);\n            // do trivial pluralization attempt\n            if (name.endsWith(\"s\")) {\n                sb.append(\"es\");\n            } else {\n                sb.append('s\"); // original\n            }\n        } else {\n            sb = new StringBuilder(name);\n        }\n        for (int i = 0, len = name.length(); i < len; ++i) {\n            char c = name.charAt(i);\n            if (c > 127) continue;\n            if (c >= 'a' && c <= 'z') continue;\n            if (c >= 'A' && c <= 'Z') continue;\n            if (c >= '0' && c <= '9') continue;\n            if (c == '_' || c == '.' || c == '-') continue;\n            // Ok, need to replace\n            ++changes;\n            if (c == '$') {\n                sb.setCharAt(i, '.');\n            } else {\n                sb.setCharAt(i, '_');\n            }\n        }\n        if (changes == 0) {\n            return name;\n        }\n        return sb.toString();\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method replaces all non-alphanumeric characters with underscores. The mutation only replaces specific characters ('$') with periods ('.'), potentially leaving other invalid characters in the string.",
+        "line": 32,
+        "precode": "sb.setCharAt(i, '_');",
+        "aftercode": "if (c == '$') { sb.setCharAt(i, '.'); } else { sb.setCharAt(i, '$'); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method checks if the name ends with '[]' to strip array specifiers. The mutation changes the condition to check for a different string, potentially altering the original intent.",
+        "line": 7,
+        "precode": "name = name.substring(0, name.length() - 2);",
+        "aftercode": "if (name.endsWith(\"foo\")) { name = name.substring(0, name.length() - 1); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

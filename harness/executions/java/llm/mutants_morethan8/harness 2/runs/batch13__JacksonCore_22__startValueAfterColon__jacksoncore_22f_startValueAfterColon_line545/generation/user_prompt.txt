@@ -1,0 +1,95 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private final JsonToken _startValueAfterColon(int ch) throws IOException
+ 2:     {
+ 3:         // First: any leading white space?
+ 4:         if (ch <= 0x0020) {
+ 5:             ch = _skipWS(ch); // will skip through all available ws (and comments)
+ 6:             if (ch <= 0) {
+ 7:                 _minorState = MINOR_VALUE_LEADING_COLON;
+ 8:                 return _currToken;
+ 9:             }
+10:         }
+11:         if (ch != INT_COLON) {
+12:             // can not omit colon here
+13:             _reportUnexpectedChar(ch, "was expecting a colon to separate field name and value");
+14:         }
+15:         int ptr = _inputPtr;
+16:         if (ptr >= _inputEnd) {
+17:             _minorState = MINOR_VALUE_LEADING_WS;
+18:             return (_currToken = JsonToken.NOT_AVAILABLE);
+19:         }
+20:         ch = _inputBuffer[ptr];
+21:         _inputPtr = ptr+1;
+22:         if (ch <= 0x0020) {
+23:             ch = _skipWS(ch); // will skip through all available ws (and comments)
+24:             if (ch <= 0) {
+25:                 _minorState = MINOR_VALUE_LEADING_WS;
+26:                 return _currToken;
+27:             }
+28:         }
+29:         if (ch == INT_QUOTE) {
+30:             return _startString();
+31:         }
+32:         switch (ch) {
+33:         case '-':
+34:             return _startNegativeNumber();
+35: 
+36:         // Should we have separate handling for plus? Although
+37:         // it is not allowed per se, it may be erroneously used,
+38:         // and could be indicate by a more specific error message.
+39:         case '0':
+40:             return _startLeadingZero();
+41: 
+42:         case '1':
+43:         case '2': case '3':
+44:         case '4': case '5':
+45:         case '6': case '7':
+46:         case '8': case '9':
+47:             return _startPositiveNumber(ch);
+48:         case 'f':
+49:             return _startFalseToken();
+50:         case 'n':
+51:             return _startNullToken();
+52:         case 't':
+53:             return _startTrueToken();
+54:         case '[':
+55:             return _startArrayScope();
+56:         case ']':
+57:             return _closeArrayScope();
+58:         case '{':
+59:             return _startObjectScope();
+60:         case '}':
+61:             return _closeObjectScope();
+62:         default:
+63:         }
+64:         return _startUnexpectedValue(ch);
+65:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The condition `n > -1023 && n < 1024` ensures that the result is a normal number. This mutant removes this check, allowing non-normal numbers to be produced.",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * 2;"
+    },
+    {
+      "id": 2,
+      "reasoning": "This mutant changes the way special cases are handled. Instead of returning `d` for NaN, infinity, or zero, it returns a constant value.",
+      "line": 10,
+      "precode": "return d;",
+      "aftercode": "return 1.0;"
+    },
+    {
+      "id": 3,
+      "reasoning": "This mutant changes the condition to allow scaling for values of `n` less than -2098 without considering the sign of `d`.",
+      "line": 13,
+      "precode": "return (d > 0) ? 0.0 : -0.0;",
+      "aftercode": "return 0.0;"
+    },
+    {
+      "id": 4,
+      "reasoning": "This mutant changes the condition to allow scaling for values of `n` greater than 2097 without considering the sign of `d`.",
+      "line": 17,
+      "precode": "return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 5,
+      "reasoning": "This mutant removes the check for zero mantissa bits, which can lead to incorrect handling of subnormal numbers.",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "// mantissa = mantissa | (1L << 52);"
+    },
+    {
+      "id": 6,
+      "reasoning": "This mutant changes the condition that determines whether to round up when scaling down a subnormal number.",
+      "line": 42,
+      "precode": "if (mostSignificantLostBit != 0) {",
+      "aftercode": "if (mostSignificantLostBit == 0) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "This mutant changes the condition that determines when to normalize a subnormal input number.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1)",
+      "aftercode": "while ((mantissa >>> 52) == 0)"
+    },
+    {
+      "id": 8,
+      "reasoning": "This mutant changes the condition for when to return infinity as a result, ignoring the sign of `d`.",
+      "line": 67,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 9,
+      "reasoning": "This mutant changes the condition that checks if `n` is negative and the result is a normal number.",
+      "line": 31,
+      "precode": "if (scaledExponent > 0)",
+      "aftercode": "if (scaledExponent <= 0)"
+    },
+    {
+      "id": 10,
+      "reasoning": "This mutant changes the condition that checks if `n` is negative and the result is a subnormal number.",
+      "line": 33,
+      "precode": "else if (scaledExponent > -53)",
+      "aftercode": "else if (scaledExponent <= -53)"
+    },
+    {
+      "id": 11,
+      "reasoning": "This mutant changes the condition that checks if `n` is negative and the result should be zero.",
+      "line": 50,
+      "precode": "return (sign == 0L) ? 0.0 : -0.0;",
+      "aftercode": "return 0.0;"
+    },
+    {
+      "id": 12,
+      "reasoning": "This mutant changes the condition that checks if `n` is non-negative and the input number is a subnormal number.",
+      "line": 56,
+      "precode": "// the input number is subnormal, normalize it",
+      "aftercode": "if (exponent == 0)"
+    },
+    {
+      "id": 13,
+      "reasoning": "This mutant changes the condition that checks if `n` is non-negative and the result should be infinity.",
+      "line": 73,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return Double.NEGATIVE_INFINITY;"
+    },
+    {
+      "id": 14,
+      "reasoning": "This mutant removes the check for normal numbers when `n` is non-negative.",
+      "line": 70,
+      "precode": "else if (scaledExponent < 2047)",
+      "aftercode": "// else if (scaledExponent < 2047)"
+    },
+    {
+      "id": 15,
+      "reasoning": "This mutant changes the condition that checks if `n` is non-negative and the result should be a normal number.",
+      "line": 65,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) (scaledExponent - 1)) << 52) | mantissa);"
+    },
+    {
+      "id": 16,
+      "reasoning": "This mutant changes the condition that checks if `n` is non-negative and the input number should be normalized.",
+      "line": 64,
+      "precode": "if (scaledExponent < 2047)",
+      "aftercode": "if (scaledExponent >= 2047)"
+    },
+    {
+      "id": 17,
+      "reasoning": "This mutant changes the condition for normalizing subnormal numbers by incorrectly increasing the exponent.",
+      "line": 61,
+      "precode": "--scaledExponent;",
+      "aftercode": "++scaledExponent;"
+    },
+    {
+      "id": 18,
+      "reasoning": "This mutant incorrectly adjusts the mantissa when normalizing a subnormal number.",
+      "line": 62,
+      "precode": "mantissa = mantissa & 0x000fffffffffffffL;",
+      "aftercode": "mantissa = mantissa | 0x8000000000000000L;"
+    },
+    {
+      "id": 19,
+      "reasoning": "This mutant incorrectly shifts the mantissa when scaling down to a subnormal number.",
+      "line": 41,
+      "precode": "mantissa = mantissa >>> (1 - scaledExponent);",
+      "aftercode": "mantissa = mantissa << (1 + scaledExponent);"
+    },
+    {
+      "id": 20,
+      "reasoning": "This mutant incorrectly handles the most significant lost bit when scaling down a subnormal number.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa | (1L << (-scaledExponent));"
+    }
+  ]
+}

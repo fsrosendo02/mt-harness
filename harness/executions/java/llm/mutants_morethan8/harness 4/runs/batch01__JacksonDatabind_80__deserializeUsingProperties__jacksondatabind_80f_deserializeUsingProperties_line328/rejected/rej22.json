@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonDatabind_80",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksondatabind_80f__deserializeUsingProperties__line328",
+  "file_path": "src/main/java/com/fasterxml/jackson/databind/deser/std/EnumMapDeserializer.java",
+  "function_name": "_deserializeUsingProperties",
+  "start_line": 328,
+  "end_line": 402,
+  "mutant_id": "rej22",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 22,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch01__JacksonDatabind_80__deserializeUsingProperties__jacksondatabind_80f_deserializeUsingProperties_line328/generation/raw_response.txt",
+  "payload": {
+    "id": 22,
+    "reasoning": "The original code skips the value if an unexpected token is encountered. This mutation does not skip the value and continues processing, potentially leading to incorrect behavior.",
+    "line": 44,
+    "precode": "p.skipChildren();",
+    "aftercode": "// p.skipChildren();",
+    "candidate_code": "    public EnumMap<?,?> _deserializeUsingProperties(JsonParser p, DeserializationContext ctxt) throws IOException\n    {\n        final PropertyBasedCreator creator = _propertyBasedCreator;\n        // null -> no ObjectIdReader for EnumMaps\n        PropertyValueBuffer buffer = creator.startBuilding(p, ctxt, null);\n\n        String keyName;\n        if (p.isExpectedStartObjectToken()) {\n            keyName = p.nextFieldName();\n        } else if (p.hasToken(JsonToken.FIELD_NAME)) {\n            keyName = p.getCurrentName();\n        } else {\n            keyName = null;\n        }\n\n        for (; keyName != null; keyName = p.nextFieldName()) {\n            JsonToken t = p.nextToken(); // to get to value\n            // creator property?\n            SettableBeanProperty prop = creator.findCreatorProperty(keyName);\n            if (prop != null) {\n                // Last property to set?\n                if (buffer.assignParameter(prop, prop.deserialize(p, ctxt))) {\n                    EnumMap<?,?> result;\n                    try {\n                        result = (EnumMap<?,?>)creator.build(ctxt, buffer);\n                    } catch (Exception e) {\n                        return wrapAndThrow(e, _containerType.getRawClass(), keyName);\n                    }\n                    return deserialize(p, ctxt, result);\n                }\n                continue;\n            }\n            // other property? needs buffering\n            // but we need to let key deserializer handle it separately, nonetheless\n            Enum<?> key = (Enum<?>) _keyDeserializer.deserializeKey(keyName, ctxt);\n            if (key == null) {\n                if (!ctxt.isEnabled(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL)) {\n                    return (EnumMap<?,?>) ctxt.handleWeirdStringValue(_enumClass, keyName,\n                            \"value not one of declared Enum instance names for %s\",\n                            _containerType.getKeyType());\n                }\n                // 24-Mar-2012, tatu: Null won't work as a key anyway, so let's\n                //  just skip the entry then. But we must skip the value as well, if so.\n                p.nextToken();\n                // p.skipChildren();\n                continue;\n            }\n            Object value; \n\n            try {\n                if (t == JsonToken.VALUE_NULL) {\n                    if (_skipNullValues) {\n                        continue;\n                    }\n                    value = _nullProvider.getNullValue(ctxt);\n                } else if (_valueTypeDeserializer == null) {\n                    value = _valueDeserializer.deserialize(p, ctxt);\n                } else {\n                    value = _valueDeserializer.deserializeWithType(p, ctxt, _valueTypeDeserializer);\n                }\n            } catch (Exception e) {\n                wrapAndThrow(e, _containerType.getRawClass(), keyName);\n                return null;\n            }\n            buffer.bufferMapProperty(key, value);\n        }\n        // end of JSON object?\n        // if so, can just construct and leave...\n        try {\n            return (EnumMap<?,?>)creator.build(ctxt, buffer);\n        } catch (Exception e) {\n            wrapAndThrow(e, _containerType.getRawClass(), keyName);\n            return null;\n        }\n    }\n",
+    "resolution_reason": "exact_search_match"
+  },
+  "log_path": "harness/runs/batch01__JacksonDatabind_80__deserializeUsingProperties__jacksondatabind_80f_deserializeUsingProperties_line328/rejected/rej22.log",
+  "mutant_path": "harness/runs/batch01__JacksonDatabind_80__deserializeUsingProperties__jacksondatabind_80f_deserializeUsingProperties_line328/rejected/rej22.mutant.txt",
+  "original_path": "harness/runs/batch01__JacksonDatabind_80__deserializeUsingProperties__jacksondatabind_80f_deserializeUsingProperties_line328/rejected/original.txt"
+}

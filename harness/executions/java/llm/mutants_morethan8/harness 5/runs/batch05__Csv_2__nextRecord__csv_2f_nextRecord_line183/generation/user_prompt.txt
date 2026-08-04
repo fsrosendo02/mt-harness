@@ -1,0 +1,70 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     CSVRecord nextRecord() throws IOException {
+ 2:         CSVRecord result = null;
+ 3:         record.clear();
+ 4:         StringBuilder sb = null;
+ 5:         do {
+ 6:             reusableToken.reset();
+ 7:             lexer.nextToken(reusableToken);
+ 8:             switch (reusableToken.type) {
+ 9:             case TOKEN:
+10:                 record.add(reusableToken.content.toString());
+11:                 break;
+12:             case EORECORD:
+13:                 record.add(reusableToken.content.toString());
+14:                 break;
+15:             case EOF:
+16:                 if (reusableToken.isReady) {
+17:                     record.add(reusableToken.content.toString());
+18:                 }
+19:                 break;
+20:             case INVALID:
+21:                 throw new IOException("(line " + getLineNumber() + ") invalid parse sequence");
+22:             case COMMENT: // Ignored currently
+23:                 if (sb == null) { // first comment for this record
+24:                     sb = new StringBuilder();
+25:                 } else {
+26:                     sb.append("\n");
+27:                 }
+28:                 sb.append(reusableToken.content);
+29:                 reusableToken.type = TOKEN; // Read another token
+30:                 break;
+31:             }
+32:         } while (reusableToken.type == TOKEN);
+33: 
+34:         if (!record.isEmpty()) {
+35:             recordNumber++;
+36:             final String comment = sb == null ? null : sb.toString();
+37:             result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);
+38:         }
+39:         return result;
+40:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

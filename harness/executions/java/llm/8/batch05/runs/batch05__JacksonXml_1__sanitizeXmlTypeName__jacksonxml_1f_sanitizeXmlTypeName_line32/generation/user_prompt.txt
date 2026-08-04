@@ -1,0 +1,70 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static String sanitizeXmlTypeName(String name)
+ 2:     {
+ 3:         StringBuilder sb;
+ 4:         int changes = 0;
+ 5:         // First things first: remove array types' trailing[]...
+ 6:         if (name.endsWith("[]")) {
+ 7:             do {
+ 8:                 name = name.substring(0, name.length() - 2);
+ 9:                 ++changes;
+10:             } while (name.endsWith("[]"));
+11:             sb = new StringBuilder(name);
+12:             // do trivial pluralization attempt
+13:             if (name.endsWith("s")) {
+14:                 sb.append("es");
+15:             } else {
+16:                 sb.append('s');
+17:             }
+18:         } else {
+19:             sb = new StringBuilder(name);
+20:         }
+21:         for (int i = 0, len = name.length(); i < len; ++i) {
+22:             char c = name.charAt(i);
+23:             if (c > 127) continue;
+24:             if (c >= 'a' && c <= 'z') continue;
+25:             if (c >= 'A' && c <= 'Z') continue;
+26:             if (c >= '0' && c <= '9') continue;
+27:             if (c == '_' || c == '.' || c == '-') continue;
+28:             // Ok, need to replace
+29:             ++changes;
+30:             if (c == '$') {
+31:                 sb.setCharAt(i, '.');
+32:             } else {
+33:                 sb.setCharAt(i, '_');
+34:             }
+35:         }
+36:         if (changes == 0) {
+37:             return name;
+38:         }
+39:         return sb.toString();
+40:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

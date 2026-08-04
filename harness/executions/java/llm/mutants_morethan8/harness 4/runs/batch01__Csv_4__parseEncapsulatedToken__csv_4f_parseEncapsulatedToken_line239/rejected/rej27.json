@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Csv_4",
+  "language": "java",
+  "version": "f",
+  "target_id": "csv_4f_parseEncapsulatedToken__line239",
+  "file_path": "src/main/java/org/apache/commons/csv/Lexer.java",
+  "function_name": "parseEncapsulatedToken",
+  "start_line": 239,
+  "end_line": 288,
+  "mutant_id": "rej27",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 27,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch01__Csv_4__parseEncapsulatedToken__csv_4f_parseEncapsulatedToken_line239/generation/raw_response.txt",
+  "payload": {
+    "id": 27,
+    "reasoning": "The original method sets the token type to EORECORD when it encounters the end of a line, but the mutant does not.",
+    "line": 32,
+    "precode": "token.type = EORECORD;",
+    "aftercode": "// skip setting token type",
+    "candidate_code": "    private Token parseEncapsulatedToken(final Token token) throws IOException {\n        // save current line number in case needed for IOE\n        final long startLineNumber = getCurrentLineNumber();\n        int c;\n        while (true) {\n            c = in.read();\n\n            if (isEscape(c)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) c).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n            } else if (isQuoteChar(c)) {\n                if (isQuoteChar(in.lookAhead())) {\n                    // double or escaped encapsulator -> add single encapsulator to token\n                    c = in.read();\n                    token.content.append((char) c);\n                } else {\n                    // token finish mark (encapsulator) reached: ignore whitespace till delimiter\n                    while (true) {\n                        c = in.read();\n                        if (isDelimiter(c)) {\n                            token.type = TOKEN;\n                            return token;\n                        } else if (isEndOfFile(c)) {\n                            token.type = EOF;\n                            token.isReady = true; // There is data at EOF\n                            return token;\n                        } else if (readEndOfLine(c)) {\n                            // skip setting token type\n                            return token;\n                        } else if (!isWhitespace(c)) {\n                            // error invalid char between token and next delimiter\n                            throw new IOException(\"(line \" + getCurrentLineNumber() +\n                                    \") invalid char between encapsulated token and delimiter\");\n                        }\n                    }\n                }\n            } else if (isEndOfFile(c)) {\n                // error condition (end of file before end of token)\n                throw new IOException(\"(startline \" + startLineNumber +\n                        \") EOF reached before encapsulated token finished\");\n            } else {\n                // consume character\n                token.content.append((char) c);\n            }\n        }\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch01__Csv_4__parseEncapsulatedToken__csv_4f_parseEncapsulatedToken_line239/rejected/rej27.log",
+  "mutant_path": "harness/runs/batch01__Csv_4__parseEncapsulatedToken__csv_4f_parseEncapsulatedToken_line239/rejected/rej27.mutant.txt",
+  "original_path": "harness/runs/batch01__Csv_4__parseEncapsulatedToken__csv_4f_parseEncapsulatedToken_line239/rejected/original.txt"
+}

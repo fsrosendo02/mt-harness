@@ -1,0 +1,492 @@
+{
+  "requested_count": 48,
+  "accepted_count": 9,
+  "rejected_count": 39,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the handling of a null text by returning an empty list instead of a single-element list.",
+        "line": 12,
+        "precode": "if (text == null) {",
+        "aftercode": "if (text == null) { return new ArrayList(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates the handling of a newline by not adding an empty line after finding a newline.",
+        "line": 32,
+        "precode": "if ((right < chars.length) && (chars[right] == '\n')) {",
+        "aftercode": "if ((right < chars.length) && (chars[right] == '\n')) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the wrapping logic by not correctly skipping spaces when finding a wrap point.",
+        "line": 81,
+        "precode": "left = right;",
+        "aftercode": "while ((right < chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) { right++; } left = right;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 95,
+        "precode": "left = right;",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the handling of a null text by returning an empty list instead of a single-element list.",
+        "line": 12,
+        "precode": "if (text == null) {",
+        "aftercode": "if (text == null) { return new ArrayList(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the handling of a newline by not adding an empty line after finding a newline.",
+        "line": 32,
+        "precode": "if ((right < chars.length) && (chars[right] == '\n')) {",
+        "aftercode": "if ((right < chars.length) && (chars[right] == '\n')) { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the wrapping logic by not checking for spaces when wrapping text.",
+        "line": 61,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when all characters are consumed.",
+        "line": 40,
+        "precode": "if (left == chars.length) {",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 52,
+        "precode": "if (chars.length <= right) {",
+        "aftercode": "if (chars.length < right) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length < right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the wrapping logic by not correctly handling spaces when finding a wrap point.",
+        "line": 62,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the wrapping logic by not correctly handling wrap points.",
+        "line": 81,
+        "precode": "left = right;",
+        "aftercode": "while ((right < chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) { right++; } left = right;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the wrapping logic by not correctly handling wrap points.",
+        "line": 84,
+        "precode": "right = Math.min(left + width, chars.length);",
+        "aftercode": "right = left + width;",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = left + width;\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 95,
+        "precode": "left = right;",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the handling of a null text by returning an empty list instead of a single-element list.",
+        "line": 12,
+        "precode": "if (text == null) {",
+        "aftercode": "if (text == null) { return new ArrayList(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the handling of a newline by not adding an empty line after finding a newline.",
+        "line": 32,
+        "precode": "if ((right < chars.length) && (chars[right] == '\n')) {",
+        "aftercode": "if ((right < chars.length) && (chars[right] == '\n')) { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the wrapping logic by not checking for spaces when wrapping text.",
+        "line": 61,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when all characters are consumed.",
+        "line": 40,
+        "precode": "if (left == chars.length) {",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 52,
+        "precode": "if (chars.length <= right) {",
+        "aftercode": "if (chars.length < right) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length < right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the wrapping logic by not correctly handling spaces when finding a wrap point.",
+        "line": 62,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the wrapping logic by not correctly skipping spaces when finding a wrap point.",
+        "line": 73,
+        "precode": "while ((right < chars.length) && (chars[right] == ' ')) {",
+        "aftercode": "while ((right <= chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right <= chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the wrapping logic by not correctly handling wrap points.",
+        "line": 81,
+        "precode": "left = right;",
+        "aftercode": "while ((right < chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) { right++; } left = right;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the wrapping logic by not correctly handling wrap points.",
+        "line": 84,
+        "precode": "right = Math.min(left + width, chars.length);",
+        "aftercode": "right = left + width;",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = left + width;\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 95,
+        "precode": "left = right;",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the handling of a null text by returning an empty list instead of a single-element list.",
+        "line": 12,
+        "precode": "if (text == null) {",
+        "aftercode": "if (text == null) { return new ArrayList(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the handling of a newline by not adding an empty line after finding a newline.",
+        "line": 32,
+        "precode": "if ((right < chars.length) && (chars[right] == '\n')) {",
+        "aftercode": "if ((right < chars.length) && (chars[right] == '\n')) { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the wrapping logic by not checking for spaces when wrapping text.",
+        "line": 61,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when all characters are consumed.",
+        "line": 40,
+        "precode": "if (left == chars.length) {",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 52,
+        "precode": "if (chars.length <= right) {",
+        "aftercode": "if (chars.length < right) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length < right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the wrapping logic by not correctly handling spaces when finding a wrap point.",
+        "line": 62,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the wrapping logic by not correctly skipping spaces when finding a wrap point.",
+        "line": 73,
+        "precode": "while ((right < chars.length) && (chars[right] == ' ')) {",
+        "aftercode": "while ((right <= chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right <= chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the wrapping logic by not correctly handling wrap points.",
+        "line": 81,
+        "precode": "left = right;",
+        "aftercode": "while ((right < chars.length) && (chars[right] == ' ') && (chars[right] != '\n')) { right++; } left = right;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "Violates the wrapping logic by not correctly handling wrap points.",
+        "line": 84,
+        "precode": "right = Math.min(left + width, chars.length);",
+        "aftercode": "right = left + width;",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = left + width;\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 42,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 95,
+        "precode": "left = right;",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 43,
+        "reasoning": "Violates the handling of a null text by returning an empty list instead of a single-element list.",
+        "line": 12,
+        "precode": "if (text == null) {",
+        "aftercode": "if (text == null) { return new ArrayList(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 44,
+        "reasoning": "Violates the handling of a newline by not adding an empty line after finding a newline.",
+        "line": 32,
+        "precode": "if ((right < chars.length) && (chars[right] == '\n')) {",
+        "aftercode": "if ((right < chars.length) && (chars[right] == '\n')) { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 45,
+        "reasoning": "Violates the wrapping logic by not checking for spaces when wrapping text.",
+        "line": 61,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 46,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when all characters are consumed.",
+        "line": 40,
+        "precode": "if (left == chars.length) {",
+        "aftercode": "if (left >= chars.length) { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 47,
+        "reasoning": "Violates the wrapping logic by not adding an empty line when reaching the end of the string.",
+        "line": 52,
+        "precode": "if (chars.length <= right) {",
+        "aftercode": "if (chars.length < right) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length < right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right >= left) && (chars[right] != ' ')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "Violates the wrapping logic by not correctly handling spaces when finding a wrap point.",
+        "line": 62,
+        "precode": "while ((right >= left) && (chars[right] != ' ')) {",
+        "aftercode": "while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {",
+        "candidate_code": "    protected static List wrap(final String text,\n                               final int width) {\n        // check for valid width\n        if (width < 1) {\n            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,\n                                                                                             new Object[] {\n                                                                                                 new Integer(width)\n                                                                                             }));\n        }\n\n        // handle degenerate case\n        if (text == null) {\n            return Collections.singletonList(\"\");\n        }\n\n        final List lines = new ArrayList();\n        final char[] chars = text.toCharArray();\n        int left = 0;\n\n        // for each character in the string\n        while (left < chars.length) {\n            // sync left and right indeces\n            int right = left;\n\n            // move right until we run out of characters, width or find a newline\n            while ((right < chars.length) && (chars[right] != '\\n') &&\n                       (right < (left + width + 1))) {\n                right++;\n            }\n\n            // if a newline was found\n            if ((right < chars.length) && (chars[right] == '\\n')) {\n                // record the substring\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // move to the end of the substring\n                left = right + 1;\n\n                if (left == chars.length) {\n                    lines.add(\"\");\n                }\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the next ideal wrap point \n            right = (left + width) - 1;\n\n            // if we have run out of characters\n            if (chars.length <= right) {\n                // record the substring\n                final String line = new String(chars, left, chars.length - left);\n                lines.add(line);\n\n                // abort the loop\n                break;\n            }\n\n            // back track the substring end until a space is found\n            while ((right > left) && (chars[right] != ' ') && (chars[right] != '\n')) {\n                right--;\n            }\n\n            // if a space was found\n            if (right >= left) {\n                // record the substring to space\n                final String line = new String(chars, left, right - left);\n                lines.add(line);\n\n                // absorb all the spaces before next substring\n                while ((right < chars.length) && (chars[right] == ' ')) {\n                    right++;\n                }\n\n                left = right;\n\n                // restart the loop\n                continue;\n            }\n\n            // move to the wrap position irrespective of spaces\n            right = Math.min(left + width, chars.length);\n\n            // record the substring\n            final String line = new String(chars, left, right - left);\n            lines.add(line);\n\n            // absorb any the spaces before next substring\n            while ((right < chars.length) && (chars[right] == ' ')) {\n                right++;\n            }\n\n            left = right;\n        }\n\n        return lines;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

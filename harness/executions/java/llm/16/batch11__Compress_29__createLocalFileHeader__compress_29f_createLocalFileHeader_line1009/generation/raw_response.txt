@@ -1,0 +1,109 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Incorrect calculation of the buffer length, which could lead to array index out-of-bounds errors.",
+      "line": 5,
+      "precode": "int len= LFH_FILENAME_OFFSET + nameLen + extra.length;",
+      "aftercode": "int len= LFH_FILENAME_OFFSET - nameLen + extra.length;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Changing the condition that checks if ZIP64 is required, potentially ignoring the necessity of ZIP64 support.",
+      "line": 13,
+      "precode": "if (phased &&  !isZip64Required(entry.entry, zip64Mode)){",
+      "aftercode": "if (!phased || isZip64Required(entry.entry, zip64Mode)){"
+    },
+    {
+      "id": 3,
+      "reasoning": "Altering the version needed for extraction without considering the actual zip method or extra field presence.",
+      "line": 16,
+      "precode": "putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort((short)0x0003, buf, LFH_VERSION_NEEDED_OFFSET);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Encoding general purpose bits with an incorrect value, potentially altering the file's compatibility.",
+      "line": 20,
+      "precode": "generalPurposeBit.encode(buf, LFH_GPB_OFFSET);",
+      "aftercode": "generalPurposeBit.encode(buf, LFH_GPB_OFFSET + 1);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Setting the compression method to an undefined value.",
+      "line": 23,
+      "precode": "putShort(zipMethod, buf, LFH_METHOD_OFFSET);",
+      "aftercode": "putShort((short)0xFFFF, buf, LFH_METHOD_OFFSET);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Introducing a time offset calculation error that could lead to invalid timestamps.",
+      "line": 25,
+      "precode": "ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);",
+      "aftercode": "ZipUtil.toDosTime(calendarInstance, null, buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Forgetting to set the CRC for non-phased entries and decompressed files.",
+      "line": 28,
+      "precode": "if (phased){",
+      "aftercode": "{"
+    },
+    {
+      "id": 8,
+      "reasoning": "Using an incorrect size for compressed or uncompressed data, leading to potential read/write errors.",
+      "line": 38,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putShort((short)0xFFFF, buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 9,
+      "reasoning": "Not accounting for the extra field length when setting it in the header.",
+      "line": 58,
+      "precode": "putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);",
+      "aftercode": "putShort(extra.length - 1, buf, LFH_EXTRA_LENGTH_OFFSET);"
+    },
+    {
+      "id": 10,
+      "reasoning": "Modifying the file name length field without updating the actual file name.",
+      "line": 55,
+      "precode": "putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);",
+      "aftercode": "putShort(nameLen + 1, buf, LFH_FILENAME_LENGTH_OFFSET);"
+    },
+    {
+      "id": 11,
+      "reasoning": "Not copying the extra field to the buffer correctly, potentially losing critical metadata.",
+      "line": 63,
+      "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+      "aftercode": "System.arraycopy(new byte[extra.length], 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Changing the method to calculate file names and extras without proper boundary checks.",
+      "line": 61,
+      "precode": "System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);",
+      "aftercode": "System.arraycopy( new byte[nameLen], 0, buf, LFH_FILENAME_OFFSET, nameLen);"
+    },
+    {
+      "id": 13,
+      "reasoning": "Not updating the buffer with the correct time for ZIP archive entries.",
+      "line": 25,
+      "precode": "ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);",
+      "aftercode": "ZipUtil.toDosTime(null, null, buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Introducing an error in the calculation of the compressed size offset.",
+      "line": 42,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putShort((short)0xFFFF, buf, LFH_COMPRESSED_SIZE_OFFSET + 2);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Incorrectly handling the case where a file is not seekable and ZIP64 extra field is present.",
+      "line": 42,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putShort((short)0xFFFF, buf, LFH_ORIGINAL_SIZE_OFFSET + 2);"
+    }
+  ]
+}

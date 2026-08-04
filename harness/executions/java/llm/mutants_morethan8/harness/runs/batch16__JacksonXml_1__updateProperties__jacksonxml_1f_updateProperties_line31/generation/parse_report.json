@@ -1,0 +1,56 @@
+{
+  "requested_count": 24,
+  "accepted_count": 7,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the behavior of handling wrapped properties",
+        "line": 47,
+        "precode": "if ((localName != null && localName.length() > 0) && !localName.equals(prop.getName())) {",
+        "aftercode": "if (localName == null || localName.length() == 0 || localName.equals(prop.getName())) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the behavior of handling wrapped properties",
+        "line": 53,
+        "precode": "continue;",
+        "aftercode": "break;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the behavior of handling unwrapped properties",
+        "line": 62,
+        "precode": "propDefs.set(i, newProp);",
+        "aftercode": "propDefs.remove(i);",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.remove(i);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the behavior of handling unwrapped properties",
+        "line": 63,
+        "precode": "continue;",
+        "aftercode": "break;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    }
+  ]
+}

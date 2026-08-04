@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_3",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_3f_perform__line64",
+  "file_path": "src/main/java/org/apache/commons/compress/changes/ChangeSetPerformer.java",
+  "function_name": "perform",
+  "start_line": 64,
+  "end_line": 127,
+  "mutant_id": "rej13",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 13,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch03__Compress_3__perform__compress_3f_perform_line64/generation/raw_response.txt",
+  "payload": {
+    "id": 13,
+    "reasoning": "Violates the property that ChangeSetResults should capture all added entries correctly.",
+    "line": 60,
+    "precode": "results.addedFromChangeSet(change.getEntry().getName());",
+    "aftercode": "// results.addedFromChangeSet(change.getEntry().getName());",
+    "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && \n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                // results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+    "resolution_reason": "exact_search_nearest_match"
+  },
+  "log_path": "harness/runs/batch03__Compress_3__perform__compress_3f_perform_line64/rejected/rej13.log",
+  "mutant_path": "harness/runs/batch03__Compress_3__perform__compress_3f_perform_line64/rejected/rej13.mutant.txt",
+  "original_path": "harness/runs/batch03__Compress_3__perform__compress_3f_perform_line64/rejected/original.txt"
+}

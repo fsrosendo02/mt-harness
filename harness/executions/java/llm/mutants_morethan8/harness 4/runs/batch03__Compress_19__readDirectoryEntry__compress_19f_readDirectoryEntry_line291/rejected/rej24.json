@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_19",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_19f_readDirectoryEntry__line291",
+  "file_path": "src/main/java/org/apache/commons/compress/archivers/dump/DumpArchiveInputStream.java",
+  "function_name": "readDirectoryEntry",
+  "start_line": 291,
+  "end_line": 374,
+  "mutant_id": "rej24",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 24,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch03__Compress_19__readDirectoryEntry__compress_19f_readDirectoryEntry_line291/generation/raw_response.txt",
+  "payload": {
+    "id": 24,
+    "reasoning": "Never uses the raw input data for parsing without checking for errors",
+    "line": 80,
+    "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+    "aftercode": "// entry = DumpArchiveEntry.parse(raw.peek());",
+    "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            // entry = DumpArchiveEntry.parse(raw.peek());\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch03__Compress_19__readDirectoryEntry__compress_19f_readDirectoryEntry_line291/rejected/rej24.log",
+  "mutant_path": "harness/runs/batch03__Compress_19__readDirectoryEntry__compress_19f_readDirectoryEntry_line291/rejected/rej24.mutant.txt",
+  "original_path": "harness/runs/batch03__Compress_19__readDirectoryEntry__compress_19f_readDirectoryEntry_line291/rejected/original.txt"
+}

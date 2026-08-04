@@ -1,0 +1,167 @@
+{
+  "requested_count": 32,
+  "accepted_count": 19,
+  "rejected_count": 13,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "Negative exponent",
+        "line": 74,
+        "precode": "c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "aftercode": "if (c == '-' || c == '+') {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Negative fractional part",
+        "line": 14,
+        "precode": "c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "aftercode": "if (c == '-' || c == '+') {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "Empty input string",
+        "line": 94,
+        "precode": "_textBuffer.setCurrentLength(outPtr);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Non-numeric character after decimal point",
+        "line": 19,
+        "precode": "c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "aftercode": "if (c != INT_0 && c != INT_9) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Non-numeric character in exponent indicator",
+        "line": 43,
+        "precode": "// Sign indicator?",
+        "aftercode": "if (c != '-' && c != '+') {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Leading zeroes in integer part",
+        "line": 20,
+        "precode": "++integerPartLength;",
+        "aftercode": "if (c == '0') {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Trailing zeroes in fractional part",
+        "line": 26,
+        "precode": "+fractLen;",
+        "aftercode": "if (c == '0') {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Leading zeroes in exponent part",
+        "line": 65,
+        "precode": "+expLen;",
+        "aftercode": "if (c == '0') {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 12,
+        "reasoning": "Trailing decimal point in integer part",
+        "line": 26,
+        "precode": "+integerPartLength;",
+        "aftercode": "-integerPartLength;",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                -integerPartLength;\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 14,
+        "reasoning": "Trailing whitespace in exponent indicator",
+        "line": 67,
+        "precode": "+expLen;",
+        "aftercode": "-expLen;",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                -expLen;\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "Negative fractional part",
+        "line": 29,
+        "precode": "+fractLen;",
+        "aftercode": "-fractLen;",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            -fractLen;// must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Trailing negative sign in integer part",
+        "line": 34,
+        "precode": "+integerPartLength;",
+        "aftercode": "-integerPartLength;",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n-integerPartLength;\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Leading negative sign in decimal point",
+        "line": 35,
+        "precode": "c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "aftercode": "-c;",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            -c;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    }
+  ]
+}

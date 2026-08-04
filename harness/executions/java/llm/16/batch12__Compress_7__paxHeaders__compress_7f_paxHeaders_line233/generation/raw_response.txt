@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changes the character encoding used for reading, potentially leading to incorrect header parsing.",
+      "line": 2,
+      "precode": "BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));",
+      "aftercode": "BufferedReader br = new BufferedReader(new InputStreamReader(this, \"ISO-8859-1\"));"
+    },
+    {
+      "id": 2,
+      "reasoning": "Allows for negative lengths, which could lead to invalid buffer sizes.",
+      "line": 32,
+      "precode": "len *= 10;",
+      "aftercode": "len = -len * 10;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Removes the check for length mismatch, allowing incomplete reads without throwing an exception.",
+      "line": 21,
+      "precode": "if (got != len-read){",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Drops the trailing newline character in a different way, potentially affecting header values.",
+      "line": 25,
+      "precode": "String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL",
+      "aftercode": "String value = new String(cbuf, 0 , len-read);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Changes the header map to a different implementation that might behave differently in edge cases.",
+      "line": 3,
+      "precode": "Map headers = new HashMap();",
+      "aftercode": "Map headers = new LinkedHashMap();"
+    },
+    {
+      "id": 6,
+      "reasoning": "Adds an extra space before reading the length, potentially skipping valid input.",
+      "line": 8,
+      "precode": "int read=0;",
+      "aftercode": "int read=1;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Does not handle non-numeric characters in the length field, leading to incorrect parsing.",
+      "line": 33,
+      "precode": "len += ch - '0';",
+      "aftercode": "len += (ch % 10);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Changes the handling of the keyword to ignore case, potentially affecting header matching.",
+      "line": 27,
+      "precode": "break;",
+      "aftercode": "keyword = keyword.toLowerCase(); break;"
+    },
+    {
+      "id": 9,
+      "reasoning": "Adds an extra character read before processing the keyword, potentially skipping valid input.",
+      "line": 14,
+      "precode": "while((ch = br.read()) != -1){",
+      "aftercode": "while((ch = br.read()) != ' ' && ch != -1){"
+    },
+    {
+      "id": 10,
+      "reasoning": "Removes the check for the '=' character, causing the header parsing to fail.",
+      "line": 16,
+      "precode": "if (ch == '='){ // end of keyword",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 11,
+      "reasoning": "Does not update the header map, making all parsed headers ineffective.",
+      "line": 25,
+      "precode": "headers.put(keyword, value);",
+      "aftercode": "// headers.put(keyword, value);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Changes the order of processing headers, potentially affecting dependencies between them.",
+      "line": 49,
+      "precode": "Iterator hdrs = headers.entrySet().iterator();",
+      "aftercode": "List<Entry> entries = new ArrayList<>(headers.entrySet()); Collections.reverse(entries); Iterator hdrs = entries.iterator();"
+    },
+    {
+      "id": 13,
+      "reasoning": "Removes the handling of 'path' header, making file name updates ineffective.",
+      "line": 54,
+      "precode": "if ("path".equals(key)){",
+      "aftercode": "// if ("path".equals(key)){" // Removed path handling"
+    },
+    {
+      "id": 14,
+      "reasoning": "Removes the handling of 'linkpath' header, making link name updates ineffective.",
+      "line": 56,
+      "precode": "if ("linkpath".equals(key)){",
+      "aftercode": "// if ("linkpath".equals(key)){" // Removed link path handling"
+    },
+    {
+      "id": 15,
+      "reasoning": "Does not parse the 'gid' header as an integer, potentially causing invalid values.",
+      "line": 60,
+      "precode": "currEntry.setGroupId(Integer.parseInt(val));",
+      "aftercode": "currEntry.setGroupId(Long.parseLong(val).intValue());"
+    },
+    {
+      "id": 16,
+      "reasoning": "Does not parse the 'uid' header as an integer, potentially causing invalid values.",
+      "line": 68,
+      "precode": "currEntry.setSize(Long.parseLong(val));",
+      "aftercode": "currEntry.setSize(Integer.parseInt(val));"
+    }
+  ]
+}

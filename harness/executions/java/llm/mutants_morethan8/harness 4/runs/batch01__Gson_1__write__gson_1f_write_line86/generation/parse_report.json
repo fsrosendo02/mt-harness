@@ -1,0 +1,384 @@
+{
+  "requested_count": 40,
+  "accepted_count": 11,
+  "rejected_count": 29,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 5,
+        "reasoning": "The original code checks if a JsonElement is null before serializing. This mutant omits this check, potentially serializing null objects.",
+        "line": 3,
+        "precode": "if (element == null || element.isJsonNull()) {",
+        "aftercode": "// if (element == null || element.isJsonNull()) {",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    // if (element == null || element.isJsonNull()) { {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 12,
+        "reasoning": "The original code checks for null elements and only serializes them if serializeNulls is true. This mutant omits the check for serializeNulls, potentially adding unintended null values to the output.",
+        "line": 5,
+        "precode": "writer.nullValue();",
+        "aftercode": "// writer.nullValue();",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        // writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a string and attempts to serialize it as such.",
+        "line": 15,
+        "precode": "writer.value(primitive.getAsString());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(0);\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly attempts to serialize the array itself as a string.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.value(element.toString());\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly attempts to serialize the object itself as a string.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.value(element.toString());\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a number and attempts to serialize it as such.",
+        "line": 13,
+        "precode": "writer.value(primitive.getAsBoolean());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(0);\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly assumes that any JsonElement is an array and attempts to serialize it as such.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      write(element, serializeNulls, writer);\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly assumes that any JsonElement is an object and attempts to serialize it as such.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      write(element, serializeNulls, writer);\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "The original code checks for null elements and only serializes them if serializeNulls is true. This mutant omits the check for serializeNulls, potentially adding unintended null values to the output.",
+        "line": 5,
+        "precode": "writer.nullValue();",
+        "aftercode": "// writer.nullValue();",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        // writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a string and attempts to serialize it as such.",
+        "line": 15,
+        "precode": "writer.value(primitive.getAsString());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(0);\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly attempts to serialize the array itself as a string.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.value(element.toString());\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly attempts to serialize the object itself as a string.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.value(element.toString());\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a number and attempts to serialize it as such.",
+        "line": 13,
+        "precode": "writer.value(primitive.getAsBoolean());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(0);\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly assumes that any JsonElement is an array and attempts to serialize it as such.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      write(element, serializeNulls, writer);\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly assumes that any JsonElement is an object and attempts to serialize it as such.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      write(element, serializeNulls, writer);\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The original code checks for null elements and only serializes them if serializeNulls is true. This mutant omits the check for serializeNulls, potentially adding unintended null values to the output.",
+        "line": 5,
+        "precode": "writer.nullValue();",
+        "aftercode": "// writer.nullValue();",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        // writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a string and attempts to serialize it as such.",
+        "line": 15,
+        "precode": "writer.value(primitive.getAsString());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(0);\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly attempts to serialize the array itself as a string.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.value(element.toString());\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly attempts to serialize the object itself as a string.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.value(element.toString());\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a number and attempts to serialize it as such.",
+        "line": 13,
+        "precode": "writer.value(primitive.getAsBoolean());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(0);\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly assumes that any JsonElement is an array and attempts to serialize it as such.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      write(element, serializeNulls, writer);\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly assumes that any JsonElement is an object and attempts to serialize it as such.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      write(element, serializeNulls, writer);\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "The original code checks for null elements and only serializes them if serializeNulls is true. This mutant omits the check for serializeNulls, potentially adding unintended null values to the output.",
+        "line": 5,
+        "precode": "writer.nullValue();",
+        "aftercode": "// writer.nullValue();",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        // writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a string and attempts to serialize it as such.",
+        "line": 15,
+        "precode": "writer.value(primitive.getAsString());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(0);\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly attempts to serialize the array itself as a string.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.value(element.toString());\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly attempts to serialize the object itself as a string.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "writer.value(element.toString());",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.value(element.toString());\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "The original code handles JsonPrimitives by checking their types. This mutant incorrectly assumes that any JsonPrimitive is a number and attempts to serialize it as such.",
+        "line": 13,
+        "precode": "writer.value(primitive.getAsBoolean());",
+        "aftercode": "writer.value(0);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(0);\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "The original code iterates over JsonArrays and serializes each element. This mutant incorrectly assumes that any JsonElement is an array and attempts to serialize it as such.",
+        "line": 19,
+        "precode": "writer.beginArray();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      write(element, serializeNulls, writer);\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      writer.beginObject();\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "The original code handles JsonObject by iterating over their entries. This mutant incorrectly assumes that any JsonElement is an object and attempts to serialize it as such.",
+        "line": 31,
+        "precode": "writer.beginObject();",
+        "aftercode": "write(element, serializeNulls, writer);",
+        "candidate_code": "  static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)\n      throws IOException {\n    if (element == null || element.isJsonNull()) {\n      if (serializeNulls) {\n        writer.nullValue();\n      }\n\n    } else if (element.isJsonPrimitive()) {\n      JsonPrimitive primitive = element.getAsJsonPrimitive();\n      if (primitive.isNumber()) {\n        writer.value(primitive.getAsNumber());\n      } else if (primitive.isBoolean()) {\n        writer.value(primitive.getAsBoolean());\n      } else {\n        writer.value(primitive.getAsString());\n      }\n\n    } else if (element.isJsonArray()) {\n      writer.beginArray();\n      for (JsonElement e : element.getAsJsonArray()) {\n        /* always print null when its parent element is an array! */\n        if (e.isJsonNull()) {\n          writer.nullValue();\n          continue;\n        }\n        write(e, serializeNulls, writer);\n      }\n      writer.endArray();\n\n    } else if (element.isJsonObject()) {\n      write(element, serializeNulls, writer);\n      for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {\n        JsonElement value = e.getValue();\n        if (!serializeNulls && value.isJsonNull()) {\n          continue;\n        }\n        writer.name(e.getKey());\n        write(value, serializeNulls, writer);\n      }\n      writer.endObject();\n\n    } else {\n      throw new IllegalArgumentException(\"Couldn't write \" + element.getClass());\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

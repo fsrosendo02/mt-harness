@@ -1,0 +1,288 @@
+{
+  "requested_count": 40,
+  "accepted_count": 16,
+  "rejected_count": 24,
+  "rejections": [
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "The check for non-empty 'localName' is removed, potentially leading to incorrect property renaming.",
+        "line": 34,
+        "precode": "if ((localName != null && localName.length() > 0)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The check for 'localName' being different from 'prop.getName()' is removed, potentially leading to incorrect property renaming.",
+        "line": 36,
+        "precode": "!localName.equals(prop.getName()))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The condition for creating a new list of properties ('propDefs') is removed, potentially leading to incorrect property handling.",
+        "line": 37,
+        "precode": "if (changed == 0) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The code to create a new list of properties ('propDefs') is removed, potentially leading to incorrect property handling.",
+        "line": 38,
+        "precode": "propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The increment of 'changed' is removed, potentially leading to incorrect property handling.",
+        "line": 40,
+        "precode": "++changed;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The continue statement after setting a new property name is removed, potentially leading to incorrect property handling.",
+        "line": 42,
+        "precode": "continue;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "The code to set the 'propDefs' list with a new property definition is commented out, potentially leading to incorrect property handling.",
+        "line": 45,
+        "precode": "propDefs.set(i, prop.withSimpleName(localName));",
+        "aftercode": "//propDefs.set(i, prop.withSimpleName(localName));",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    //propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The continue statement after setting a new property name with unwrapped properties is removed, potentially leading to incorrect property handling.",
+        "line": 46,
+        "precode": "continue;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "The loop variable 'i' is not incremented, potentially leading to an infinite loop or skipping properties.",
+        "line": 8,
+        "precode": "++i",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "The original property list ('propDefs') is reassigned without creating a new copy, potentially leading to unexpected behavior due to aliasing.",
+        "line": 38,
+        "precode": "propDefs = propDefs;",
+        "aftercode": "propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);",
+        "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    // make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not return the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method returns a list with an arbitrary element instead of the modified property list, potentially leading to incorrect behavior.",
+        "line": 47,
+        "precode": "return propDefs;",
+        "aftercode": "List<BeanPropertyDefinition> emptyList = new ArrayList<>();\nemptyList.add(new BeanPropertyDefinition(\"test\", new AnnotatedMember(), new AnnotationIntrospector()));\nemptyList.get(0).setPrimaryMember(null);\nemptyList.get(0).getPrimaryMember().addAnnotation(new SomeAnnotation());\nemptyList.get(0).getPrimaryMember().setDeclaringClass(getClass());\nemptyList.get(0).getPrimaryMember().setMember(null);\nemptyList.get(0).getPrimaryMember().setAnnotations(Arrays.asList(new Annotation[] {new SomeAnnotation()}));\nemptyList.get(0).getPrimaryMember().setVisibility(Modifier.PRIVATE);\nemptyList.get(0).getPrimaryMember().setSynthetic(true);\nemptyList.get(0).getPrimaryMember().addOverride(null);\nreturn emptyList;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

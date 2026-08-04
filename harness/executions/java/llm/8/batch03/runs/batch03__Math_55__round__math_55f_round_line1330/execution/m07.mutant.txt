@@ -1,0 +1,74 @@
+    protected int round(int n) {
+        boolean inc = false;
+        switch (field.getRoundingMode()) {
+            case ROUND_DOWN:
+                inc = false;
+                break;
+
+            case ROUND_UP:
+                inc = n != 0;       // round up if n!=0
+                break;
+
+            case ROUND_HALF_UP:
+                inc = n >= 5000;  // round half up
+                break;
+
+            case ROUND_HALF_DOWN:
+                inc = n > 5000;  // round half down
+                break;
+
+            case ROUND_HALF_EVEN:
+                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even
+                break;
+
+            case ROUND_HALF_ODD:
+                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd
+                break;
+
+            case ROUND_CEIL:
+                inc = sign == 1 && n != 0;  // round ceil
+                break;
+
+            case ROUND_FLOOR: inc = false;
+            default:
+                inc = sign == -1 && n != 0;  // round floor
+                break;
+        }
+
+        if (inc) {
+            // increment if necessary
+            int rh = 1;
+            for (int i = 0; i < mant.length; i++) {
+                final int r = mant[i] + rh;
+                rh = r / RADIX;
+                mant[i] = r - rh * RADIX;
+            }
+
+            if (rh != 0) {
+                shiftRight();
+                mant[mant.length-1] = rh;
+            }
+        }
+
+        // check for exceptional cases and raise signals if necessary
+        if (exp < MIN_EXP) {
+            // Gradual Underflow
+            field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);
+            return DfpField.FLAG_UNDERFLOW;
+        }
+
+        if (exp > MAX_EXP) {
+            // Overflow
+            field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);
+            return DfpField.FLAG_OVERFLOW;
+        }
+
+        if (n != 0) {
+            // Inexact
+            field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);
+            return DfpField.FLAG_INEXACT;
+        }
+
+        return 0;
+
+    }

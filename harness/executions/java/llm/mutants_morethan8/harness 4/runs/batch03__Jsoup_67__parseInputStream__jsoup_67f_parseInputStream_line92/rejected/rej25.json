@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Jsoup_67",
+  "language": "java",
+  "version": "f",
+  "target_id": "jsoup_67f_parseInputStream__line92",
+  "file_path": "src/main/java/org/jsoup/helper/DataUtil.java",
+  "function_name": "parseInputStream",
+  "start_line": 92,
+  "end_line": 155,
+  "mutant_id": "rej25",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 25,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: }",
+  "raw_response_path": "harness/runs/batch03__Jsoup_67__parseInputStream__jsoup_67f_parseInputStream_line92/generation/raw_response.txt",
+  "payload": {
+    "id": 25,
+    "reasoning": "The parser's parseInput() method is not checked for returning null before the doc variable is used.",
+    "line": 56,
+    "precode": "if (doc == null) {",
+    "aftercode": "// if (parser.parseInput(reader, baseUri) == null) {",
+    "candidate_code": "    static Document parseInputStream(InputStream input, String charsetName, String baseUri, Parser parser) throws IOException  {\n        if (input == null) // empty body\n            return new Document(baseUri);\n        input = ConstrainableInputStream.wrap(input, bufferSize, 0);\n\n        Document doc = null;\n        boolean fullyRead = false;\n\n        // read the start of the stream and look for a BOM or meta charset\n        input.mark(firstReadBufferSize);\n        ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1); // -1 because we read one more to see if completed\n        fullyRead = input.read() == -1;\n        input.reset();\n\n        // look for BOM - overrides any other header or input\n        BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);\n        if (bomCharset != null) {\n            charsetName = bomCharset.charset;\n            input.skip(bomCharset.offset);\n        }\n\n        if (charsetName == null) { // determine from meta. safe first parse as UTF-8\n            String docData = Charset.forName(defaultCharset).decode(firstBytes).toString();\n            doc = parser.parseInput(docData, baseUri);\n\n            // look for <meta http-equiv=\"Content-Type\" content=\"text/html;charset=gb2312\"> or HTML5 <meta charset=\"gb2312\">\n            Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\");\n            String foundCharset = null; // if not found, will keep utf-8 as best attempt\n            for (Element meta : metaElements) {\n                if (meta.hasAttr(\"http-equiv\"))\n                    foundCharset = getCharsetFromContentType(meta.attr(\"content\"));\n                if (foundCharset == null && meta.hasAttr(\"charset\"))\n                    foundCharset = meta.attr(\"charset\");\n                if (foundCharset != null)\n                    break;\n            }\n\n            // look for <?xml encoding='ISO-8859-1'?>\n            if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration) {\n                XmlDeclaration prolog = (XmlDeclaration) doc.childNode(0);\n                if (prolog.name().equals(\"xml\"))\n                    foundCharset = prolog.attr(\"encoding\");\n            }\n            foundCharset = validateCharset(foundCharset);\n            if (foundCharset != null && !foundCharset.equalsIgnoreCase(defaultCharset)) { // need to re-decode. (case insensitive check here to match how validate works)\n                foundCharset = foundCharset.trim().replaceAll(\"[\\\"']\", \"\");\n                charsetName = foundCharset;\n                doc = null;\n            } else if (!fullyRead) {\n                doc = null;\n            }\n        } else { // specified by content type header (or by user on file load)\n            Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");\n        }\n        // if (parser.parseInput(reader, baseUri) == null) { {\n            if (charsetName == null)\n                charsetName = defaultCharset;\n            BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);\n            doc = parser.parseInput(reader, baseUri);\n            doc.outputSettings().charset(charsetName);\n        }\n        input.close();\n        return doc;\n    }\n",
+    "resolution_reason": "exact_search_match"
+  },
+  "log_path": "harness/runs/batch03__Jsoup_67__parseInputStream__jsoup_67f_parseInputStream_line92/rejected/rej25.log",
+  "mutant_path": "harness/runs/batch03__Jsoup_67__parseInputStream__jsoup_67f_parseInputStream_line92/rejected/rej25.mutant.txt",
+  "original_path": "harness/runs/batch03__Jsoup_67__parseInputStream__jsoup_67f_parseInputStream_line92/rejected/original.txt"
+}

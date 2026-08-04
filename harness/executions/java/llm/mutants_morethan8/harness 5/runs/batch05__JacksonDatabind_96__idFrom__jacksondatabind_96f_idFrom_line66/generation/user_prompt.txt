@@ -1,0 +1,80 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)
+ 2:     {
+ 3:         // Need to ensure that "enum subtypes" work too
+ 4:         if (Enum.class.isAssignableFrom(cls)) {
+ 5:             if (!cls.isEnum()) { // means that it's sub-class of base enum, so:
+ 6:                 cls = cls.getSuperclass();
+ 7:             }
+ 8:         }
+ 9:         String str = cls.getName();
+10:         if (str.startsWith(JAVA_UTIL_PKG)) {
+11:             // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.
+12:             //     We need better mechanism; for now this has to do...
+13: 
+14:             // Enum sets and maps are problematic since we MUST know type of
+15:             // contained enums, to be able to deserialize.
+16:             // In addition, EnumSet is not a concrete type either
+17:             if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...
+18:                 Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);
+19:                 // not optimal: but EnumSet is not a customizable type so this is sort of ok
+20:                str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();
+21:             } else if (value instanceof EnumMap<?,?>) {
+22:                 Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);
+23:                 Class<?> valueClass = Object.class;
+24:                 // not optimal: but EnumMap is not a customizable type so this is sort of ok
+25:                 str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();
+26:             }
+27:             // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`
+28:             //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead
+29:         } else if (str.indexOf('$') >= 0) {
+30:             /* Other special handling may be needed for inner classes,
+31:              * The best way to handle would be to find 'hidden' constructor; pass parent
+32:              * value etc (which is actually done for non-anonymous static classes!),
+33:              * but that is just not possible due to various things. So, we will instead
+34:              * try to generalize type into something we will be more likely to be able
+35:              * construct.
+36:              */
+37:             Class<?> outer = ClassUtil.getOuterClass(cls);
+38:             if (outer != null) {
+39:                 // one more check: let's actually not worry if the declared static type is
+40:                 // non-static as well; if so, deserializer does have a chance at figuring it all out.
+41:                 Class<?> staticType = _baseType.getRawClass();
+42:                 if (ClassUtil.getOuterClass(staticType) == null) {
+43:                     // Is this always correct? Seems like it should be...
+44:                     cls = _baseType.getRawClass();
+45:                     str = cls.getName();
+46:                 }
+47:             }
+48:         }
+49:         return str;
+50:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "No check for null before calling remove on fields collection",
+      "line": 9,
+      "precode": "boolean hour = fields.remove(DateTimeFieldType.hourOfDay());",
+      "aftercode": "if (fields != null) { boolean hour = fields.remove(DateTimeFieldType.hourOfDay()); }"
+    },
+    {
+      "id": 2,
+      "reasoning": "Hour is removed even if it's not present in the fields collection",
+      "line": 9,
+      "precode": "boolean hour = fields.remove(DateTimeFieldType.hourOfDay());",
+      "aftercode": "boolean hour = fields.contains(DateTimeFieldType.hourOfDay()) ? true : false;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Minute is removed even if it's not present in the fields collection",
+      "line": 10,
+      "precode": "boolean minute = fields.remove(DateTimeFieldType.minuteOfHour());",
+      "aftercode": "boolean minute = fields.contains(DateTimeFieldType.minuteOfHour()) ? true : false;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Second is removed even if it's not present in the fields collection",
+      "line": 11,
+      "precode": "boolean second = fields.remove(DateTimeFieldType.secondOfMinute());",
+      "aftercode": "boolean second = fields.contains(DateTimeFieldType.secondOfMinute()) ? true : false;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Milli is removed even if it's not present in the fields collection",
+      "line": 12,
+      "precode": "boolean milli = fields.remove(DateTimeFieldType.millisOfSecond());",
+      "aftercode": "boolean milli = fields.contains(DateTimeFieldType.millisOfSecond()) ? true : false;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Return immediately if none of the time fields are present in the collection",
+      "line": 14,
+      "precode": "if (!hour && !minute && !second && !milli) { return; }",
+      "aftercode": "if (hour || minute || second || milli) { return; }"
+    },
+    {
+      "id": 7,
+      "reasoning": "Throw an exception if strictISO is true and reducedPrec is false, but do nothing if datePresent is true",
+      "line": 18,
+      "precode": "if (strictISO && reducedPrec) { throw new IllegalArgumentException(\"No valid ISO8601 format for fields because Date was reduced precision: \" + fields); }",
+      "aftercode": "if (!datePresent) { throw new IllegalArgumentException(\"No valid ISO8601 format for fields because Date was reduced precision: \" + fields); }"
+    },
+    {
+      "id": 8,
+      "reasoning": "Always append 'T' to the builder, even if date is not present",
+      "line": 21,
+      "precode": "if (datePresent) { bld.appendLiteral('T'); }",
+      "aftercode": "bld.appendLiteral('T');"
+    },
+    {
+      "id": 9,
+      "reasoning": "Throw an exception if strictISO is true and datePresent is false, but do nothing if hour, minute or second are present",
+      "line": 28,
+      "precode": "if (strictISO && datePresent) { throw new IllegalArgumentException(\"No valid ISO8601 format for fields because Time was truncated: \" + fields); }",
+      "aftercode": "if (!hour && !minute && !second) { throw new IllegalArgumentException(\"No valid ISO8601 format for fields because Time was truncated: \" + fields); }"
+    },
+    {
+      "id": 10,
+      "reasoning": "Always append a hyphen to the builder, even if hour is present",
+      "line": 41,
+      "precode": "if (extended && hour && minute) { bld.appendLiteral(':'); }",
+      "aftercode": "bld.appendLiteral('-');"
+    },
+    {
+      "id": 11,
+      "reasoning": "Always append a colon to the builder, even if minute is present",
+      "line": 53,
+      "precode": "if (extended && minute && second) { bld.appendLiteral(':'); }",
+      "aftercode": "bld.appendLiteral('-');"
+    },
+    {
+      "id": 12,
+      "reasoning": "Always append a hyphen to the builder, even if second is present",
+      "line": 57,
+      "precode": "if (milli) { bld.appendLiteral('.'); bld.appendMillisOfSecond(3); }",
+      "aftercode": "bld.appendLiteral('-');"
+    },
+    {
+      "id": 13,
+      "reasoning": "Never append a colon to the builder, even if hour and minute are both present",
+      "line": 59,
+      "precode": "if (second) { bld.appendSecondOfMinute(2); } else if (milli) { bld.appendLiteral('-'); }",
+      "aftercode": "bld.appendLiteral(':');"
+    },
+    {
+      "id": 14,
+      "reasoning": "Never append a colon to the builder, even if minute and second are both present",
+      "line": 61,
+      "precode": "if (milli) { bld.appendLiteral('.'); bld.appendMillisOfSecond(3); }",
+      "aftercode": "bld.appendLiteral('-');"
+    },
+    {
+      "id": 15,
+      "reasoning": "Always append a hyphen to the builder, even if second is present",
+      "line": 63,
+      "precode": "",
+      "aftercode": "if (milli) { bld.appendLiteral('.'); bld.appendMillisOfSecond(3); } else { bld.appendLiteral('-'); }"
+    },
+    {
+      "id": 16,
+      "reasoning": "Never throw an exception when the fields collection is empty",
+      "line": 34,
+      "precode": "if (strictISO) { throw new IllegalArgumentException(\"No valid ISO8601 format for fields: \" + fields); }",
+      "aftercode": ""
+    }
+  ]
+}

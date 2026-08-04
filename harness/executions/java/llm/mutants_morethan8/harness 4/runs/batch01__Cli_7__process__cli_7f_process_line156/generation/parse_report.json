@@ -1,0 +1,58 @@
+{
+  "requested_count": 40,
+  "accepted_count": 10,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "The original code checks if a duplicate argument has been processed, but it compares objects by identity instead of value.",
+        "line": 12,
+        "precode": "// rollback and abort",
+        "aftercode": "if (!arg.equals(previous)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 6,
+        "reasoning": "The original code checks for the existence of anonymous arguments before processing. This mutant removes this check, potentially leading to an error.",
+        "line": 64,
+        "precode": "if (anonymous.isEmpty()) {",
+        "aftercode": "// anonymous argument check removed",
+        "candidate_code": "    public void process(final WriteableCommandLine commandLine,\n                        final ListIterator arguments)\n        throws OptionException {\n        String previous = null;\n\n        // [START process each command line token\n        while (arguments.hasNext()) {\n            // grab the next argument\n            final String arg = (String) arguments.next();\n\n            // if we have just tried to process this instance\n            if (arg == previous) {\n                // rollback and abort\n                arguments.previous();\n\n                break;\n            }\n\n            // remember last processed instance\n            previous = arg;\n\n            final Option opt = (Option) optionMap.get(arg);\n\n            // option found\n            if (opt != null) {\n                arguments.previous();\n                opt.process(commandLine, arguments);\n            }\n            // [START option NOT found\n            else {\n                // it might be an anonymous argument continue search\n                // [START argument may be anonymous\n                if (commandLine.looksLikeOption(arg)) {\n                    // narrow the search\n                    final Collection values = optionMap.tailMap(arg).values();\n\n                    boolean foundMemberOption = false;\n\n                    for (Iterator i = values.iterator(); i.hasNext() && !foundMemberOption;) {\n                        final Option option = (Option) i.next();\n\n                        if (option.canProcess(commandLine, arg)) {\n                            foundMemberOption = true;\n                            arguments.previous();\n                            option.process(commandLine, arguments);\n                        }\n                    }\n\n                    // back track and abort this group if necessary\n                    if (!foundMemberOption) {\n                        arguments.previous();\n\n                        return;\n                    }\n                } // [END argument may be anonymous\n\n                // [START argument is NOT anonymous\n                else {\n                    // move iterator back, current value not used\n                    arguments.previous();\n\n                    // if there are no anonymous arguments then this group can't\n                    // process the argument\n                    // anonymous argument check removed {\n                        break;\n                    }\n\n                    // TODO: why do we iterate over all anonymous arguments?\n                    // canProcess will always return true?\n                    for (final Iterator i = anonymous.iterator(); i.hasNext();) {\n                        final Argument argument = (Argument) i.next();\n\n                        if (argument.canProcess(commandLine, arguments)) {\n                            argument.process(commandLine, arguments);\n                        }\n                    }\n                } // [END argument is NOT anonymous\n            } // [END option NOT found\n        } // [END process each command line token\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 7,
+        "reasoning": "The original code iterates over all anonymous arguments. This mutant changes the condition under which each argument is processed.",
+        "line": 71,
+        "precode": "if (argument.canProcess(commandLine, arguments)) {",
+        "aftercode": "// canProcess check omitted for all arguments",
+        "candidate_code": "    public void process(final WriteableCommandLine commandLine,\n                        final ListIterator arguments)\n        throws OptionException {\n        String previous = null;\n\n        // [START process each command line token\n        while (arguments.hasNext()) {\n            // grab the next argument\n            final String arg = (String) arguments.next();\n\n            // if we have just tried to process this instance\n            if (arg == previous) {\n                // rollback and abort\n                arguments.previous();\n\n                break;\n            }\n\n            // remember last processed instance\n            previous = arg;\n\n            final Option opt = (Option) optionMap.get(arg);\n\n            // option found\n            if (opt != null) {\n                arguments.previous();\n                opt.process(commandLine, arguments);\n            }\n            // [START option NOT found\n            else {\n                // it might be an anonymous argument continue search\n                // [START argument may be anonymous\n                if (commandLine.looksLikeOption(arg)) {\n                    // narrow the search\n                    final Collection values = optionMap.tailMap(arg).values();\n\n                    boolean foundMemberOption = false;\n\n                    for (Iterator i = values.iterator(); i.hasNext() && !foundMemberOption;) {\n                        final Option option = (Option) i.next();\n\n                        if (option.canProcess(commandLine, arg)) {\n                            foundMemberOption = true;\n                            arguments.previous();\n                            option.process(commandLine, arguments);\n                        }\n                    }\n\n                    // back track and abort this group if necessary\n                    if (!foundMemberOption) {\n                        arguments.previous();\n\n                        return;\n                    }\n                } // [END argument may be anonymous\n\n                // [START argument is NOT anonymous\n                else {\n                    // move iterator back, current value not used\n                    arguments.previous();\n\n                    // if there are no anonymous arguments then this group can't\n                    // process the argument\n                    if (anonymous.isEmpty()) {\n                        break;\n                    }\n\n                    // TODO: why do we iterate over all anonymous arguments?\n                    // canProcess will always return true?\n                    for (final Iterator i = anonymous.iterator(); i.hasNext();) {\n                        final Argument argument = (Argument) i.next();\n\n                        // canProcess check omitted for all arguments {\n                            argument.process(commandLine, arguments);\n                        }\n                    }\n                } // [END argument is NOT anonymous\n            } // [END option NOT found\n        } // [END process each command line token\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "The original code breaks out of the loop when no member option is found. This mutant continues processing instead.",
+        "line": 54,
+        "precode": "return;",
+        "aftercode": "// continue processing",
+        "candidate_code": "    public void process(final WriteableCommandLine commandLine,\n                        final ListIterator arguments)\n        throws OptionException {\n        String previous = null;\n\n        // [START process each command line token\n        while (arguments.hasNext()) {\n            // grab the next argument\n            final String arg = (String) arguments.next();\n\n            // if we have just tried to process this instance\n            if (arg == previous) {\n                // rollback and abort\n                arguments.previous();\n\n                break;\n            }\n\n            // remember last processed instance\n            previous = arg;\n\n            final Option opt = (Option) optionMap.get(arg);\n\n            // option found\n            if (opt != null) {\n                arguments.previous();\n                opt.process(commandLine, arguments);\n            }\n            // [START option NOT found\n            else {\n                // it might be an anonymous argument continue search\n                // [START argument may be anonymous\n                if (commandLine.looksLikeOption(arg)) {\n                    // narrow the search\n                    final Collection values = optionMap.tailMap(arg).values();\n\n                    boolean foundMemberOption = false;\n\n                    for (Iterator i = values.iterator(); i.hasNext() && !foundMemberOption;) {\n                        final Option option = (Option) i.next();\n\n                        if (option.canProcess(commandLine, arg)) {\n                            foundMemberOption = true;\n                            arguments.previous();\n                            option.process(commandLine, arguments);\n                        }\n                    }\n\n                    // back track and abort this group if necessary\n                    if (!foundMemberOption) {\n                        arguments.previous();\n\n                        // continue processing\n                    }\n                } // [END argument may be anonymous\n\n                // [START argument is NOT anonymous\n                else {\n                    // move iterator back, current value not used\n                    arguments.previous();\n\n                    // if there are no anonymous arguments then this group can't\n                    // process the argument\n                    if (anonymous.isEmpty()) {\n                        break;\n                    }\n\n                    // TODO: why do we iterate over all anonymous arguments?\n                    // canProcess will always return true?\n                    for (final Iterator i = anonymous.iterator(); i.hasNext();) {\n                        final Argument argument = (Argument) i.next();\n\n                        if (argument.canProcess(commandLine, arguments)) {\n                            argument.process(commandLine, arguments);\n                        }\n                    }\n                } // [END argument is NOT anonymous\n            } // [END option NOT found\n        } // [END process each command line token\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

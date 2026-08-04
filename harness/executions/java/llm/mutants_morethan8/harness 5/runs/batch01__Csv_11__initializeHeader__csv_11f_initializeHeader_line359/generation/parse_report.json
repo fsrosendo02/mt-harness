@@ -1,0 +1,468 @@
+{
+  "requested_count": 48,
+  "accepted_count": 7,
+  "rejected_count": 41,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "The assignment of headerRecord does not check if nextRecord returns a non-null value.",
+        "line": 11,
+        "precode": "final CSVRecord nextRecord()",
+        "aftercode": "final CSVRecord nextRecord()"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method initializes hdrMap to null and never checks its state before returning it.",
+        "line": 35,
+        "precode": "return hdrMap;",
+        "aftercode": "if (hdrMap == null) { return Collections.emptyMap(); } return hdrMap;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method skips the header record check for formatHeader.length != 0 without considering if the length is 1.",
+        "line": 14,
+        "precode": "if (this.format.getSkipHeaderRecord())",
+        "aftercode": "if (formatHeader.length > 1 && this.format.getSkipHeaderRecord())",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            if (formatHeader.length > 1 && this.format.getSkipHeaderRecord()) {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {\n                        throw new IllegalArgumentException(\"The header contains a duplicate name: \\\"\" + header +\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method does not handle the case where nextRecord() returns null when formatHeader.length == 0.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not check if hdrMap is null before adding new headers to it.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not handle the case where headerRecord is null after checking its length.",
+        "line": 20,
+        "precode": "headerRecord = formatHeader;",
+        "aftercode": "if (headerRecord != null) { headerRecord = formatHeader; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not check if headerRecord is null before attempting to loop through it.",
+        "line": 23,
+        "precode": "for (int i = 0; i < headerRecord.length; i++)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not handle the case where a duplicate header is found without checking if it's an empty string.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method always tries to put a header into hdrMap, even if it's empty and should be ignored.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method throws an IllegalArgumentException if a duplicate header is found, but it does not check for case-insensitivity.",
+        "line": 28,
+        "precode": "\" + header + \"\"",
+        "aftercode": "\" + header.toLowerCase() + \"",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {\n                        \" + header.toLowerCase() + \"\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method incorrectly checks if the formatHeader is null before assigning it to hdrMap.",
+        "line": 5,
+        "precode": "hdrMap = new LinkedHashMap<String, Integer>();",
+        "aftercode": "if (formatHeader != null) { hdrMap = new LinkedHashMap<String, Integer>(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not handle the case where hdrMap is not initialized after checking formatHeader.",
+        "line": 6,
+        "precode": "hdrMap = new LinkedHashMap<String, Integer>();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap even when there are headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": "if (i > 0) { hdrMap.put(header, Integer.valueOf(-1)); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not handle the case where the first line of the file contains a header with an empty string.",
+        "line": 11,
+        "precode": "if (nextRecord != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method throws an IllegalArgumentException if a duplicate header is found, but it does not check for case-sensitivity.",
+        "line": 28,
+        "precode": "\" + header + \"\"",
+        "aftercode": "\" + header.toUpperCase() + \"",
+        "candidate_code": "    private Map<String, Integer> initializeHeader() throws IOException {\n        Map<String, Integer> hdrMap = null;\n        final String[] formatHeader = this.format.getHeader();\n        if (formatHeader != null) {\n            hdrMap = new LinkedHashMap<String, Integer>();\n\n            String[] headerRecord = null;\n            if (formatHeader.length == 0) {\n                // read the header from the first line of the file\n                final CSVRecord nextRecord = this.nextRecord();\n                if (nextRecord != null) {\n                    headerRecord = nextRecord.values();\n                }\n            } else {\n                if (this.format.getSkipHeaderRecord()) {\n                    this.nextRecord();\n                }\n                headerRecord = formatHeader;\n            }\n\n            // build the name to index mappings\n            if (headerRecord != null) {\n                for (int i = 0; i < headerRecord.length; i++) {\n                    final String header = headerRecord[i];\n                    final boolean containsHeader = hdrMap.containsKey(header);\n                    final boolean emptyHeader = header == null || header.trim().isEmpty();\n                    if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders()))) {\n                        \" + header.toUpperCase() + \"\n                                \"\\\" in \" + Arrays.toString(headerRecord));\n                    }\n                    hdrMap.put(header, Integer.valueOf(i));\n                }\n            }\n        }\n        return hdrMap;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap even when there are headers, and without checking for empty headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method incorrectly initializes headerRecord to formatHeader without considering if the file has no lines or headers.",
+        "line": 18,
+        "precode": "headerRecord = formatHeader;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking for an empty header, even if it should be ignored.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not handle the case where formatHeader is non-null but empty.",
+        "line": 5,
+        "precode": "hdrMap = new LinkedHashMap<String, Integer>();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap without checking if there are headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method does not handle the case where nextRecord returns null when formatHeader is non-empty.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not handle the case where the first line of the file contains a header with an empty string and should be ignored.",
+        "line": 11,
+        "precode": "if (nextRecord != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap even when there are headers and should be ignored.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method incorrectly initializes headerRecord to formatHeader without considering if the file has no lines or headers, and does not handle empty strings in headers.",
+        "line": 18,
+        "precode": "headerRecord = formatHeader;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header, even if it should be ignored.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap without checking if there are headers, and does not handle empty strings in headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method does not handle the case where nextRecord returns null when formatHeader is non-empty and contains empty strings.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header, even if it should be ignored and there are headers.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap without checking if there are headers, and does not handle empty strings in headers, even when formatHeader is non-null.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method does not handle the case where nextRecord returns null when formatHeader is non-empty and contains empty strings, and does not check if hdrMap is initialized.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header, even if it should be ignored and there are headers, and does not check if formatHeader is non-null.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 40,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap without checking if there are headers, and does not handle empty strings in headers, even when formatHeader is non-null, and does not check if hdrMap is initialized.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 41,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 41,
+        "reasoning": "The method does not handle the case where nextRecord returns null when formatHeader is non-empty and contains empty strings, and does not check if hdrMap is initialized, even when there are headers.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 42,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 42,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header, even if it should be ignored and there are headers, and does not check if formatHeader is non-null, and does not check if hdrMap is initialized.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 43,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 43,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap without checking if there are headers, and does not handle empty strings in headers, even when formatHeader is non-null, and does not check if hdrMap is initialized, and does not check if the file has no lines or headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 44,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 44,
+        "reasoning": "The method does not handle the case where nextRecord returns null when formatHeader is non-empty and contains empty strings, and does not check if hdrMap is initialized, even when there are headers, and does not handle empty strings in headers.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 45,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 45,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header, even if it should be ignored and there are headers, and does not check if formatHeader is non-null, and does not check if hdrMap is initialized, and does not handle empty strings in headers.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 46,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 46,
+        "reasoning": "The method incorrectly assigns the index value of -1 to hdrMap without checking if there are headers, and does not handle empty strings in headers, even when formatHeader is non-null, and does not check if hdrMap is initialized, and does not handle empty strings in headers, and does not check if the file has no lines or headers.",
+        "line": 31,
+        "precode": "hdrMap.put(header, Integer.valueOf(i));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 47,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 47,
+        "reasoning": "The method does not handle the case where nextRecord returns null when formatHeader is non-empty and contains empty strings, and does not check if hdrMap is initialized, even when there are headers, and does not handle empty strings in headers, and does not check if the file has no lines or headers.",
+        "line": 9,
+        "precode": "// read the header from the first line of the file",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 48,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 48,
+        "reasoning": "The method does not handle the case where hdrMap is null after checking if it contains an empty header, even if it should be ignored and there are headers, and does not check if formatHeader is non-null, and does not check if hdrMap is initialized, and does not handle empty strings in headers, and does not check if the file has no lines or headers.",
+        "line": 27,
+        "precode": "if (containsHeader && (!emptyHeader || (emptyHeader && !this.format.getIgnoreEmptyHeaders())))",
+        "aftercode": ""
+      }
+    }
+  ]
+}

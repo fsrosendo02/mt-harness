@@ -1,0 +1,284 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the handling of normal numbers by changing the exponent calculation.",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n + 1024)) << 52);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the handling of special cases by changing the NaN check.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (!Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the handling of underflow by changing the threshold.",
+      "line": 12,
+      "precode": "if (n < -2098) {",
+      "aftercode": "if (n < -2097) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the handling of overflow by changing the threshold.",
+      "line": 15,
+      "precode": "if (n > 2097) {",
+      "aftercode": "if (n > 2098) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the decomposition of the double by changing the sign mask.",
+      "line": 21,
+      "precode": "final long sign = bits & 0x8000000000000000L;",
+      "aftercode": "final long sign = bits & 0x4000000000000000L;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the decomposition of the double by changing the exponent mask.",
+      "line": 22,
+      "precode": "int  exponent   = ((int) (bits >>> 52)) & 0x7ff;",
+      "aftercode": "int  exponent   = ((int) (bits >>> 53)) & 0x7ff;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the decomposition of the double by changing the mantissa mask.",
+      "line": 23,
+      "precode": "long mantissa   = bits & 0x000fffffffffffffL;",
+      "aftercode": "long mantissa   = bits & 0x001fffffffffffffL;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the scaled exponent calculation by changing the addition.",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the handling of negative scaling by changing the condition.",
+      "line": 28,
+      "precode": "if (n < 0) {",
+      "aftercode": "if (n <= 0) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the handling of normal numbers scaling down by changing the condition.",
+      "line": 30,
+      "precode": "if (scaledExponent > 0) {",
+      "aftercode": "if (scaledExponent >= 0) {"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the handling of subnormal numbers by changing the condition.",
+      "line": 34,
+      "precode": "else if (scaledExponent > -53) {",
+      "aftercode": "else if (scaledExponent >= -53) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the hidden mantissa recovery by changing the bit shift.",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa | (1L << 53);"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the most significant lost bit calculation by changing the condition.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent - 1));"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the mantissa scaling down by changing the shift.",
+      "line": 41,
+      "precode": "mantissa = mantissa >>> (1 - scaledExponent);",
+      "aftercode": "mantissa = mantissa >>> (2 - scaledExponent);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the rounding up condition by changing the comparison.",
+      "line": 42,
+      "precode": "if (mostSignificantLostBit != 0) {",
+      "aftercode": "if (mostSignificantLostBit == 0) {"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the result construction by changing the bit mask.",
+      "line": 46,
+      "precode": "return Double.longBitsToDouble(sign | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (mantissa << 1));"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the handling of scaling down to zero by changing the condition.",
+      "line": 50,
+      "precode": "if (sign == 0L) {",
+      "aftercode": "if (sign != 0L) {"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the handling of positive scaling by changing the condition.",
+      "line": 53,
+      "precode": "else {",
+      "aftercode": "} else {"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the normalization of subnormal numbers by changing the loop condition.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 53) != 1) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the normalization of subnormal numbers by changing the decrement.",
+      "line": 60,
+      "precode": "--scaledExponent;",
+      "aftercode": "scaledExponent--;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the normalization of subnormal numbers by changing the mask.",
+      "line": 62,
+      "precode": "mantissa = mantissa & 0x000fffffffffffffL;",
+      "aftercode": "mantissa = mantissa & 0x001fffffffffffffL;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the handling of scaled exponent less than 2047 by changing the condition.",
+      "line": 64,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the result construction by changing the bit mask.",
+      "line": 65,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 53) | mantissa);"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the handling of infinity by changing the condition.",
+      "line": 67,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign != 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;"
+    },
+    {
+      "id": 25,
+      "reasoning": "Violates the handling of scaled exponent less than 2047 by changing the condition.",
+      "line": 70,
+      "precode": "else if (scaledExponent < 2047) {",
+      "aftercode": "} else if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 26,
+      "reasoning": "Violates the result construction by changing the bit mask.",
+      "line": 71,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 53) | mantissa);"
+    },
+    {
+      "id": 27,
+      "reasoning": "Violates the handling of infinity by changing the condition.",
+      "line": 73,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign != 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;"
+    },
+    {
+      "id": 28,
+      "reasoning": "Violates the handling of negative scaling by changing the condition.",
+      "line": 29,
+      "precode": "if (scaledExponent > 0) {",
+      "aftercode": "} else if (scaledExponent > 0) {"
+    },
+    {
+      "id": 29,
+      "reasoning": "Violates the handling of subnormal numbers by changing the condition.",
+      "line": 34,
+      "precode": "else if (scaledExponent > -53) {",
+      "aftercode": "} else if (scaledExponent >= -53) {"
+    },
+    {
+      "id": 30,
+      "reasoning": "Violates the hidden mantissa recovery by changing the bit shift.",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa | (1L << 53);"
+    },
+    {
+      "id": 31,
+      "reasoning": "Violates the most significant lost bit calculation by changing the condition.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent - 1));"
+    },
+    {
+      "id": 32,
+      "reasoning": "Violates the mantissa scaling down by changing the shift.",
+      "line": 41,
+      "precode": "mantissa = mantissa >>> (1 - scaledExponent);",
+      "aftercode": "mantissa = mantissa >>> (2 - scaledExponent);"
+    },
+    {
+      "id": 33,
+      "reasoning": "Violates the rounding up condition by changing the comparison.",
+      "line": 42,
+      "precode": "if (mostSignificantLostBit != 0) {",
+      "aftercode": "if (mostSignificantLostBit == 0) {"
+    },
+    {
+      "id": 34,
+      "reasoning": "Violates the result construction by changing the bit mask.",
+      "line": 46,
+      "precode": "return Double.longBitsToDouble(sign | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (mantissa << 1));"
+    },
+    {
+      "id": 35,
+      "reasoning": "Violates the handling of scaling down to zero by changing the condition.",
+      "line": 50,
+      "precode": "if (sign == 0L) {",
+      "aftercode": "if (sign != 0L) {"
+    },
+    {
+      "id": 36,
+      "reasoning": "Violates the handling of positive scaling by changing the condition.",
+      "line": 53,
+      "precode": "else {",
+      "aftercode": "} else {"
+    },
+    {
+      "id": 37,
+      "reasoning": "Violates the normalization of subnormal numbers by changing the loop condition.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 53) != 1) {"
+    },
+    {
+      "id": 38,
+      "reasoning": "Violates the normalization of subnormal numbers by changing the decrement.",
+      "line": 60,
+      "precode": "--scaledExponent;",
+      "aftercode": "scaledExponent--;"
+    },
+    {
+      "id": 39,
+      "reasoning": "Violates the normalization of subnormal numbers by changing the mask.",
+      "line": 62,
+      "precode": "mantissa = mantissa & 0x000fffffffffffffL;",
+      "aftercode": "mantissa = mantissa & 0x001fffffffffffffL;"
+    },
+    {
+      "id": 40,
+      "reasoning": "Violates the handling of scaled exponent less than 2047 by changing the condition.",
+      "line": 64,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2047) {"
+    }
+  ]
+}

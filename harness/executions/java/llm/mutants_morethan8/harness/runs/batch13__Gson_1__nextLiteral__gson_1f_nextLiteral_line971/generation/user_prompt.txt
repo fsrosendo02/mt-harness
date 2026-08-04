@@ -1,0 +1,76 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   private String nextLiteral() throws IOException {
+ 2:     StringBuilder builder = null;
+ 3:     do {
+ 4:       /* the index of the first character not yet appended to the builder. */
+ 5:       int start = pos;
+ 6:       while (pos < limit) {
+ 7:         int c = buffer[pos++];
+ 8:         switch (c) {
+ 9:         case '/':
+10:         case '\\':
+11:         case ';':
+12:         case '#':
+13:         case '=':
+14:           checkLenient(); // fall-through
+15: 
+16:         case '{':
+17:         case '}':
+18:         case '[':
+19:         case ']':
+20:         case ':':
+21:         case ',':
+22:         case ' ':
+23:         case '\t':
+24:         case '\f':
+25:         case '\r':
+26:         case '\n':
+27:           pos--;
+28:           if (skipping) {
+29:             return "skipped!";
+30:           } else if (builder == null) {
+31:             return new String(buffer, start, pos - start);
+32:           } else {
+33:             builder.append(buffer, start, pos - start);
+34:             return builder.toString();
+35:           }
+36:         }
+37:       }
+38: 
+39:       if (builder == null) {
+40:         builder = new StringBuilder();
+41:       }
+42:       builder.append(buffer, start, pos - start);
+43:     } while (fillBuffer(1));
+44: 
+45:     return builder.toString();
+46:   }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

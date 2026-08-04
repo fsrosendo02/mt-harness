@@ -1,0 +1,391 @@
+{
+  "requested_count": 48,
+  "accepted_count": 18,
+  "rejected_count": 30,
+  "rejections": [
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Header processing is not thread-safe",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: synchronized (extraPaxHeaders) { extraPaxHeaders.put(key, val); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "Header processing is not thread-safe",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { @Override public void uncaughtException(Thread t, Throwable e) { extraPaxHeaders.put(key, val); } });",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Multiple headers are processed in a single switch case block",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: extraPaxHeaders.put(\"multiple\", \"multiple value\");",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                default: extraPaxHeaders.put(\"multiple\", \"multiple value\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Header processing is not thread-safe",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { @Override public void uncaughtException(Thread t, Throwable e) { extraPaxHeaders.put(key, val); } });",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Null check is not performed for header value",
+        "line": 31,
+        "precode": "setGroupId(Long.parseLong(val));",
+        "aftercode": "setGroupId(null)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(null)\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Empty string is treated as valid header value",
+        "line": 45,
+        "precode": "setModTime((long) (Double.parseDouble(val) * 1000));",
+        "aftercode": "setModTime(0)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime(0)\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Invalid header key is not handled",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"invalid\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"invalid\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "Header value is not checked for decimal type",
+        "line": 48,
+        "precode": "setDevMinor(Integer.parseInt(val));",
+        "aftercode": "setDevMinor(Double.parseDouble(val));",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Double.parseDouble(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Invalid header key is not handled in switch block",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"unknown\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"unknown\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "Multiple headers are processed in a single switch case block",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: extraPaxHeaders.put(\"multiple\", \"multiple value\");",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                default: extraPaxHeaders.put(\"multiple\", \"multiple value\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Header processing is not thread-safe",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { @Override public void uncaughtException(Thread t, Throwable e) { extraPaxHeaders.put(key, val); } });",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Null check is not performed for header value",
+        "line": 31,
+        "precode": "setGroupId(Long.parseLong(val));",
+        "aftercode": "setGroupId(null)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(null)\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Empty string is treated as valid header value",
+        "line": 45,
+        "precode": "setModTime((long) (Double.parseDouble(val) * 1000));",
+        "aftercode": "setModTime(0)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime(0)\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "Invalid header key is not handled",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"invalid\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"invalid\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Header value is not checked for decimal type",
+        "line": 48,
+        "precode": "setDevMinor(Integer.parseInt(val));",
+        "aftercode": "setDevMinor(Double.parseDouble(val));",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Double.parseDouble(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Invalid header key is not handled in switch block",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"unknown\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"unknown\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Multiple headers are processed in a single switch case block",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: extraPaxHeaders.put(\"multiple\", \"multiple value\");",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                default: extraPaxHeaders.put(\"multiple\", \"multiple value\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "Header processing is not thread-safe",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { @Override public void uncaughtException(Thread t, Throwable e) { extraPaxHeaders.put(key, val); } });",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "Null check is not performed for header value",
+        "line": 31,
+        "precode": "setGroupId(Long.parseLong(val));",
+        "aftercode": "setGroupId(null)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(null)\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "Empty string is treated as valid header value",
+        "line": 45,
+        "precode": "setModTime((long) (Double.parseDouble(val) * 1000));",
+        "aftercode": "setModTime(0)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime(0)\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Invalid header key is not handled",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"invalid\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"invalid\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "Header value is not checked for decimal type",
+        "line": 48,
+        "precode": "setDevMinor(Integer.parseInt(val));",
+        "aftercode": "setDevMinor(Double.parseDouble(val));",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Double.parseDouble(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Invalid header key is not handled in switch block",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"unknown\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"unknown\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Multiple headers are processed in a single switch case block",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: extraPaxHeaders.put(\"multiple\", \"multiple value\");",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                default: extraPaxHeaders.put(\"multiple\", \"multiple value\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "Header processing is not thread-safe",
+        "line": 65,
+        "precode": "default: extraPaxHeaders.put(key,val);",
+        "aftercode": "default: Thread.currentThread().setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() { @Override public void uncaughtException(Thread t, Throwable e) { extraPaxHeaders.put(key, val); } });",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "Null check is not performed for header value",
+        "line": 31,
+        "precode": "setGroupId(Long.parseLong(val));",
+        "aftercode": "setGroupId(null)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(null)\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 42,
+        "reasoning": "Empty string is treated as valid header value",
+        "line": 45,
+        "precode": "setModTime((long) (Double.parseDouble(val) * 1000));",
+        "aftercode": "setModTime(0)",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime(0)\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 43,
+        "reasoning": "Invalid header key is not handled",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"invalid\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"invalid\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 44,
+        "reasoning": "Header value is not checked for decimal type",
+        "line": 48,
+        "precode": "setDevMinor(Integer.parseInt(val));",
+        "aftercode": "setDevMinor(Double.parseDouble(val));",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Double.parseDouble(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 45,
+        "reasoning": "Invalid header key is not handled in switch block",
+        "line": 23,
+        "precode": "case \"path\":",
+        "aftercode": "case \"unknown\" :",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"unknown\" :\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                if (\"sparse\".equals(val)) {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

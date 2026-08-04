@@ -1,0 +1,284 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method throws an IllegalArgumentException for a null stream, but this can be bypassed.",
+      "line": 2,
+      "precode": "if (in == null) {",
+      "aftercode": "if (in != null && in.available() > 0) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method checks if the input stream supports marking, but a valid implementation should always support it.",
+      "line": 6,
+      "precode": "if (!in.markSupported()) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method marks the input stream with a fixed size, but this can be too small for certain archives.",
+      "line": 11,
+      "precode": "in.mark(signature.length);",
+      "aftercode": "in.mark(1024);"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method does not reset the input stream after reading, which can cause issues with subsequent reads.",
+      "line": 15,
+      "precode": "try {",
+      "aftercode": "try (final InputStream inWrapped = in) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method catches IOException but throws an ArchiveException instead, which can mask the original exception.",
+      "line": 17,
+      "precode": "throw new ArchiveException(\"IOException while reading signature.\", e);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method does not check if the input stream is closed before attempting to read from it.",
+      "line": 14,
+      "precode": "signatureLength = IOUtils.readFully(in, signature);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method does not check if the input stream is exhausted before attempting to read from it.",
+      "line": 14,
+      "precode": "signatureLength = IOUtils.readFully(in, signature);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method does not handle the case where the input stream is exhausted before reading any data.",
+      "line": 14,
+      "precode": "signatureLength = IOUtils.readFully(in, signature);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method does not check if the input stream is closed before attempting to reset it.",
+      "line": 16,
+      "precode": "in.reset();",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 10,
+      "reasoning": "The method does not check if the input stream is exhausted before attempting to reset it.",
+      "line": 16,
+      "precode": "in.reset();",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 11,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 21,
+      "precode": "if (ZipArchiveInputStream.matches(signature, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 23,
+      "precode": "else if (JarArchiveInputStream.matches(signature, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 25,
+      "precode": "else if (ArArchiveInputStream.matches(signature, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 27,
+      "precode": "else if (CpioArchiveInputStream.matches(signature, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 15,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 29,
+      "precode": "else if (ArjArchiveInputStream.matches(signature, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 16,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 31,
+      "precode": "else if (SevenZFile.matches(signature, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 17,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 33,
+      "precode": "// Dump needs a bigger buffer to check the signature;",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 18,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 43,
+      "precode": "if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 19,
+      "reasoning": "The method throws an ArchiveException for a specific archive type, but this can be bypassed.",
+      "line": 56,
+      "precode": "if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 20,
+      "reasoning": "The method creates a ByteArrayInputStream from the tar header, but this can cause issues with certain archives.",
+      "line": 64,
+      "precode": "TarArchiveInputStream tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));",
+      "aftercode": "TarArchiveInputStream tais = new TarArchiveInputStream(in);"
+    },
+    {
+      "id": 21,
+      "reasoning": "The method verifies the header checksum, but this can be skipped for certain archives.",
+      "line": 66,
+      "precode": "if (tais.getNextTarEntry().isCheckSumOK()) {",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 22,
+      "reasoning": "The method does not close the TarArchiveInputStream, which can cause resource leaks.",
+      "line": 75,
+      "precode": "IOUtils.closeQuietly(tais);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 23,
+      "reasoning": "The method throws an ArchiveException for unknown archives, but this can be bypassed.",
+      "line": 78,
+      "precode": "throw new ArchiveException(\"No Archiver found for the stream signature\");",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 24,
+      "reasoning": "The method does not handle the case where multiple archives match the signature.",
+      "line": 78,
+      "precode": "throw new ArchiveException(\"No Archiver found for the stream signature\");",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 25,
+      "reasoning": "The method does not handle the case where the archive type is unknown.",
+      "line": 78,
+      "precode": "throw new ArchiveException(\"No Archiver found for the stream signature\");",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 26,
+      "reasoning": "The method uses a hardcoded buffer size for reading the tar header, but this can be too small for certain archives.",
+      "line": 49,
+      "precode": "final byte[] tarHeader = new byte[TAR_HEADER_SIZE];",
+      "aftercode": "final byte[] tarHeader = new byte[1024];"
+    },
+    {
+      "id": 27,
+      "reasoning": "The method reads the entire tar header into memory, but this can cause issues with large archives.",
+      "line": 51,
+      "precode": "signatureLength = IOUtils.readFully(in, tarHeader);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 28,
+      "reasoning": "The method does not check if the input stream is exhausted before attempting to read from it.",
+      "line": 51,
+      "precode": "signatureLength = IOUtils.readFully(in, tarHeader);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 29,
+      "reasoning": "The method does not handle the case where the input stream is exhausted before reading any data.",
+      "line": 51,
+      "precode": "signatureLength = IOUtils.readFully(in, tarHeader);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 30,
+      "reasoning": "The method uses a hardcoded buffer size for reading the dump signature, but this can be too small for certain archives.",
+      "line": 36,
+      "precode": "final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];",
+      "aftercode": "final byte[] dumpsig = new byte[1024];"
+    },
+    {
+      "id": 31,
+      "reasoning": "The method reads the entire dump signature into memory, but this can cause issues with large archives.",
+      "line": 38,
+      "precode": "signatureLength = IOUtils.readFully(in, dumpsig);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 32,
+      "reasoning": "The method does not check if the input stream is exhausted before attempting to read from it.",
+      "line": 38,
+      "precode": "signatureLength = IOUtils.readFully(in, dumpsig);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 33,
+      "reasoning": "The method does not handle the case where the input stream is exhausted before reading any data.",
+      "line": 38,
+      "precode": "signatureLength = IOUtils.readFully(in, dumpsig);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 34,
+      "reasoning": "The method uses a hardcoded buffer size for reading the signature, but this can be too small for certain archives.",
+      "line": 10,
+      "precode": "final byte[] signature = new byte[SIGNATURE_SIZE];",
+      "aftercode": "final byte[] signature = new byte[1024];"
+    },
+    {
+      "id": 35,
+      "reasoning": "The method reads the entire signature into memory, but this can cause issues with large archives.",
+      "line": 14,
+      "precode": "signatureLength = IOUtils.readFully(in, signature);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 36,
+      "reasoning": "The method does not check if the input stream is exhausted before attempting to read from it.",
+      "line": 14,
+      "precode": "signatureLength = IOUtils.readFully(in, signature);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 37,
+      "reasoning": "The method does not handle the case where the input stream is exhausted before reading any data.",
+      "line": 14,
+      "precode": "signatureLength = IOUtils.readFully(in, signature);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 38,
+      "reasoning": "The method uses a hardcoded buffer size for reading the tar header, but this can be too small for certain archives.",
+      "line": 49,
+      "precode": "final byte[] tarHeader = new byte[TAR_HEADER_SIZE];",
+      "aftercode": "final byte[] tarHeader = new byte[1024];"
+    },
+    {
+      "id": 39,
+      "reasoning": "The method reads the entire tar header into memory, but this can cause issues with large archives.",
+      "line": 51,
+      "precode": "signatureLength = IOUtils.readFully(in, tarHeader);",
+      "aftercode": "// No change"
+    },
+    {
+      "id": 40,
+      "reasoning": "The method does not check if the input stream is exhausted before attempting to read from it.",
+      "line": 51,
+      "precode": "signatureLength = IOUtils.readFully(in, tarHeader);",
+      "aftercode": "// No change"
+    }
+  ]
+}

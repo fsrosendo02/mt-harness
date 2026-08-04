@@ -1,0 +1,201 @@
+{
+  "requested_count": 40,
+  "accepted_count": 24,
+  "rejected_count": 16,
+  "rejections": [
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly parsing optional seconds by not checking for and handling the absence of a seconds field.",
+        "line": 38,
+        "precode": "",
+        "aftercode": "if (date.length() > offset) { char c = date.charAt(offset); if (c != 'Z' && c != '+' && c != '-') { int secondsTemp = parseInt(date, offset, offset += 2); } }}"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly parsing optional milliseconds by not checking for and handling the absence of a milliseconds field.",
+        "line": 43,
+        "precode": "",
+        "aftercode": "if (date.length() > offset) { char c = date.charAt(offset); if (c != 'Z' && c != '+' && c != '-') { int secondsTemp = parseInt(date, offset, offset += 2); if (checkOffset(date, offset, '.')) { int milliseconds = parseInt(date, offset += 1, offset += 3); } }}"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly setting time zone by not handling the case where there is no offset specified.",
+        "line": 53,
+        "precode": "",
+        "aftercode": "throw new IllegalArgumentException(\"No time zone indicator\");"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly handling exceptions by not setting a specific exception when parsing fails.",
+        "line": 85,
+        "precode": "",
+        "aftercode": "throw new ParseException(\"Failed to parse date [null]: \" + fail.getMessage(), pos.getIndex());"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly parsing numbers by using parseInt with incorrect parameters.",
+        "line": 37,
+        "precode": "",
+        "aftercode": "int secondsTemp = Integer.parseInt(date.substring(offset, offset + 2));"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly parsing numbers by using parseInt with incorrect parameters.",
+        "line": 43,
+        "precode": "",
+        "aftercode": "int millisecondsTemp = Integer.parseInt(date.substring(offset + 1, offset + 3));"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly setting calendar properties by not properly initializing the calendar.",
+        "line": 73,
+        "precode": "Calendar calendar = new GregorianCalendar(timezone);",
+        "aftercode": "Calendar calendar = Calendar.getInstance(); calendar.setTimeZone(timezone);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = Calendar.getInstance(); calendar.setTimeZone(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the year properly.",
+        "line": 74,
+        "precode": "calendar.set(Calendar.YEAR, year);",
+        "aftercode": "calendar.set(Calendar.YEAR, year - 1900);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year - 1900);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the month properly.",
+        "line": 75,
+        "precode": "calendar.set(Calendar.MONTH, month - 1);",
+        "aftercode": "calendar.set(Calendar.MONTH, month);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the day properly.",
+        "line": 76,
+        "precode": "calendar.set(Calendar.DAY_OF_MONTH, day);",
+        "aftercode": "calendar.set(Calendar.DAY_OF_YEAR, day);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_YEAR, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the hour properly.",
+        "line": 77,
+        "precode": "calendar.set(Calendar.HOUR_OF_DAY, hour);",
+        "aftercode": "calendar.set(Calendar.MINUTE, hour);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.MINUTE, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the minute properly.",
+        "line": 78,
+        "precode": "calendar.set(Calendar.MINUTE, minutes);",
+        "aftercode": "calendar.set(Calendar.HOUR_OF_DAY, minutes);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.HOUR_OF_DAY, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the second properly.",
+        "line": 79,
+        "precode": "calendar.set(Calendar.SECOND, seconds);",
+        "aftercode": "calendar.set(Calendar.MINUTE, seconds);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.MINUTE, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly setting calendar properties by not setting the millisecond properly.",
+        "line": 80,
+        "precode": "calendar.set(Calendar.MILLISECOND, milliseconds);",
+        "aftercode": "calendar.set(Calendar.SECOND, milliseconds);",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        hour = parseInt(date, offset += 1, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.SECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly handling exceptions by not setting a specific exception when parsing fails.",
+        "line": 85,
+        "precode": "",
+        "aftercode": "throw new ParseException(\"Failed to parse date [null]: \" + fail.getMessage(), pos.getIndex());"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly parsing numbers by using parseInt with incorrect parameters.",
+        "line": 28,
+        "precode": "hour = parseInt(date, offset += 1, offset += 2);",
+        "aftercode": "int hourTemp = Integer.parseInt(date.substring(offset + 1, offset + 3));",
+        "candidate_code": "  private static Date parse(String date, ParsePosition pos) throws ParseException {\n    Exception fail = null;\n    try {\n      int offset = pos.getIndex();\n\n      // extract year\n      int year = parseInt(date, offset, offset += 4);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract month\n      int month = parseInt(date, offset, offset += 2);\n      if (checkOffset(date, offset, '-')) {\n        offset += 1;\n      }\n\n      // extract day\n      int day = parseInt(date, offset, offset += 2);\n      // default time value\n      int hour = 0;\n      int minutes = 0;\n      int seconds = 0;\n      int milliseconds = 0; // always use 0 otherwise returned date will include millis of current time\n      if (checkOffset(date, offset, 'T')) {\n\n        // extract hours, minutes, seconds and milliseconds\n        int hourTemp = Integer.parseInt(date.substring(offset + 1, offset + 3));\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n\n        minutes = parseInt(date, offset, offset += 2);\n        if (checkOffset(date, offset, ':')) {\n          offset += 1;\n        }\n        // second and milliseconds can be optional\n        if (date.length() > offset) {\n          char c = date.charAt(offset);\n          if (c != 'Z' && c != '+' && c != '-') {\n            seconds = parseInt(date, offset, offset += 2);\n            // milliseconds can be optional in the format\n            if (checkOffset(date, offset, '.')) {\n              milliseconds = parseInt(date, offset += 1, offset += 3);\n            }\n          }\n        }\n      }\n\n      // extract timezone\n      String timezoneId;\n      if (date.length() <= offset) {\n        throw new IllegalArgumentException(\"No time zone indicator\");\n      }\n      char timezoneIndicator = date.charAt(offset);\n      if (timezoneIndicator == '+' || timezoneIndicator == '-') {\n        String timezoneOffset = date.substring(offset);\n        timezoneId = GMT_ID + timezoneOffset;\n        offset += timezoneOffset.length();\n      } else if (timezoneIndicator == 'Z') {\n        timezoneId = GMT_ID;\n        offset += 1;\n      } else {\n        throw new IndexOutOfBoundsException(\"Invalid time zone indicator \" + timezoneIndicator);\n      }\n\n      TimeZone timezone = TimeZone.getTimeZone(timezoneId);\n      if (!timezone.getID().equals(timezoneId)) {\n        throw new IndexOutOfBoundsException();\n      }\n\n      Calendar calendar = new GregorianCalendar(timezone);\n      calendar.setLenient(false);\n      calendar.set(Calendar.YEAR, year);\n      calendar.set(Calendar.MONTH, month - 1);\n      calendar.set(Calendar.DAY_OF_MONTH, day);\n      calendar.set(Calendar.HOUR_OF_DAY, hour);\n      calendar.set(Calendar.MINUTE, minutes);\n      calendar.set(Calendar.SECOND, seconds);\n      calendar.set(Calendar.MILLISECOND, milliseconds);\n\n      pos.setIndex(offset);\n      return calendar.getTime();\n      // If we get a ParseException it'll already have the right message/offset.\n      // Other exception types can convert here.\n    } catch (IndexOutOfBoundsException e) {\n      fail = e;\n    } catch (NumberFormatException e) {\n      fail = e;\n    } catch (IllegalArgumentException e) {\n      fail = e;\n    }\n    String input = (date == null) ? null : ('\"' + date + \"'\");\n    throw new ParseException(\"Failed to parse date [\" + input + \"]: \" + fail.getMessage(), pos.getIndex());\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

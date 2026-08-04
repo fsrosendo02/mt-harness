@@ -1,0 +1,20 @@
+{
+  "requested_count": 24,
+  "accepted_count": 8,
+  "rejected_count": 1,
+  "rejections": [
+    {
+      "index": 6,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the null pointer exception behavior",
+        "line": 20,
+        "precode": "Type[] actualTypeArguments = null;",
+        "aftercode": "Type[] actualTypeArguments = new Type[0];",
+        "candidate_code": "  private static Type extractTypeForHierarchy(Type parentType, TypeVariable<?> typeToEvaluate) {\n    Class<?> rawParentType = null;\n    if (parentType instanceof Class<?>) {\n      rawParentType = (Class<?>) parentType;\n    } else if (parentType instanceof ParameterizedType) {\n      ParameterizedType parentTypeAsPT = (ParameterizedType) parentType;\n      rawParentType = (Class<?>) parentTypeAsPT.getRawType();\n    } else {\n      return null;\n    }\n\n    Type superClass = rawParentType.getGenericSuperclass();\n    if (superClass instanceof ParameterizedType\n        && ((ParameterizedType) superClass).getRawType() == typeToEvaluate.getGenericDeclaration()) {\n      // Evaluate type on this type\n      TypeVariable<?>[] classTypeVariables =\n          ((Class<?>) ((ParameterizedType) superClass).getRawType()).getTypeParameters();\n      int indexOfActualTypeArgument = getIndex(classTypeVariables, typeToEvaluate);\n\n      Type[] actualTypeArguments = new Type[0];\n      if (parentType instanceof Class<?>) {\n        actualTypeArguments = ((ParameterizedType) superClass).getActualTypeArguments();\n      } else if (parentType instanceof ParameterizedType) {\n        actualTypeArguments = ((ParameterizedType) parentType).getActualTypeArguments();\n      } else {\n        return null;\n      }\n\n      return actualTypeArguments[indexOfActualTypeArgument];\n    }\n\n    Type searchedType = null;\n    if (superClass != null) {\n      searchedType = extractTypeForHierarchy(superClass, typeToEvaluate);\n    }\n    return searchedType;\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+# Reproducible mull toolchain image for the ManyBugs `lighttpd` family.
+#
+# Base is Ubuntu 18.04 (bionic), same rationale as Dockerfile.gzip: the
+# original prosyslab/manybugs image is even older here (Ubuntu 14.04
+# Trusty), so its apt repos are dead/EOL too.
+#
+# Unlike gzip, lighttpd's original CFLAGS have NO -m32 — it's built 64-bit
+# natively (confirmed via config.log in the original image), so no
+# gcc-multilib here. Confirmed via real PoC (2026-07-31) that
+# ./configure + make -j2 CC=clang-9 compiles 100% clean in bionic with no
+# source patches, given these dev packages (missing by default in a bare
+# bionic image, present via apt): libglib2.0-dev (gthread-2.0),
+# libbz2-dev, libpcre3-dev, libssl-dev, zlib1g-dev, pkg-config, automake,
+# autoconf, libtool.
+#
+# KNOWN OPEN RISK (see mull_baseline_plan.md, "Investigação lighttpd"):
+# the p2 test (lowercase.t) has a confirmed, unexplained runtime
+# regression on this rebuild vs. the original Trusty binary (server
+# starts but stops accepting connections). p1 (mod-rewrite.t) is
+# confirmed equivalent. n1-n12 are already non-discriminating in this
+# ManyBugs scenario regardless of mull (confirmed against real LLM
+# execution data), so this isn't specific to mull either. Current
+# accepted mitigation: scope the mull baseline for this family to tests
+# confirmed equivalent (p1), not the full eligible set, per-target.
+FROM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && apt-get install -y -qq \
+      curl \
+      ca-certificates \
+      gnupg \
+      apt-transport-https \
+      clang-9 \
+      make \
+      perl \
+      psmisc \
+      sqlite3 \
+      pkg-config \
+      libtool \
+      automake \
+      autoconf \
+      libglib2.0-dev \
+      libbz2-dev \
+      libpcre3-dev \
+      libssl-dev \
+      zlib1g-dev \
+    && curl -1sLf "https://dl.cloudsmith.io/public/mull-project/mull-stable/setup.deb.sh" | bash \
+    && apt-get install -y -qq mull-9 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# See Dockerfile.gzip for why -O1 -fexperimental-new-pass-manager are
+# required, and why CFLAGS must be passed to `make` as a command-line
+# argument, not just this inherited env var, when `./configure` also
+# received CFLAGS (it didn't, here — prepare_mull_checkout.py calls
+# `./configure CC=clang-9` with no CFLAGS for every project, relying
+# entirely on the make-time override).
+ENV MULL_CC=clang-9
+ENV MULL_CFLAGS="-Wall -W -Wshadow -pedantic -std=gnu99 -O1 -fexperimental-new-pass-manager -fpass-plugin=/usr/lib/mull-ir-frontend-9 -g -grecord-command-line"
+ENV MULL_LDFLAGS=""
+
+WORKDIR /experiment

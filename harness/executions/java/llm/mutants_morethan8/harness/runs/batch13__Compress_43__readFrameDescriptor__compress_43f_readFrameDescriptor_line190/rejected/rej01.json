@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_43",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_43f_readFrameDescriptor__line190",
+  "file_path": "src/main/java/org/apache/commons/compress/compressors/lz4/FramedLZ4CompressorInputStream.java",
+  "function_name": "readFrameDescriptor",
+  "start_line": 190,
+  "end_line": 233,
+  "mutant_id": "rej01",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 1,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: }",
+  "raw_response_path": "harness/runs/batch13__Compress_43__readFrameDescriptor__compress_43f_readFrameDescriptor_line190/generation/raw_response.txt",
+  "payload": {
+    "id": 1,
+    "reasoning": "Does not check for premature end of stream when reading frame BD byte.",
+    "line": 22,
+    "precode": "if (bdByte == -1) { // max size is irrelevant for this implementation",
+    "aftercode": "// if (bdByte == -1) { // max size is irrelevant for this implementation",
+    "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        // if (bdByte == -1) { // max size is irrelevant for this implementation {\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch13__Compress_43__readFrameDescriptor__compress_43f_readFrameDescriptor_line190/rejected/rej01.log",
+  "mutant_path": "harness/runs/batch13__Compress_43__readFrameDescriptor__compress_43f_readFrameDescriptor_line190/rejected/rej01.mutant.txt",
+  "original_path": "harness/runs/batch13__Compress_43__readFrameDescriptor__compress_43f_readFrameDescriptor_line190/rejected/original.txt"
+}

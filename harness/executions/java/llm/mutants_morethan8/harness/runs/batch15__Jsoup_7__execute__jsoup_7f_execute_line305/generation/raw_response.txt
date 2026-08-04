@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Allow non-HTTP/HTTPS protocols",
+      "line": 4,
+      "precode": "Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\")",
+      "aftercode": "Validate.isTrue(true, \"Only http & https protocols supported\")"
+    },
+    {
+      "id": 2,
+      "reasoning": "Disallow HTTP requests with data",
+      "line": 9,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.GET)"
+    },
+    {
+      "id": 3,
+      "reasoning": "Require GET requests to have data",
+      "line": 9,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.GET || req.data().size() > 0)"
+    },
+    {
+      "id": 4,
+      "reasoning": "Do not follow redirects",
+      "line": 28,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": "false"
+    },
+    {
+      "id": 5,
+      "reasoning": "Do not extract data from responses",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": ""
+    },
+    {
+      "id": 6,
+      "reasoning": "Extract data from all responses, even those with no encoding",
+      "line": 34,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()))"
+    },
+    {
+      "id": 7,
+      "reasoning": "Throw an exception for all non-200 status codes",
+      "line": 23,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "throw new IOException(\"Error loading URL \" + req.url().toString());"
+    },
+    {
+      "id": 8,
+      "reasoning": "Do not set `executed` flag to true",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": ""
+    },
+    {
+      "id": 9,
+      "reasoning": "Set `executed` flag to false for all responses",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "res.executed = false;"
+    },
+    {
+      "id": 10,
+      "reasoning": "Do not close the input stream",
+      "line": 40,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": ""
+    },
+    {
+      "id": 11,
+      "reasoning": "Close the input stream twice",
+      "line": 40,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": "if (inStream != null) { inStream.close(); inStream.close(); }"
+    },
+    {
+      "id": 12,
+      "reasoning": "Set `byteData` to an empty byte array for all responses",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "res.byteData = new byte[0];"
+    },
+    {
+      "id": 13,
+      "reasoning": "Do not set `charset` to the content type of the response",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": ""
+    },
+    {
+      "id": 14,
+      "reasoning": "Set `charset` to a random string for all responses",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"UTF-32\";"
+    },
+    {
+      "id": 15,
+      "reasoning": "Do not call `setupFromConnection` on the response object",
+      "line": 26,
+      "precode": "Response res = new Response(); res.setupFromConnection(conn);",
+      "aftercode": ""
+    },
+    {
+      "id": 16,
+      "reasoning": "Call `setupFromConnection` on a null connection",
+      "line": 26,
+      "precode": "Response res = new Response(); res.setupFromConnection(conn);",
+      "aftercode": "res.setupFromConnection(null)"
+    },
+    {
+      "id": 17,
+      "reasoning": "Do not set the `Location` header in the response object",
+      "line": 28,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": ""
+    },
+    {
+      "id": 18,
+      "reasoning": "Set the `Location` header to a random string for all responses",
+      "line": 28,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": "res.header(\"Location\", \"https://example.com\")"
+    },
+    {
+      "id": 19,
+      "reasoning": "Do not call `writePost` on the request object",
+      "line": 13,
+      "precode": "if (req.method() == Connection.Method.POST) writePost(req.data(), conn.getOutputStream());",
+      "aftercode": ""
+    },
+    {
+      "id": 20,
+      "reasoning": "Call `writePost` with a null data array",
+      "line": 13,
+      "precode": "if (req.method() == Connection.Method.POST) writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "writePost(null, conn.getOutputStream())"
+    },
+    {
+      "id": 21,
+      "reasoning": "Do not call `serialiseRequestUrl` on the request object",
+      "line": 9,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": ""
+    },
+    {
+      "id": 22,
+      "reasoning": "Call `serialiseRequestUrl` with a null request object",
+      "line": 9,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "serialiseRequestUrl(null)"
+    },
+    {
+      "id": 23,
+      "reasoning": "Do not create a connection for the request object",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": ""
+    },
+    {
+      "id": 24,
+      "reasoning": "Create a connection with an invalid protocol",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "HttpURLConnection conn = createConnection(new URL(\"ftp://example.com\"))"
+    }
+  ]
+}

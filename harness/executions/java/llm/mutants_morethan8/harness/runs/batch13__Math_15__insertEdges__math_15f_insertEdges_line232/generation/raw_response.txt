@@ -1,0 +1,179 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method does not check if an edge has already been inserted into the node before trying to insert a new one, leading to redundant insertion attempts.",
+      "line": 9,
+      "precode": "inserted = edges.get(index++);",
+      "aftercode": "if (inserted == null) { inserted = edges.get(index++); } else { inserted = null; }"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method does not handle the case where an edge with a non-null node is found, potentially skipping suitable edges.",
+      "line": 9,
+      "precode": "inserted = edges.get(index++);",
+      "aftercode": "if (inserted == null || inserted.getNode() != null) { inserted = edges.get(index++); } else { inserted = null; }"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method inserts an edge into a node only if the insertion of its line succeeds, but it does not consider that insertion might fail for all edges.",
+      "line": 11,
+      "precode": "if (node.insertCut(inserted.getLine())) {",
+      "aftercode": "if (!node.insertCut(inserted.getLine())) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method sets the node's attribute to true if it is a leaf node and its parent is null, ignoring the case where the node is the minus child of its parent.",
+      "line": 26,
+      "precode": "node.setAttribute(Boolean.TRUE);",
+      "aftercode": "if (parent == null) { node.setAttribute(Boolean.TRUE); } else if (node != parent.getMinus()) { node.setAttribute(Boolean.FALSE); }"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method sets the minus node's attribute to false if it is empty, regardless of whether it has been split by an edge or not.",
+      "line": 81,
+      "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+      "aftercode": "if (!minusList.isEmpty()) { node.getMinus().setAttribute(Boolean.FALSE); }"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method sets the plus node's attribute to false if it is empty, regardless of whether it has been split by an edge or not.",
+      "line": 81,
+      "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+      "aftercode": "if (plusList.isEmpty()) { node.getPlus().setAttribute(Boolean.TRUE); }"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method does not check if the start side is equal to the end side when determining how to distribute edges, potentially missing opportunities for edge splitting.",
+      "line": 47,
+      "precode": "if (endSide == Side.MINUS) {",
+      "aftercode": "if (startSide != endSide) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method incorrectly assumes that an edge will always be split when the start side is hyperplane and the end side is either plus or minus, ignoring the case where both sides are hyperplane.",
+      "line": 42,
+      "precode": "Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?",
+      "aftercode": "Side startSide = (FastMath.abs(startOffset) < hyperplaneThickness) ?"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+      "line": 50,
+      "precode": "minusList.add(splitPoint.getOutgoing());",
+      "aftercode": ""
+    },
+    {
+      "id": 10,
+      "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+      "line": 50,
+      "precode": "plusList.add(splitPoint.getIncoming());",
+      "aftercode": ""
+    },
+    {
+      "id": 11,
+      "reasoning": "The method incorrectly uses a strict equality check for side comparisons, which may not accurately reflect the intended behavior when considering floating-point precision.",
+      "line": 42,
+      "precode": "Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?",
+      "aftercode": "Side startSide = (FastMath.abs(startOffset) < hyperplaneThickness) ?"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method assigns the result of a boolean comparison to a variable, which could lead to incorrect logic for edge insertion.",
+      "line": 26,
+      "precode": "node.setAttribute(Boolean.TRUE);",
+      "aftercode": "node.setAttribute(parent == null || node == parent.getMinus());"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method does not reset the index to 0 after finding an inserted edge, which could lead to skipping over subsequent edges.",
+      "line": 9,
+      "precode": "inserted = edges.get(index++);",
+      "aftercode": "inserted = (index == edges.size()) ? null : edges.get(index++);"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method does not ensure that all edges are processed even if a split point is found, which could result in some edges being ignored.",
+      "line": 75,
+      "precode": "for (final Edge edge : edges) {",
+      "aftercode": "for (int i = 0; i < edges.size(); i++) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "The method does not check if an edge is null before attempting to access its start location, which could lead to a NullPointerException.",
+      "line": 39,
+      "precode": "final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());",
+      "aftercode": "if (edge != null && edge.getStart() != null) { final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation()); }"
+    },
+    {
+      "id": 16,
+      "reasoning": "The method does not check if an edge is null before attempting to access its end location, which could lead to a NullPointerException.",
+      "line": 40,
+      "precode": "final double endOffset = inserted.getLine().getOffset(edge.getEnd().getLocation());",
+      "aftercode": "if (edge != null && edge.getEnd() != null) { final double endOffset = inserted.getLine().getOffset(edge.getEnd().getLocation()); }"
+    },
+    {
+      "id": 17,
+      "reasoning": "The method does not check if an edge is null before attempting to split it, which could lead to a NullPointerException.",
+      "line": 49,
+      "precode": "final Vertex splitPoint = edge.split(inserted.getLine());",
+      "aftercode": "if (edge != null) { final Vertex splitPoint = edge.split(inserted.getLine()); }"
+    },
+    {
+      "id": 18,
+      "reasoning": "The method does not check if the plusList is empty before recursively calling insertEdges, which could lead to unnecessary recursive calls.",
+      "line": 78,
+      "precode": "insertEdges(hyperplaneThickness, node.getPlus(), plusList);",
+      "aftercode": ""
+    },
+    {
+      "id": 19,
+      "reasoning": "The method does not check if the minusList is empty before recursively calling insertEdges, which could lead to unnecessary recursive calls.",
+      "line": 83,
+      "precode": "insertEdges(hyperplaneThickness, node.getMinus(), minusList);",
+      "aftercode": ""
+    },
+    {
+      "id": 20,
+      "reasoning": "The method sets the attribute of the plus or minus node to false or true based on whether the list is empty, regardless of whether a split occurred.",
+      "line": 81,
+      "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+      "aftercode": ""
+    },
+    {
+      "id": 21,
+      "reasoning": "The method sets the attribute of the plus or minus node to false or true based on whether the list is empty, regardless of whether a split occurred.",
+      "line": 81,
+      "precode": "node.getMinus().setAttribute(Boolean.FALSE);",
+      "aftercode": ""
+    },
+    {
+      "id": 22,
+      "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+      "line": 50,
+      "precode": "minusList.add(splitPoint.getOutgoing());",
+      "aftercode": ""
+    },
+    {
+      "id": 23,
+      "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+      "line": 50,
+      "precode": "plusList.add(splitPoint.getIncoming());",
+      "aftercode": ""
+    },
+    {
+      "id": 24,
+      "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+      "line": 50,
+      "precode": "minusList.add(splitPoint.getOutgoing());",
+      "aftercode": ""
+    },
+    {
+      "id": 25,
+      "reasoning": "The method does not handle the case where an edge is split and both resulting edges are added to the same list, which could lead to incorrect distribution of edges.",
+      "line": 50,
+      "precode": "plusList.add(splitPoint.getIncoming());",
+      "aftercode": ""
+    }
+  ]
+}

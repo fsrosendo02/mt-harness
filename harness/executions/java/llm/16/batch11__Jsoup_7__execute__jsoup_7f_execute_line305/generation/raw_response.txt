@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The protocol check does not account for case sensitivity, allowing other protocols like 'HTTP' or 'HTTPS' which are valid.",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(protocol.equalsIgnoreCase(\"http\") || protocol.equalsIgnoreCase(\"https\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method serialiseRequestUrl(req) is called only for GET requests with data, but it does not ensure that the request data can be serialized to a URL query string.",
+      "line": 9,
+      "precode": "serialiseRequestUrl(req); // appends query string",
+      "aftercode": "// serialiseRequestUrl(req); // commented out due to potential serialization issues"
+    },
+    {
+      "id": 3,
+      "reasoning": "The code does not check if the URL has been modified before following a redirect, which could lead to an infinite loop for certain types of redirects.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "// req.url(new URL(res.header(\"Location\"))); // commented out due to potential infinite loop"
+    },
+    {
+      "id": 4,
+      "reasoning": "The code assumes that the Content-Encoding header indicates gzip compression, but it does not account for other types of encoding.",
+      "line": 34,
+      "precode": "inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?",
+      "aftercode": "// inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? // commented out due to encoding issues"
+    },
+    {
+      "id": 5,
+      "reasoning": "The code attempts to close the InputStream even if it is null, which will throw a NullPointerException.",
+      "line": 40,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": "// if (inStream != null) inStream.close(); // commented out due to potential NPE"
+    },
+    {
+      "id": 6,
+      "reasoning": "The code writes POST data only if the request method is POST, but it does not handle situations where data is present for non-POST methods.",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "// writePost(req.data(), conn.getOutputStream()); // commented out due to handling of non-POST method data"
+    },
+    {
+      "id": 7,
+      "reasoning": "The code checks for specific HTTP status codes when determining if a redirect is needed, but it does not account for all possible redirect status codes.",
+      "line": 21,
+      "precode": "needsRedirect = true;",
+      "aftercode": "// needsRedirect = true; // commented out due to potential misinterpretation of HTTP response codes"
+    },
+    {
+      "id": 8,
+      "reasoning": "The code assumes that the Response object will always have a 'Location' header when following redirects, but this is not guaranteed.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "// req.url(new URL(res.header(\"Location\"))); // commented out due to potential missing Location header"
+    },
+    {
+      "id": 9,
+      "reasoning": "The code does not handle the case where the 'Content-Encoding' header is present but does not specify gzip encoding, leading to incorrect InputStream creation.",
+      "line": 35,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()))",
+      "aftercode": "// new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) // commented out due to potential encoding issues"
+    },
+    {
+      "id": 10,
+      "reasoning": "The code throws an IOException for all non-200 status codes, but it does not provide a way to handle or retrieve the response body in such cases.",
+      "line": 23,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "// throw new IOException(status + \" error loading URL \" + req.url().toString()); // commented out due to potential error handling issues"
+    },
+    {
+      "id": 11,
+      "reasoning": "The code does not check if the request method is GET before attempting to serialize data to the URL, which could lead to incorrect behavior for non-GET requests.",
+      "line": 9,
+      "precode": "serialiseRequestUrl(req); // appends query string",
+      "aftercode": "// serialiseRequestUrl(req); // commented out due to potential incorrect serialization"
+    },
+    {
+      "id": 12,
+      "reasoning": "The code does not check if the URL is null before calling the `req.url(new URL(res.header(\"Location\")));` method, which could lead to a NullPointerException.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "// req.url(new URL(res.header(\"Location\"))); // commented out due to potential null pointer exception"
+    },
+    {
+      "id": 13,
+      "reasoning": "The code does not handle the case where the 'Content-Encoding' header is missing, leading to incorrect InputStream creation.",
+      "line": 36,
+      "precode": "new BufferedInputStream(conn.getInputStream())",
+      "aftercode": "// new BufferedInputStream(conn.getInputStream()) // commented out due to potential missing Content-Encoding header"
+    },
+    {
+      "id": 14,
+      "reasoning": "The code does not check if the response body can be read into a byte buffer, which could lead to incorrect behavior for large responses.",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "// res.byteData = DataUtil.readToByteBuffer(inStream); // commented out due to potential large response handling issues"
+    },
+    {
+      "id": 15,
+      "reasoning": "The code does not handle the case where the request data is empty for POST requests, leading to an attempt to write null data.",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "// writePost(req.data(), conn.getOutputStream()); // commented out due to potential null data writing"
+    },
+    {
+      "id": 16,
+      "reasoning": "The code does not handle the case where the response does not contain a 'Content-Type' header, leading to potential issues with character set detection.",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "// res.charset = DataUtil.getCharsetFromContentType(res.contentType); // commented out due to potential missing Content-Type header"
+    }
+  ]
+}

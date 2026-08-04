@@ -1,0 +1,87 @@
+    public Value unaryOperation(final AbstractInsnNode insn, final Value value)
+            throws AnalyzerException
+    {
+        switch (insn.getOpcode()) {
+            case INEG:
+            case IINC:
+            case L2I:
+            case F2I:
+            case D2I:
+            case I2B:
+            case I2C:
+            case I2S:
+                return BasicValue.INT_VALUE;
+            case FNEG:
+            case I2F:
+            case L2F:
+            case D2F:
+                return BasicValue.FLOAT_VALUE;
+            case LNEG:
+            case I2L:
+            case F2L:
+            case D2L:
+                return BasicValue.LONG_VALUE;
+            case DNEG:
+            case I2D:
+            case L2D:
+            case F2D:
+                return BasicValue.DOUBLE_VALUE;
+            case IFEQ:
+            case IFNE:
+            case IFLT:
+            case IFGE:
+            case IFGT:
+            case IFLE:
+            case TABLESWITCH:
+            case LOOKUPSWITCH:
+            case IRETURN:
+            case LRETURN:
+            case FRETURN:
+            case DRETURN:
+            case ARETURN:
+            case PUTSTATIC:
+                return null;
+            case GETFIELD:
+                return newValue(Type.getType(((FieldInsnNode) insn).desc));
+            case NEWARRAY:
+                switch (((IntInsnNode) insn).operand) {
+                    case T_BOOLEAN:
+                        return newValue(Type.getType("[Z"));
+                    case T_CHAR:
+                        return newValue(Type.getType("[C"));
+                    case T_BYTE:
+                        return newValue(Type.getType("[B"));
+                    case T_SHORT:
+                        return newValue(Type.getType("[S"));
+                    case T_INT:
+                        return newValue(Type.getType("[I"));
+                    case T_FLOAT:
+                        return newValue(Type.getType("[F"));
+                    case T_DOUBLE:
+                        return newValue(Type.getType("[D"));
+                    case T_LONG:
+                        return newValue(Type.getType("[J"));
+                    default:
+                        throw new AnalyzerException("Invalid array type");
+                }
+            case ANEWARRAY:
+                String desc = ((TypeInsnNode) insn).desc;
+                return newValue(Type.getType(desc));
+            case ARRAYLENGTH:
+                return BasicValue.INT_VALUE;
+            case ATHROW:
+                return null;
+            case CHECKCAST:
+                desc = ((TypeInsnNode) insn).desc;
+                return newValue(Type.getObjectType(desc));
+            case INSTANCEOF:
+                return BasicValue.INT_VALUE;
+            case MONITORENTER:
+            case MONITOREXIT:
+            case IFNULL:
+            case IFNONNULL:
+                return null;
+            default:
+                throw new Error("Internal error.");
+        }
+    }

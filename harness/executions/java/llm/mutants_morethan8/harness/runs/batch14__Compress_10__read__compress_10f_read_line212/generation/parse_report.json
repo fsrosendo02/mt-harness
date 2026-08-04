@@ -1,0 +1,248 @@
+{
+  "requested_count": 24,
+  "accepted_count": 3,
+  "rejected_count": 21,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violates the property of ensuring data integrity by not checking for CRC32 and uncompressed size errors.",
+        "line": 57,
+        "precode": "if (crcStored != crc.getValue())",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt (CRC32 error)\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the property of correctly handling end-of-file conditions by not checking for decompression termination.",
+        "line": 60,
+        "precode": "if (!decompressConcatenated || !init(false))",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates the property of correctly skipping excessive input by not resetting the read position.",
+        "line": 41,
+        "precode": "in.reset();",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the property of correctly handling input by not skipping excessive bytes.",
+        "line": 44,
+        "precode": "if (in.skip(skipAmount) != skipAmount)",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly updating CRC32 and uncompressed size by not updating memberSize.",
+        "line": 28,
+        "precode": "crc.update(b, off, ret);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly reading input by not checking for EOF.",
+        "line": 15,
+        "precode": "if (bufUsed == -1)",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly handling decompression by not resetting inf after end.",
+        "line": 71,
+        "precode": "inf.end();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly handling decompression by not setting inf to null.",
+        "line": 72,
+        "precode": "inf = null;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly handling decompression by not setting endReached.",
+        "line": 73,
+        "precode": "endReached = true;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly handling decompression by not returning size.",
+        "line": 79,
+        "precode": "return size;",
+        "aftercode": "return -1;",
+        "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return -1;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly handling decompression by not returning size.",
+        "line": 79,
+        "precode": "return size;",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of correctly handling decompression by not checking for EOF.",
+        "line": 39,
+        "precode": "",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly handling decompression by not checking for end condition.",
+        "line": 35,
+        "precode": "if (inf.finished())",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly handling decompression by not setting input mark.",
+        "line": 12,
+        "precode": "in.mark(buf.length);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly handling decompression by not checking for input needs.",
+        "line": 9,
+        "precode": "if (inf.needsInput())",
+        "aftercode": "if (true) { throw new IOException(\"Gzip-compressed data is corrupt\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly handling decompression by not setting input mark.",
+        "line": 12,
+        "precode": "in.mark(buf.length);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of ensuring proper decompression by not updating crc.",
+        "line": 28,
+        "precode": "crc.update(b, off, ret);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly handling decompression by not updating memberSize.",
+        "line": 29,
+        "precode": "memberSize += ret;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly handling decompression by not updating off and len.",
+        "line": 30,
+        "precode": "off += ret; len -= ret;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly handling decompression by not updating size.",
+        "line": 32,
+        "precode": "off += ret; len -= ret;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly handling decompression by not incrementing size.",
+        "line": 33,
+        "precode": "count(ret);",
+        "aftercode": ""
+      }
+    }
+  ]
+}

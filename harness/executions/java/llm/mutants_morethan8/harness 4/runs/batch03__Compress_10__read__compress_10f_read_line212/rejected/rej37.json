@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_10",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_10f_read__line212",
+  "file_path": "src/main/java/org/apache/commons/compress/compressors/gzip/GzipCompressorInputStream.java",
+  "function_name": "read",
+  "start_line": 212,
+  "end_line": 291,
+  "mutant_id": "rej37",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 37,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch03__Compress_10__read__compress_10f_read_line212/generation/raw_response.txt",
+  "payload": {
+    "id": 37,
+    "reasoning": "The method does not handle the case where crc.getValue() is null.",
+    "line": 56,
+    "precode": "if (crcStored != crc.getValue())",
+    "aftercode": "if (crcStored != null && crcStored != crc.getValue())",
+    "candidate_code": "    @Override\n    public int read(byte[] b, int off, int len) throws IOException {\n        if (endReached)\n            return -1;\n\n        int size = 0;\n\n        while (len > 0) {\n            if (inf.needsInput()) {\n                // Remember the current position because we may need to\n                // rewind after reading too much input.\n                in.mark(buf.length);\n\n                bufUsed = in.read(buf);\n                if (bufUsed == -1)\n                    throw new EOFException();\n\n                inf.setInput(buf, 0, bufUsed);\n            }\n\n            int ret;\n            try {\n                ret = inf.inflate(b, off, len);\n            } catch (DataFormatException e) {\n                throw new IOException(\"Gzip-compressed data is corrupt\");\n            }\n\n            crc.update(b, off, ret);\n            memberSize += ret;\n            off += ret;\n            len -= ret;\n            size += ret;\n            count(ret);\n\n            if (inf.finished()) {\n                // We may have read too many bytes. Rewind the read\n                // position to match the actual amount used.\n                //\n                // NOTE: The \"if\" is there just in case. Since we used\n                // in.mark earler, it should always skip enough.\n                in.reset();\n\n                int skipAmount = bufUsed - inf.getRemaining();\n                if (in.skip(skipAmount) != skipAmount)\n                    throw new IOException();\n\n                bufUsed = 0;\n\n                DataInputStream inData = new DataInputStream(in);\n\n                // CRC32\n                long crcStored = 0;\n                for (int i = 0; i < 4; ++i)\n                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);\n\n                if (crcStored != null && crcStored != crc.getValue())\n                    throw new IOException(\"Gzip-compressed data is corrupt \"\n                                          + \"(CRC32 error)\");\n\n                // Uncompressed size modulo 2^32 (ISIZE in the spec)\n                int isize = 0;\n                for (int i = 0; i < 4; ++i)\n                    isize |= inData.readUnsignedByte() << (i * 8);\n\n                if (isize != memberSize)\n                    throw new IOException(\"Gzip-compressed data is corrupt\"\n                                          + \"(uncompressed size mismatch)\");\n\n                // See if this is the end of the file.\n                if (!decompressConcatenated || !init(false)) {\n                    inf.end();\n                    inf = null;\n                    endReached = true;\n                    return size == 0 ? -1 : size;\n                }\n            }\n        }\n\n        return size;\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch03__Compress_10__read__compress_10f_read_line212/rejected/rej37.log",
+  "mutant_path": "harness/runs/batch03__Compress_10__read__compress_10f_read_line212/rejected/rej37.mutant.txt",
+  "original_path": "harness/runs/batch03__Compress_10__read__compress_10f_read_line212/rejected/original.txt"
+}

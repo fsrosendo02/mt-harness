@@ -1,0 +1,105 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider prov)
+ 3:         throws Exception
+ 4:     {
+ 5:         Object value = get(bean);
+ 6: 
+ 7:         /* 13-Feb-2014, tatu: As per [#103], default handling does not really
+ 8:          *   work here. Rather, we need just a wrapping and should NOT call
+ 9:          *   null handler, as it does not know what to do...
+10:          *   
+11:          *   Question, however, is what should it be serialized as. We have two main
+12:          *   choices; equivalent empty List, and "nothing" (missing). Let's start with
+13:          *   empty List? But producing missing entry is non-trivial...
+14:          */
+15:         if (value == null) {
+16:             // if (_nullSerializer != null) { ... }
+17: 
+18:             // For Empty List, we'd do this:
+19:             /*
+20:             @SuppressWarnings("resource")
+21:             final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;
+22:             if (xmlGen != null) {
+23:                 xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);
+24:                 xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);
+25:             }
+26:             */
+27:             // but for missing thing, well, just output nothing
+28:             
+29:             return;
+30:         }
+31: 
+32:         // then find serializer to use
+33:         JsonSerializer<Object> ser = _serializer;
+34:         if (ser == null) {
+35:             Class<?> cls = value.getClass();
+36:             PropertySerializerMap map = _dynamicSerializers;
+37:             ser = map.serializerFor(cls);
+38:             if (ser == null) {
+39:                 ser = _findAndAddDynamic(map, cls, prov);
+40:             }
+41:         }
+42:         // and then see if we must suppress certain values (default, empty)
+43:         if (_suppressableValue != null) {
+44:             if (MARKER_FOR_EMPTY == _suppressableValue) {
+45:                 if (ser.isEmpty(prov, value)) {
+46:                     return;
+47:                 }
+48:             } else if (_suppressableValue.equals(value)) {
+49:                 return;
+50:             }
+51:         }
+52:         // For non-nulls: simple check for direct cycles
+53:         if (value == bean) {
+54:             // NOTE: method signature here change 2.3->2.4
+55:             if (_handleSelfReference(bean, jgen, prov, ser)) {
+56:                 return;
+57:             }
+58:         }
+59: 
+60:         final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;
+61:         // Ok then; addition we want to do is to add wrapper element, and that's what happens here
+62:         // 19-Aug-2013, tatu: ... except for those nasty 'convertValue()' calls...
+63:         if (xmlGen != null) {
+64:             xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);
+65:         }
+66:         jgen.writeFieldName(_name);
+67:         if (_typeSerializer == null) {
+68:             ser.serialize(value, jgen, prov);
+69:         } else {
+70:             ser.serializeWithType(value, jgen, prov, _typeSerializer);
+71:         }
+72:         if (xmlGen != null) {
+73:             xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);
+74:         }
+75:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

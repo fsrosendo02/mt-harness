@@ -1,0 +1,109 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method returns a new Document even if the input is null, which violates the behavior of attempting to parse something from an input stream.",
+      "line": 2,
+      "precode": "// empty body",
+      "aftercode": ""
+    },
+    {
+      "id": 2,
+      "reasoning": "The method closes the input stream at the end of its execution, which might prevent the caller from using it after parsing. This violates the principle that an object should not be modified by a method unless explicitly instructed to do so.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": "// input.close();"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method resets the input stream's position after reading the first bytes, which might lead to an IOException if the reset fails. This violates the principle of handling potential exceptions properly.",
+      "line": 13,
+      "precode": "input.reset();",
+      "aftercode": "// input.reset();"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method skips bytes in the input stream without checking if it's possible. This might lead to an IOException if there are not enough bytes to skip. This violates the principle of handling potential exceptions properly.",
+      "line": 19,
+      "precode": "input.skip(bomCharset.offset);",
+      "aftercode": "// input.skip(bomCharset.offset);"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method uses a fixed buffer size for reading the first bytes of the stream. This might not work well with different input sizes, violating the principle of making methods flexible.",
+      "line": 11,
+      "precode": "ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1);",
+      "aftercode": "ByteBuffer firstBytes = readToByteBuffer(input, inputStream.available());"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method tries to detect the charset from a ByteBuffer by decoding it as UTF-8. If the actual encoding is not UTF-8, this will fail. This violates the principle of correctly detecting the input's character set.",
+      "line": 23,
+      "precode": "docData = Charset.forName(defaultCharset).decode(firstBytes).toString();",
+      "aftercode": "// docData = Charset.forName(defaultCharset).decode(firstBytes).toString();"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method checks for a BOM without considering the possibility that the BOM might not be present. This violates the principle of handling all possible cases.",
+      "line": 16,
+      "precode": "BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);",
+      "aftercode": "// bomCharset = null;"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method does not handle the case where no meta elements with charset information are found. It should return an error or use a default encoding in such cases. This violates the principle of handling all possible cases.",
+      "line": 37,
+      "precode": "if (foundCharset == null)",
+      "aftercode": "// if (foundCharset == null)"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method does not check if the reader is null before using it to parse the input. This violates the principle of checking for null values before using an object.",
+      "line": 59,
+      "precode": "doc = parser.parseInput(reader, baseUri);",
+      "aftercode": "// doc = parser.parseInput(reader, baseUri);"
+    },
+    {
+      "id": 10,
+      "reasoning": "The method sets the document's charset without checking if it matches the detected charset. This might lead to incorrect character encoding in the output. This violates the principle of setting attributes based on input data correctly.",
+      "line": 60,
+      "precode": "doc.outputSettings().charset(charsetName);",
+      "aftercode": "// doc.outputSettings().charset(charsetName);"
+    },
+    {
+      "id": 11,
+      "reasoning": "The method sets the charsetName to a trimmed and stripped version of foundCharset without considering potential cases where this might lead to an invalid charset name. This violates the principle of validating inputs before processing them.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll("[\"']", "");",
+      "aftercode": "// foundCharset = foundCharset.trim();"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method uses a default charset without considering if the input stream is actually in that encoding. This violates the principle of correctly identifying and using the input's character set.",
+      "line": 58,
+      "precode": "BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);",
+      "aftercode": "// BufferedReader reader = new BufferedReader(new InputStreamReader(input, defaultCharset), bufferSize);"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method does not handle the case where no XML declaration is found. It should return an error or use a default encoding in such cases. This violates the principle of handling all possible cases.",
+      "line": 39,
+      "precode": "if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration)",
+      "aftercode": "// if (foundCharset == null)"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method does not handle the case where no BOM is found. It should return an error or use a default encoding in such cases. This violates the principle of handling all possible cases.",
+      "line": 16,
+      "precode": "BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);",
+      "aftercode": "// if (bomCharset == null)"
+    },
+    {
+      "id": 15,
+      "reasoning": "The method does not handle the case where a BOM is found but its offset is greater than the buffer size. This violates the principle of correctly handling input data.",
+      "line": 19,
+      "precode": "input.skip(bomCharset.offset);",
+      "aftercode": "// if (bomCharset.offset <= firstReadBufferSize) input.skip(bomCharset.offset);"
+    }
+  ]
+}

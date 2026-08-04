@@ -1,0 +1,416 @@
+{
+  "requested_count": 48,
+  "accepted_count": 14,
+  "rejected_count": 34,
+  "rejections": [
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 41,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly updating array values by not properly setting elements in 'inUse'.",
+        "line": 25,
+        "precode": "if (bsGetBit()) {",
+        "aftercode": "if (!bsGetBit()) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (!bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; j++; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly updating array values by not properly setting elements in 'inUse'.",
+        "line": 26,
+        "precode": "inUse[i16 + j] = true;",
+        "aftercode": "if (bsGetBit()) { inUse[i16 + j] = true; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 53,
+        "precode": "int v = selectorMtf[i] & 0xff;",
+        "aftercode": "if (bsGetBit()) { int v = selectorMtf[i] & 0xff; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly updating array values by not properly setting elements in 'inUse'.",
+        "line": 26,
+        "precode": "inUse[i16 + j] = true;",
+        "aftercode": "if (bsGetBit()) { if (count > 0) inUse[i16 + j] = true; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly updating array values by not properly setting elements in 'inUse'.",
+        "line": 26,
+        "precode": "inUse[i16 + j] = true;",
+        "aftercode": "if (bsGetBit()) { if (count > 0) inUse[i16 + j] = false; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly updating array values by not properly setting elements in 'inUse'.",
+        "line": 26,
+        "precode": "inUse[i16 + j] = true;",
+        "aftercode": "if (bsGetBit()) { if (count > 0) inUse[i16 + j] = true; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 41,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 42,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 43,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 44,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 45,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 46,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 71,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 47,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 43,
+        "precode": "j++;",
+        "aftercode": "int count = 0; while (bsGetBit() && count < MAX_COUNT) { count++; if (count > 1) j++; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 48,
+        "reasoning": "Violates the property of correctly interpreting bitstream data by not handling a possible zero value.",
+        "line": 57,
+        "precode": "while (v > 0) {",
+        "aftercode": "int count = 0; while (v > 0 && count < MAX_COUNT) { count++; v--; } else { break; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

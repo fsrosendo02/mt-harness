@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonDatabind_2",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksondatabind_2f_buildCollectionSerializer__line598",
+  "file_path": "src/main/java/com/fasterxml/jackson/databind/ser/BasicSerializerFactory.java",
+  "function_name": "buildCollectionSerializer",
+  "start_line": 598,
+  "end_line": 660,
+  "mutant_id": "rej05",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 5,
+  "rejection_reason": "non_executable_structural_change: unclosed delimiter(s): {",
+  "raw_response_path": "harness/runs/batch02__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/generation/raw_response.txt",
+  "payload": {
+    "id": 5,
+    "reasoning": "The method builds a serializer for an indexed list type, but it does not check if the element value serializer is actually an indexed list serializer. If the element value serializer is not an indexed list serializer, then this could lead to an incorrect serialization of the indexed list.",
+    "line": 49,
+    "precode": "if (ser == null)",
+    "aftercode": "if (ser == null && !(elementValueSerializer instanceof IndexedListSerializer))",
+    "candidate_code": "    protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,\n            CollectionType type, BeanDescription beanDesc, boolean staticTyping,\n            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) \n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = null;\n        // Module-provided custom collection serializers?\n        for (Serializers serializers : customSerializers()) {\n            ser = serializers.findCollectionSerializer(config,\n                    type, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                break;\n            }\n        }\n\n        if (ser == null) {\n            // We may also want to use serialize Collections \"as beans\", if (and only if)\n            // this is specified with `@JsonFormat(shape=Object)`\n            JsonFormat.Value format = beanDesc.findExpectedFormat(null);\n            if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {\n                return null;\n            }\n            Class<?> raw = type.getRawClass();\n            if (EnumSet.class.isAssignableFrom(raw)) {\n                // this may or may not be available (Class doesn't; type of field/method does)\n                JavaType enumType = type.getContentType();\n                // and even if nominally there is something, only use if it really is enum\n                if (!enumType.isEnumType()) {\n                    enumType = null;\n                }\n                ser = buildEnumSetSerializer(enumType);\n            } else {\n                Class<?> elementRaw = type.getContentType().getRawClass();\n                if (isIndexedList(raw)) {\n                    if (elementRaw == String.class) {\n                        // [JACKSON-829] Must NOT use if we have custom serializer\n                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                            ser = IndexedStringListSerializer.instance;\n                        }\n                    } else {\n                        ser = buildIndexedListSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                    }\n                } else if (elementRaw == String.class) {\n                    // [JACKSON-829] Must NOT use if we have custom serializer\n                    if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                        ser = StringCollectionSerializer.instance;\n                    }\n                if (ser == null && !(elementValueSerializer instanceof IndexedListSerializer))\n                if (ser == null) {\n                    ser = buildCollectionSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                }\n            }\n        }\n        // [Issue#120]: Allow post-processing\n        if (_factoryConfig.hasSerializerModifiers()) {\n            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);\n            }\n        }\n        return ser;\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/runs/batch02__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/rejected/rej05.log",
+  "mutant_path": "harness/runs/batch02__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/rejected/rej05.mutant.txt",
+  "original_path": "harness/runs/batch02__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/rejected/original.txt"
+}

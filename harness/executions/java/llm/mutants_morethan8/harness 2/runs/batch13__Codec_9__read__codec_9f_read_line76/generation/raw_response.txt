@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Removes null check for byte array, violating input validation",
+      "line": 2,
+      "precode": "if (b == null)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 2,
+      "reasoning": "Disables negative offset/len check, violating input validation",
+      "line": 4,
+      "precode": "offset < 0 || len < 0",
+      "aftercode": "offset >= 0 || len >= 0"
+    },
+    {
+      "id": 3,
+      "reasoning": "Weakens array boundary check, violating input validation",
+      "line": 6,
+      "precode": "offset > b.length || offset + len > b.length",
+      "aftercode": "offset >= b.length || offset + len >= b.length"
+    },
+    {
+      "id": 4,
+      "reasoning": "Returns incorrect value for zero-length read",
+      "line": 8,
+      "precode": "return 0",
+      "aftercode": "return 1"
+    },
+    {
+      "id": 5,
+      "reasoning": "Inverts loop condition, violating read retry logic",
+      "line": 28,
+      "precode": "while (readLen == 0)",
+      "aftercode": "while (readLen != 0)"
+    },
+    {
+      "id": 6,
+      "reasoning": "Modifies buffer size for encoding, violating performance contract",
+      "line": 30,
+      "precode": "byte[] buf = new byte[doEncode ? 4096 : 8192]",
+      "aftercode": "byte[] buf = new byte[doEncode ? 1024 : 2048]"
+    },
+    {
+      "id": 7,
+      "reasoning": "Adds incorrect parameter to read call, violating API contract",
+      "line": 31,
+      "precode": "int c = in.read(buf)",
+      "aftercode": "int c = in.read(buf, 0, 1024)"
+    },
+    {
+      "id": 8,
+      "reasoning": "Incorrectly uses decode instead of encode when required",
+      "line": 34,
+      "precode": "baseNCodec.encode(buf, 0, c)",
+      "aftercode": "baseNCodec.decode(buf, 0, c)"
+    },
+    {
+      "id": 9,
+      "reasoning": "Incorrectly uses encode instead of decode when required",
+      "line": 35,
+      "precode": "baseNCodec.decode(buf, 0, c)",
+      "aftercode": "baseNCodec.encode(buf, 0, c)"
+    },
+    {
+      "id": 10,
+      "reasoning": "Passes incorrect parameters to readResults, violating contract",
+      "line": 38,
+      "precode": "readLen = baseNCodec.readResults(b, offset, len)",
+      "aftercode": "readLen = baseNCodec.readResults(b, offset, 0)"
+    },
+    {
+      "id": 11,
+      "reasoning": "Returns incorrect EOF value, violating contract",
+      "line": 40,
+      "precode": "return readLen",
+      "aftercode": "return -1"
+    },
+    {
+      "id": 12,
+      "reasoning": "Skips reading data, violating core functionality",
+      "line": 38,
+      "precode": "readLen = baseNCodec.readResults(b, offset, len)",
+      "aftercode": "readLen = 0"
+    },
+    {
+      "id": 13,
+      "reasoning": "Bypasses data availability check, violating flow control",
+      "line": 29,
+      "precode": "if (!baseNCodec.hasData())",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 14,
+      "reasoning": "Modifies buffer size for decoding, violating performance contract",
+      "line": 30,
+      "precode": "byte[] buf = new byte[doEncode ? 4096 : 8192]",
+      "aftercode": "byte[] buf = new byte[doEncode ? 2048 : 4096]"
+    },
+    {
+      "id": 15,
+      "reasoning": "Uses incorrect length parameter in readResults, violating contract",
+      "line": 38,
+      "precode": "readLen = baseNCodec.readResults(b, offset, len)",
+      "aftercode": "readLen = baseNCodec.readResults(b, offset, offset + len)"
+    },
+    {
+      "id": 16,
+      "reasoning": "Ignores readResults result, violating core functionality",
+      "line": 38,
+      "precode": "readLen = baseNCodec.readResults(b, offset, len)",
+      "aftercode": "baseNCodec.readResults(b, offset, len); readLen = 0"
+    }
+  ]
+}

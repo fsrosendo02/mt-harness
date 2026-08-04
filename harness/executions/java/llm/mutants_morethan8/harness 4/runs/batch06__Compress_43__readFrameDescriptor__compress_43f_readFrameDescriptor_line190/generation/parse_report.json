@@ -1,0 +1,267 @@
+{
+  "requested_count": 40,
+  "accepted_count": 20,
+  "rejected_count": 20,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the property of correctly updating content hash.",
+        "line": 36,
+        "precode": "contentHash.update(headerHash);",
+        "aftercode": "// Comment out or remove the line that updates the content hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        // Comment out or remove the line that updates the content hash {\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly resetting content hash.",
+        "line": 40,
+        "precode": "if (headerHash != expectedHash) {",
+        "aftercode": "// Comment out or remove the line that checks the header hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        // Comment out or remove the line that checks the header hash {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 37,
+        "precode": "if (headerHash == -1) {",
+        "aftercode": "if (headerHash != -1) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash != -1) {// partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly updating content size.",
+        "line": 33,
+        "precode": "contentHash.update(contentSize, 0, contentSize.length);",
+        "aftercode": "// Comment out or remove the line that updates the content hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            // Comment out or remove the line that updates the content hash\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 5,
+        "precode": "if (flags == -1) {",
+        "aftercode": "if (flags != -1) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags != -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly reading content size.",
+        "line": 27,
+        "precode": "if (expectContentSize) {",
+        "aftercode": "if (!expectContentSize) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (!expectContentSize) {// for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 36,
+        "precode": "if (headerHash == -1) {",
+        "aftercode": "if (headerHash != -1) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash != -1) {// partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly handling content size expectation.",
+        "line": 30,
+        "precode": "if (8 != skipped) {",
+        "aftercode": "if (8 == skipped) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 == skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly updating content hash.",
+        "line": 33,
+        "precode": "contentHash.update(contentSize, 0, contentSize.length);",
+        "aftercode": "// Comment out or remove the line that updates the content hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            // Comment out or remove the line that updates the content hash\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 24,
+        "precode": "throw new IOException(\"Premature end of stream while reading frame BD byte\");",
+        "aftercode": "throw new IOException(\"Stream is not at an end: \" + (flags >> 6));",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Stream is not at an end: \" + (flags >> 6));\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly handling content size expectation.",
+        "line": 31,
+        "precode": "throw new IOException(\"Premature end of stream while reading content size\");",
+        "aftercode": "throw new IOException(\"Content size is already read: \" + (flags >> 6));",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Content size is already read: \" + (flags >> 6));\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly updating content hash.",
+        "line": 39,
+        "precode": "contentHash.update(headerHash);",
+        "aftercode": "// Comment out or remove the line that updates the content hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        // Comment out or remove the line that updates the content hash\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 5,
+        "precode": "if (flags == -1) {",
+        "aftercode": "if (flags != -1) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags != -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of correctly handling block dependency expectations.",
+        "line": 13,
+        "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];",
+        "aftercode": "// Do not initialize blockDependencyBuffer",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                // Do not initialize blockDependencyBuffer\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly reading content size.",
+        "line": 27,
+        "precode": "if (expectContentSize) {",
+        "aftercode": "if (!expectContentSize) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (!expectContentSize) {// for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly updating content hash.",
+        "line": 39,
+        "precode": "contentHash.update(headerHash);",
+        "aftercode": "// Comment out or remove the line that updates the content hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        // Comment out or remove the line that updates the content hash\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 36,
+        "precode": "if (headerHash == -1) {",
+        "aftercode": "if (headerHash != -1) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash != -1) {// partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of correctly handling content size expectation.",
+        "line": 30,
+        "precode": "if (8 != skipped) {",
+        "aftercode": "if (8 == skipped) {",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 == skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of correctly updating content hash.",
+        "line": 33,
+        "precode": "contentHash.update(contentSize, 0, contentSize.length);",
+        "aftercode": "// Comment out or remove the line that updates the content hash",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            // Comment out or remove the line that updates the content hash\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly checking for premature end of stream.",
+        "line": 24,
+        "precode": "throw new IOException(\"Premature end of stream while reading frame BD byte\");",
+        "aftercode": "throw new IOException(\"Stream is not at an end: \" + (flags >> 6));",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Stream is not at an end: \" + (flags >> 6));\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        contentHash.reset();\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

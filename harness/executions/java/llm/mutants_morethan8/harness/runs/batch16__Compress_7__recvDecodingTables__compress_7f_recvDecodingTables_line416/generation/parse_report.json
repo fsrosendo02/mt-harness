@@ -1,0 +1,177 @@
+{
+  "requested_count": 24,
+  "accepted_count": 10,
+  "rejected_count": 14,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violates the property of input validation.",
+        "line": 45,
+        "precode": "while(bsGetBit()){",
+        "aftercode": "while(bsGetBit() && bsR(3) != 0){",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 45,
+        "precode": "while(bsGetBit()){",
+        "aftercode": "for(int i=0;i<16;i++){if(bsR(3)==i){inUse[i]=true;}else{inUse[i]=false;}}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of data consistency.",
+        "line": 64,
+        "precode": "final char[][] len = dataShadow.temp_charArray2d;",
+        "aftercode": "final char[][] len = new char[16][16];",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = new char[16][16];\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of data consistency.",
+        "line": 78,
+        "precode": "final char[][] len = dataShadow.temp_charArray2d;",
+        "aftercode": "final char[][] len = new char[16][16];",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = new char[16][16];\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(1);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(3);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(5);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(15);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(27);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(32);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(39);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(42);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(47);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of resource consumption.",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "for (int i=0;i<nGroups*alphaSize;i++){bsR(53);}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

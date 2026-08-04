@@ -1,0 +1,267 @@
+{
+  "requested_count": 24,
+  "accepted_count": 2,
+  "rejected_count": 22,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates boundary condition for handling end-of-line",
+        "line": 31,
+        "precode": "if (readEndOfLine(c)) { token.type = EORECORD; return token; }",
+        "aftercode": "if (readEndOfLine(c)) { token.type = TOKEN; return token; }",
+        "candidate_code": "    private Token parseEncapsulatedToken(final Token token) throws IOException {\n        // save current line number in case needed for IOE\n        final long startLineNumber = getCurrentLineNumber();\n        int c;\n        while (true) {\n            c = in.read();\n\n            if (isEscape(c)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) c).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n            } else if (isQuoteChar(c)) {\n                if (isQuoteChar(in.lookAhead())) {\n                    // double or escaped encapsulator -> add single encapsulator to token\n                    c = in.read();\n                    token.content.append((char) c);\n                } else {\n                    // token finish mark (encapsulator) reached: ignore whitespace till delimiter\n                    while (true) {\n                        c = in.read();\n                        if (isDelimiter(c)) {\n                            token.type = TOKEN;\n                            return token;\n                        } else if (isEndOfFile(c)) {\n                            token.type = EOF;\n                            token.isReady = true; // There is data at EOF\n                            return token;\n                        if (readEndOfLine(c)) { token.type = TOKEN; return token; } {\n                            token.type = EORECORD;\n                            return token;\n                        } else if (!isWhitespace(c)) {\n                            // error invalid char between token and next delimiter\n                            throw new IOException(\"(line \" + getCurrentLineNumber() +\n                                    \") invalid char between encapsulated token and delimiter\");\n                        }\n                    }\n                }\n            } else if (isEndOfFile(c)) {\n                // error condition (end of file before end of token)\n                throw new IOException(\"(startline \" + startLineNumber +\n                        \") EOF reached before encapsulated token finished\");\n            } else {\n                // consume character\n                token.content.append((char) c);\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates boundary condition for handling whitespace characters after the token finish mark",
+        "line": 23,
+        "precode": "while (true) { c = in.read(); if (isDelimiter(c)) { token.type = TOKEN; return token; } else if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; } else if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } }",
+        "aftercode": "while (true) { c = in.read(); if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates boundary condition for handling escaped characters",
+        "line": 9,
+        "precode": "final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates boundary condition for handling double quotes",
+        "line": 17,
+        "precode": "if (isQuoteChar(in.lookAhead())) { // double or escaped encapsulator -> add single encapsulator to token c = in.read(); token.content.append((char) c); } else { // token finish mark (encapsulator) reached: ignore whitespace till delimiter while (true) { c = in.read(); if (isDelimiter(c)) { token.type = TOKEN; return token; } else if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; } else if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } }",
+        "aftercode": "if (isQuoteChar(in.lookAhead())) { // double or escaped encapsulator -> add single encapsulator to token c = in.read(); token.content.append((char) c); } else { // token finish mark (encapsulator) reached: ignore whitespace till delimiter while (true) { c = in.read(); if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); } }"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates boundary condition for handling escaped quotes",
+        "line": 16,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates boundary condition for handling end-of-line",
+        "line": 24,
+        "precode": "if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; }",
+        "aftercode": "if (isEndOfFile(c) || readEndOfLine(c)) { token.type = TOKEN; return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates boundary condition for handling whitespace characters",
+        "line": 26,
+        "precode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); }",
+        "aftercode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); if (isEndOfFile(c)) { token.type = EOF; return token; } }"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates boundary condition for handling escaped characters",
+        "line": 8,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates boundary condition for handling end-of-line",
+        "line": 24,
+        "precode": "if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; }",
+        "aftercode": "if (isEndOfFile(c) || readEndOfLine(c)) { token.type = TOKEN; return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates boundary condition for handling escaped quotes",
+        "line": 16,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates boundary condition for handling whitespace characters",
+        "line": 26,
+        "precode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); }",
+        "aftercode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); if (isEndOfFile(c)) { token.type = EOF; return token; } }"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates boundary condition for handling escaped characters",
+        "line": 8,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates boundary condition for handling end-of-line",
+        "line": 24,
+        "precode": "if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; }",
+        "aftercode": "if (isEndOfFile(c) || readEndOfLine(c)) { token.type = TOKEN; return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates boundary condition for handling escaped quotes",
+        "line": 16,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates boundary condition for handling whitespace characters",
+        "line": 26,
+        "precode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); }",
+        "aftercode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); if (isEndOfFile(c)) { token.type = EOF; return token; } }"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates boundary condition for handling escaped characters",
+        "line": 8,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates boundary condition for handling end-of-line",
+        "line": 24,
+        "precode": "if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; }",
+        "aftercode": "if (isEndOfFile(c) || readEndOfLine(c)) { token.type = TOKEN; return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates boundary condition for handling escaped quotes",
+        "line": 16,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates boundary condition for handling whitespace characters",
+        "line": 26,
+        "precode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); }",
+        "aftercode": "if (!isWhitespace(c)) { // error invalid char between token and next delimiter throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid char between encapsulated token and delimiter\"); } else { token.content.append((char) c); if (isEndOfFile(c)) { token.type = EOF; return token; } }"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates boundary condition for handling escaped characters",
+        "line": 8,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates boundary condition for handling end-of-line",
+        "line": 24,
+        "precode": "if (isEndOfFile(c)) { token.type = EOF; token.isReady = true; return token; } else if (readEndOfLine(c)) { token.type = EORECORD; return token; }",
+        "aftercode": "if (isEndOfFile(c) || readEndOfLine(c)) { token.type = TOKEN; return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates boundary condition for handling escaped quotes",
+        "line": 16,
+        "precode": "if (isEscape(c)) { final int unescaped = readEscape(); if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape token.content.append((char) c).append((char) in.getLastChar()); } else { token.content.append((char) unescaped); }",
+        "aftercode": "if (isEscape(c)) { if (readEscape() == Constants.END_OF_STREAM) { // unexpected char after escape throw new IOException(\"(line \" + getCurrentLineNumber() + \") invalid escaped character\"); } else { token.content.append((char) unescaped); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

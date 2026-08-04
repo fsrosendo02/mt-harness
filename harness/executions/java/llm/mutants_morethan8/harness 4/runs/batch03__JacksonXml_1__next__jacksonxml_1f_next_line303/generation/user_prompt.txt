@@ -1,0 +1,76 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private final int _next() throws XMLStreamException
+ 2:     {
+ 3:         switch (_currentState) {
+ 4:         case XML_ATTRIBUTE_VALUE:
+ 5:             ++_nextAttributeIndex;
+ 6:             // fall through
+ 7:         case XML_START_ELEMENT: // attributes to return?
+ 8:             if (_nextAttributeIndex < _attributeCount) {
+ 9:                 _localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);
+10:                 _namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);
+11:                 _textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);
+12:                 return (_currentState = XML_ATTRIBUTE_NAME);
+13:             }
+14:             // otherwise need to find START/END_ELEMENT or text
+15:             String text = _collectUntilTag();
+16:             // If it's START_ELEMENT, ignore any text
+17:             if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {
+18:                 return _initStartElement();
+19:             }
+20:             // For END_ELEMENT we will return text, if any
+21:             if (text != null) {
+22:                 _textValue = text;
+23:                 return (_currentState = XML_TEXT);
+24:             }
+25:             return _handleEndElement();
+26:         case XML_ATTRIBUTE_NAME:
+27:             // if we just returned name, will need to just send value next
+28:             return (_currentState = XML_ATTRIBUTE_VALUE);
+29:         case XML_TEXT:
+30:             // text is always followed by END_ELEMENT
+31:             return _handleEndElement();
+32:         case XML_END:
+33:             return XML_END;
+34: //            throw new IllegalStateException("No more XML tokens available (end of input)");
+35:         }
+36: 
+37:         // Ok: must be END_ELEMENT; see what tag we get (or end)
+38:         switch (_skipUntilTag()) {
+39:         case XMLStreamConstants.END_DOCUMENT:
+40:             return (_currentState = XML_END);
+41:         case XMLStreamConstants.END_ELEMENT:
+42:             return _handleEndElement();
+43:         }
+44:         // START_ELEMENT...
+45:         return _initStartElement();
+46:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

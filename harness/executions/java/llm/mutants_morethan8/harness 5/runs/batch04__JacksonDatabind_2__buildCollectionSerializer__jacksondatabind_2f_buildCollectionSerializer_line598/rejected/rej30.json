@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonDatabind_2",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksondatabind_2f_buildCollectionSerializer__line598",
+  "file_path": "src/main/java/com/fasterxml/jackson/databind/ser/BasicSerializerFactory.java",
+  "function_name": "buildCollectionSerializer",
+  "start_line": 598,
+  "end_line": 660,
+  "mutant_id": "rej30",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 30,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch04__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/generation/raw_response.txt",
+  "payload": {
+    "id": 30,
+    "reasoning": "Fails to check custom serializer for collections",
+    "line": 46,
+    "precode": "if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {",
+    "aftercode": "if (true) {",
+    "candidate_code": "    protected JsonSerializer<?> buildCollectionSerializer(SerializationConfig config,\n            CollectionType type, BeanDescription beanDesc, boolean staticTyping,\n            TypeSerializer elementTypeSerializer, JsonSerializer<Object> elementValueSerializer) \n        throws JsonMappingException\n    {\n        JsonSerializer<?> ser = null;\n        // Module-provided custom collection serializers?\n        for (Serializers serializers : customSerializers()) {\n            ser = serializers.findCollectionSerializer(config,\n                    type, beanDesc, elementTypeSerializer, elementValueSerializer);\n            if (ser != null) {\n                break;\n            }\n        }\n\n        if (ser == null) {\n            // We may also want to use serialize Collections \"as beans\", if (and only if)\n            // this is specified with `@JsonFormat(shape=Object)`\n            JsonFormat.Value format = beanDesc.findExpectedFormat(null);\n            if (format != null && format.getShape() == JsonFormat.Shape.OBJECT) {\n                return null;\n            }\n            Class<?> raw = type.getRawClass();\n            if (EnumSet.class.isAssignableFrom(raw)) {\n                // this may or may not be available (Class doesn't; type of field/method does)\n                JavaType enumType = type.getContentType();\n                // and even if nominally there is something, only use if it really is enum\n                if (!enumType.isEnumType()) {\n                    enumType = null;\n                }\n                ser = buildEnumSetSerializer(enumType);\n            } else {\n                Class<?> elementRaw = type.getContentType().getRawClass();\n                if (isIndexedList(raw)) {\n                    if (elementRaw == String.class) {\n                        // [JACKSON-829] Must NOT use if we have custom serializer\n                        if (elementValueSerializer == null || ClassUtil.isJacksonStdImpl(elementValueSerializer)) {\n                            ser = IndexedStringListSerializer.instance;\n                        }\n                    } else {\n                        ser = buildIndexedListSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                    }\n                } else if (elementRaw == String.class) {\n                    // [JACKSON-829] Must NOT use if we have custom serializer\n                    if (true) {\n                        ser = StringCollectionSerializer.instance;\n                    }\n                }\n                if (ser == null) {\n                    ser = buildCollectionSerializer(type.getContentType(), staticTyping,\n                            elementTypeSerializer, elementValueSerializer);\n                }\n            }\n        }\n        // [Issue#120]: Allow post-processing\n        if (_factoryConfig.hasSerializerModifiers()) {\n            for (BeanSerializerModifier mod : _factoryConfig.serializerModifiers()) {\n                ser = mod.modifyCollectionSerializer(config, type, beanDesc, ser);\n            }\n        }\n        return ser;\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch04__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/rejected/rej30.log",
+  "mutant_path": "harness/runs/batch04__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/rejected/rej30.mutant.txt",
+  "original_path": "harness/runs/batch04__JacksonDatabind_2__buildCollectionSerializer__jacksondatabind_2f_buildCollectionSerializer_line598/rejected/original.txt"
+}

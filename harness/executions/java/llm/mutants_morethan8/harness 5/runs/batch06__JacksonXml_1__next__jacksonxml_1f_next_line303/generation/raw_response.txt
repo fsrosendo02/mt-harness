@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The `_nextAttributeIndex` counter is not properly incremented when switching from `XML_ATTRIBUTE_VALUE` to `XML_START_ELEMENT`.",
+      "line": 5,
+      "precode": "case XML_START_ELEMENT: // attributes to return?",
+      "aftercode": "case XML_START_ELEMENT: ++_nextAttributeIndex; // attributes to return?"
+    },
+    {
+      "id": 2,
+      "reasoning": "The `_attributeCount` check is not sufficient to ensure that all attributes are processed.",
+      "line": 8,
+      "precode": "if (_nextAttributeIndex < _attributeCount) {",
+      "aftercode": "if (_nextAttributeIndex <= _attributeCount) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "The `fall through` statement is not necessary and can cause incorrect behavior.",
+      "line": 6,
+      "precode": "// fall through",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "The `_xmlReader.getAttributeLocalName(_nextAttributeIndex)` method call is not checked for null.",
+      "line": 9,
+      "precode": "_localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex);",
+      "aftercode": "_localName = _xmlReader.getAttributeLocalName(_nextAttributeIndex) != null ? _xmlReader.getAttributeLocalName(_nextAttributeIndex) : \"\"; "
+    },
+    {
+      "id": 5,
+      "reasoning": "The `_xmlReader.getAttributeNamespace(_nextAttributeIndex)` method call is not checked for null.",
+      "line": 10,
+      "precode": "_namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex);",
+      "aftercode": "_namespaceURI = _xmlReader.getAttributeNamespace(_nextAttributeIndex) != null ? _xmlReader.getAttributeNamespace(_nextAttributeIndex) : \"\"; "
+    },
+    {
+      "id": 6,
+      "reasoning": "The `_xmlReader.getAttributeValue(_nextAttributeIndex)` method call is not checked for null.",
+      "line": 11,
+      "precode": "_textValue = _xmlReader.getAttributeValue(_nextAttributeIndex);",
+      "aftercode": "_textValue = _xmlReader.getAttributeValue(_nextAttributeIndex) != null ? _xmlReader.getAttributeValue(_nextAttributeIndex) : \"\"; "
+    },
+    {
+      "id": 7,
+      "reasoning": "The `switch` statement does not handle the case where `_currentState` is `XML_TEXT`.",
+      "line": 27,
+      "precode": "case XML_ATTRIBUTE_NAME:",
+      "aftercode": "case XML_TEXT: // if we just returned text, will need to just send name next return (_currentState = XML_ATTRIBUTE_NAME);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The `switch` statement does not handle the case where `_xmlReader.getEventType()` returns a value other than `XMLStreamReader.START_ELEMENT`.",
+      "line": 17,
+      "precode": "if (_xmlReader.getEventType() == XMLStreamReader.START_ELEMENT) {",
+      "aftercode": "if (_xmlReader.getEventType() != XMLStreamReader.END_ELEMENT && _xmlReader.getEventType() != XMLStreamReader.START_ELEMENT) {"
+    },
+    {
+      "id": 9,
+      "reasoning": "The `_collectUntilTag()` method call is not checked for null.",
+      "line": 15,
+      "precode": "String text = _collectUntilTag();",
+      "aftercode": "String text = _collectUntilTag() != null ? _collectUntilTag() : \"\"; "
+    },
+    {
+      "id": 10,
+      "reasoning": "The `if (_xmlReader.getEventType() == XMLStreamReader.END_ELEMENT)` statement is not necessary.",
+      "line": 21,
+      "precode": "if (_xmlReader.getEventType() == XMLStreamReader.END_ELEMENT) {",
+      "aftercode": ""
+    },
+    {
+      "id": 11,
+      "reasoning": "The `return _initStartElement()` statement in the case of `XML_START_ELEMENT` is not necessary.",
+      "line": 18,
+      "precode": "return _initStartElement();",
+      "aftercode": ""
+    },
+    {
+      "id": 12,
+      "reasoning": "The `_handleEndElement()` method call is not checked for null.",
+      "line": 25,
+      "precode": "return _handleEndElement();",
+      "aftercode": "return _handleEndElement() != null ? _handleEndElement() : \"\"; "
+    },
+    {
+      "id": 13,
+      "reasoning": "The `throw new IllegalStateException(\"No more XML tokens available (end of input)\");` statement is not necessary.",
+      "line": 34,
+      "precode": "// throw new IllegalStateException(\"No more XML tokens available (end of input)\";",
+      "aftercode": ""
+    },
+    {
+      "id": 14,
+      "reasoning": "The `switch (_skipUntilTag())` statement does not handle the case where `_currentState` is `XML_END`.",
+      "line": 38,
+      "precode": "switch (_skipUntilTag()) {",
+      "aftercode": "case XMLStreamConstants.END_DOCUMENT: return (\'currentState = XML_END);"
+    },
+    {
+      "id": 15,
+      "reasoning": "The `return _initStartElement()` statement in the case of `_skipUntilTag()` returning `XMLStreamConstants.START_ELEMENT` is not necessary.",
+      "line": 45,
+      "precode": "return _initStartElement();",
+      "aftercode": ""
+    },
+    {
+      "id": 16,
+      "reasoning": "The `_currentState = XML_END` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is not necessary.",
+      "line": 40,
+      "precode": "return (_currentState = XML_END);",
+      "aftercode": ""
+    },
+    {
+      "id": 17,
+      "reasoning": "The `_currentState = XML_TEXT` assignment in the case of `_handleEndElement()` returning null is not necessary.",
+      "line": 23,
+      "precode": "return (_currentState = XML_TEXT);",
+      "aftercode": ""
+    },
+    {
+      "id": 18,
+      "reasoning": "The `XML_END` return value in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is not necessary.",
+      "line": 40,
+      "precode": "return XML_END;",
+      "aftercode": ""
+    },
+    {
+      "id": 19,
+      "reasoning": "The `XML_TEXT` return value in the case of `_handleEndElement()` returning null is not necessary.",
+      "line": 23,
+      "precode": "return (\'textValue = text);",
+      "aftercode": ""
+    },
+    {
+      "id": 20,
+      "reasoning": "The `XML_ATTRIBUTE_VALUE` return value in the case of `_currentState` being `XML_ATTRIBUTE_NAME` is not necessary.",
+      "line": 12,
+      "precode": "return (_currentState = XML_ATTRIBUTE_VALUE);",
+      "aftercode": ""
+    },
+    {
+      "id": 21,
+      "reasoning": "The `_textValue` assignment in the case of `_handleEndElement()` returning null is not necessary.",
+      "line": 22,
+      "precode": "_textValue = text;",
+      "aftercode": ""
+    },
+    {
+      "id": 22,
+      "reasoning": "The `return _initStartElement();` statement in the case of `_skipUntilTag()` returning `XMLStreamConstants.START_ELEMENT` is not necessary.",
+      "line": 45,
+      "precode": "return _initStartElement();",
+      "aftercode": ""
+    },
+    {
+      "id": 23,
+      "reasoning": "The `_currentState = XML_START_ELEMENT` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.START_ELEMENT` is not necessary.",
+      "line": 45,
+      "precode": "return (\'currentState = XML_START_ELEMENT);",
+      "aftercode": ""
+    },
+    {
+      "id": 24,
+      "reasoning": "The `XML_ATTRIBUTE_NAME` return value in the case of `_currentState` being `XML_ATTRIBUTE_VALUE` is not necessary.",
+      "line": 28,
+      "precode": "return (_currentState = XML_ATTRIBUTE_NAME);",
+      "aftercode": ""
+    },
+    {
+      "id": 25,
+      "reasoning": "The `_nextAttributeIndex` counter is incremented unnecessarily when switching from `XML_START_ELEMENT` to `XML_ATTRIBUTE_VALUE`.",
+      "line": 27,
+      "precode": "case XML_ATTRIBUTE_NAME:",
+      "aftercode": "case XML_ATTRIBUTE_NAME: ++_nextAttributeIndex;"
+    },
+    {
+      "id": 26,
+      "reasoning": "The `_currentState = XML_END` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is unnecessary and can cause incorrect behavior.",
+      "line": 40,
+      "precode": "return (_currentState = XML_END);",
+      "aftercode": ""
+    },
+    {
+      "id": 27,
+      "reasoning": "The `_textValue` assignment in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 22,
+      "precode": "_textValue = text;",
+      "aftercode": ""
+    },
+    {
+      "id": 28,
+      "reasoning": "The `XML_TEXT` return value in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 23,
+      "precode": "return (\'textValue = text);",
+      "aftercode": ""
+    },
+    {
+      "id": 29,
+      "reasoning": "The `XML_ATTRIBUTE_VALUE` return value in the case of `_currentState` being `XML_ATTRIBUTE_NAME` is unnecessary and can cause incorrect behavior.",
+      "line": 12,
+      "precode": "return (_currentState = XML_ATTRIBUTE_VALUE);",
+      "aftercode": ""
+    },
+    {
+      "id": 30,
+      "reasoning": "The `_nextAttributeIndex` counter is not decremented when switching from `XML_ATTRIBUTE_NAME` to `XML_START_ELEMENT`.",
+      "line": 27,
+      "precode": "case XML_ATTRIBUTE_NAME:",
+      "aftercode": "case XML_ATTRIBUTE_NAME: --_nextAttributeIndex;"
+    },
+    {
+      "id": 31,
+      "reasoning": "The `_currentState = XML_END` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is unnecessary and can cause incorrect behavior.",
+      "line": 40,
+      "precode": "return (_currentState = XML_END);",
+      "aftercode": ""
+    },
+    {
+      "id": 32,
+      "reasoning": "The `_textValue` assignment in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 22,
+      "precode": "_textValue = text;",
+      "aftercode": ""
+    },
+    {
+      "id": 33,
+      "reasoning": "The `XML_TEXT` return value in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 23,
+      "precode": "return (\'textValue = text);",
+      "aftercode": ""
+    },
+    {
+      "id": 34,
+      "reasoning": "The `XML_ATTRIBUTE_VALUE` return value in the case of `_currentState` being `XML_ATTRIBUTE_NAME` is unnecessary and can cause incorrect behavior.",
+      "line": 12,
+      "precode": "return (_currentState = XML_ATTRIBUTE_VALUE);",
+      "aftercode": ""
+    },
+    {
+      "id": 35,
+      "reasoning": "The `_nextAttributeIndex` counter is not incremented when switching from `XML_ATTRIBUTE_NAME` to `XML_START_ELEMENT`.",
+      "line": 27,
+      "precode": "case XML_ATTRIBUTE_NAME:",
+      "aftercode": "case XML_ATTRIBUTE_NAME: ++_nextAttributeIndex;"
+    },
+    {
+      "id": 36,
+      "reasoning": "The `_currentState = XML_END` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is unnecessary and can cause incorrect behavior.",
+      "line": 40,
+      "precode": "return (_currentState = XML_END);",
+      "aftercode": ""
+    },
+    {
+      "id": 37,
+      "reasoning": "The `_textValue` assignment in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 22,
+      "precode": "_textValue = text;",
+      "aftercode": ""
+    },
+    {
+      "id": 38,
+      "reasoning": "The `XML_TEXT` return value in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 23,
+      "precode": "return (\'textValue = text);",
+      "aftercode": ""
+    },
+    {
+      "id": 39,
+      "reasoning": "The `XML_ATTRIBUTE_VALUE` return value in the case of `_currentState` being `XML_ATTRIBUTE_NAME` is unnecessary and can cause incorrect behavior.",
+      "line": 12,
+      "precode": "return (_currentState = XML_ATTRIBUTE_VALUE);",
+      "aftercode": ""
+    },
+    {
+      "id": 40,
+      "reasoning": "The `_nextAttributeIndex` counter is not decremented when switching from `XML_START_ELEMENT` to `XML_ATTRIBUTE_VALUE`.",
+      "line": 27,
+      "precode": "case XML_ATTRIBUTE_NAME:",
+      "aftercode": "case XML_ATTRIBUTE_NAME: --_nextAttributeIndex;"
+    },
+    {
+      "id": 41,
+      "reasoning": "The `_currentState = XML_END` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is unnecessary and can cause incorrect behavior.",
+      "line": 40,
+      "precode": "return (_currentState = XML_END);",
+      "aftercode": ""
+    },
+    {
+      "id": 42,
+      "reasoning": "The `_textValue` assignment in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 22,
+      "precode": "_textValue = text;",
+      "aftercode": ""
+    },
+    {
+      "id": 43,
+      "reasoning": "The `XML_TEXT` return value in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 23,
+      "precode": "return (\'textValue = text);",
+      "aftercode": ""
+    },
+    {
+      "id": 44,
+      "reasoning": "The `XML_ATTRIBUTE_VALUE` return value in the case of `_currentState` being `XML_ATTRIBUTE_NAME` is unnecessary and can cause incorrect behavior.",
+      "line": 12,
+      "precode": "return (_currentState = XML_ATTRIBUTE_VALUE);",
+      "aftercode": ""
+    },
+    {
+      "id": 45,
+      "reasoning": "The `_nextAttributeIndex` counter is not incremented when switching from `XML_START_ELEMENT` to `XML_ATTRIBUTE_VALUE`.",
+      "line": 27,
+      "precode": "case XML_ATTRIBUTE_NAME:",
+      "aftercode": "case XML_ATTRIBUTE_NAME: ++_nextAttributeIndex;"
+    },
+    {
+      "id": 46,
+      "reasoning": "The `_currentState = XML_END` assignment in the case of `_skipUntilTag()` returning `XMLStreamConstants.END_DOCUMENT` is unnecessary and can cause incorrect behavior.",
+      "line": 40,
+      "precode": "return (_currentState = XML_END);",
+      "aftercode": ""
+    },
+    {
+      "id": 47,
+      "reasoning": "The `_textValue` assignment in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 22,
+      "precode": "_textValue = text;",
+      "aftercode": ""
+    },
+    {
+      "id": 48,
+      "reasoning": "The `XML_TEXT` return value in the case of `_handleEndElement()` returning null is unnecessary and can cause incorrect behavior.",
+      "line": 23,
+      "precode": "return (\'textValue = text);",
+      "aftercode": ""
+    }
+  ]
+}

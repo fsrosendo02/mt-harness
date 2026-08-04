@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_7",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_7f_recvDecodingTables__line416",
+  "file_path": "src/main/java/org/apache/commons/compress/compressors/bzip2/BZip2CompressorInputStream.java",
+  "function_name": "recvDecodingTables",
+  "start_line": 416,
+  "end_line": 495,
+  "mutant_id": "rej32",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 32,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch05__Compress_7__recvDecodingTables__compress_7f_recvDecodingTables_line416/generation/raw_response.txt",
+  "payload": {
+    "id": 32,
+    "reasoning": "The selector array is filled with values that are copied from the pos array, but they should be filled with random values.",
+    "line": 53,
+    "precode": "selector[i] = tmp;",
+    "aftercode": "selector[i] = (byte) (int) (Math.random() * 256)",
+    "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = (byte) (int) (Math.random() * 256)\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+    "resolution_reason": "exact_search_match"
+  },
+  "log_path": "harness/runs/batch05__Compress_7__recvDecodingTables__compress_7f_recvDecodingTables_line416/rejected/rej32.log",
+  "mutant_path": "harness/runs/batch05__Compress_7__recvDecodingTables__compress_7f_recvDecodingTables_line416/rejected/rej32.mutant.txt",
+  "original_path": "harness/runs/batch05__Compress_7__recvDecodingTables__compress_7f_recvDecodingTables_line416/rejected/original.txt"
+}

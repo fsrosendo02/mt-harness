@@ -1,0 +1,72 @@
+{
+  "requested_count": 16,
+  "accepted_count": 10,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 1,
+        "reasoning": "Does not check if the byte array is null before throwing NullPointerException.",
+        "line": 2,
+        "precode": "if (b == null) {",
+        "aftercode": "// if (b == null) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        // if (b == null) { {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 7,
+        "reasoning": "Removes the while loop that ensures non-zero read length.",
+        "line": 28,
+        "precode": "while (readLen == 0) {",
+        "aftercode": "// while (readLen == 0) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            // while (readLen == 0) { {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 8,
+        "reasoning": "Does not check if the input stream has data before attempting to read from it.",
+        "line": 29,
+        "precode": "if (!baseNCodec.hasData()) {",
+        "aftercode": "// if (!baseNCodec.hasData()) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                // if (!baseNCodec.hasData()) { {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 9,
+        "reasoning": "Does not check if the input stream returns EOF before calling encode/decode.",
+        "line": 31,
+        "precode": "int c = in.read(buf);",
+        "aftercode": "int c = -1;",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = -1;\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 10,
+        "reasoning": "Does not call encode or decode based on the doEncode flag, causing incorrect encoding/decoding.",
+        "line": 32,
+        "precode": "if (doEncode) {",
+        "aftercode": "// if (doEncode) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    // if (doEncode) { {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

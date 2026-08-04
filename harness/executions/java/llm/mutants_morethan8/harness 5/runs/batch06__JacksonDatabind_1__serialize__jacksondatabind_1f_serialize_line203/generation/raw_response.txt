@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Ptr can be out of bounds, causing an infinite loop.",
+      "line": 8,
+      "precode": "+= ptr >= Segment.TOKENS_PER_SEGMENT",
+      "aftercode": "+= ptr > Segment.TOKENS_PER_SEGMENT"
+    },
+    {
+      "id": 2,
+      "reasoning": "Segment can be null, causing a NullPointerException.",
+      "line": 10,
+      "precode": "segment = segment.next();",
+      "aftercode": "segment = new Segment();"
+    },
+    {
+      "id": 3,
+      "reasoning": "Ptr can be out of bounds, skipping valid tokens.",
+      "line": 13,
+      "precode": "JsonToken t = segment.type(ptr);",
+      "aftercode": "JsonToken t = segment.type(0);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Unrecognized token type can cause a RuntimeException.",
+      "line": 98,
+      "precode": "throw new RuntimeException(\"Internal error: should never end up through this code path\");",
+      "aftercode": "throw new JsonGenerationException(\"Internal error: should never end up through this code path\");"
+    },
+    {
+      "id": 5,
+      "reasoning": "JsonGenerator can be null, causing a NullPointerException.",
+      "line": 16,
+      "precode": "switch (t) {",
+      "aftercode": "if (jgen == null) throw new IOException(\"JsonGenerator is null\");"
+    },
+    {
+      "id": 6,
+      "reasoning": "Missing writeStartObject() for START_OBJECT token.",
+      "line": 18,
+      "precode": "case START_OBJECT: jgen.writeStartObject();",
+      "aftercode": "case START_OBJECT: // do nothing"
+    },
+    {
+      "id": 7,
+      "reasoning": "Missing writeEndObject() for END_OBJECT token.",
+      "line": 22,
+      "precode": "case END_OBJECT: jgen.writeEndObject();",
+      "aftercode": "case END_OBJECT: // do nothing"
+    },
+    {
+      "id": 8,
+      "reasoning": "Missing writeStartArray() for START_ARRAY token.",
+      "line": 26,
+      "precode": "case START_ARRAY: jgen.writeStartArray();",
+      "aftercode": "case START_ARRAY: // do nothing"
+    },
+    {
+      "id": 9,
+      "reasoning": "Missing writeEndArray() for END_ARRAY token.",
+      "line": 30,
+      "precode": "case END_ARRAY: jgen.writeEndArray();",
+      "aftercode": "case END_ARRAY: // do nothing"
+    },
+    {
+      "id": 10,
+      "reasoning": "Unrecognized value type can cause a JsonGenerationException.",
+      "line": 82,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "System.out.println(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName());"
+    },
+    {
+      "id": 11,
+      "reasoning": "Null value is written as a number.",
+      "line": 72,
+      "precode": "jgen.writeNumber(((Double) n).doubleValue());",
+      "aftercode": "if (n == null) jgen.writeString(\"null\");"
+    },
+    {
+      "id": 12,
+      "reasoning": "Null value is written as a boolean.",
+      "line": 87,
+      "precode": "jgen.writeBoolean(true);",
+      "aftercode": "if (n == null) jgen.writeString(\"null\");"
+    },
+    {
+      "id": 13,
+      "reasoning": "Null value is written as a string.",
+      "line": 46,
+      "precode": "jgen.writeString((SerializableString) ob);",
+      "aftercode": "if (ob == null) jgen.writeString(\"null\");"
+    },
+    {
+      "id": 14,
+      "reasoning": "Serialized field name is not written.",
+      "line": 36,
+      "precode": "jgen.writeFieldName((SerializableString) ob);",
+      "aftercode": "// do nothing"
+    },
+    {
+      "id": 15,
+      "reasoning": "Embedded object is not written.",
+      "line": 96,
+      "precode": "jgen.writeObject(segment.get(ptr));",
+      "aftercode": "// do nothing"
+    },
+    {
+      "id": 16,
+      "reasoning": "Incorrect token type can cause a JsonGenerationException.",
+      "line": 81,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "if (!(n instanceof Number)) throw new JsonGenerationException(\"Incorrect token type: \" + n.getClass().getName());"
+    },
+    {
+      "id": 17,
+      "reasoning": "Incorrect value type can cause a RuntimeException.",
+      "line": 82,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "if (!(n instanceof Number)) throw new RuntimeException(\"Incorrect value type: \" + n.getClass().getName());"
+    },
+    {
+      "id": 18,
+      "reasoning": "Missing check for null token.",
+      "line": 15,
+      "precode": "break;",
+      "aftercode": "if (t == null) jgen.writeString(\"null\");"
+    },
+    {
+      "id": 19,
+      "reasoning": "Incorrect type casting can cause a ClassCastException.",
+      "line": 35,
+      "precode": "jgen.writeFieldName((SerializableString) ob);",
+      "aftercode": "try { jgen.writeFieldName((String) ob); } catch (ClassCastException e) { throw new JsonGenerationException(\"Type mismatch: \" + e.getMessage()); }"
+    },
+    {
+      "id": 20,
+      "reasoning": "Incorrect type casting can cause a ClassCastException.",
+      "line": 45,
+      "precode": "jgen.writeString((SerializableString) ob);",
+      "aftercode": "try { jgen.writeString((String) ob); } catch (ClassCastException e) { throw new JsonGenerationException(\"Type mismatch: \" + e.getMessage()); }"
+    },
+    {
+      "id": 21,
+      "reasoning": "Incorrect type casting can cause a ClassCastException.",
+      "line": 55,
+      "precode": "jgen.writeNumber((Integer) n);",
+      "aftercode": "try { jgen.writeNumber(n.toString()); } catch (ClassCastException e) { throw new JsonGenerationException(\"Type mismatch: \" + e.getMessage()); }"
+    },
+    {
+      "id": 22,
+      "reasoning": "Incorrect type casting can cause a ClassCastException.",
+      "line": 71,
+      "precode": "jgen.writeNumber(((Double) n).doubleValue());",
+      "aftercode": "try { jgen.writeNumber(n.toString()); } catch (ClassCastException e) { throw new JsonGenerationException(\"Type mismatch: \" + e.getMessage()); }"
+    },
+    {
+      "id": 23,
+      "reasoning": "Incorrect type casting can cause a ClassCastException.",
+      "line": 76,
+      "precode": "jgen.writeNumber(((Float) n).floatValue());",
+      "aftercode": "try { jgen.writeNumber(n.toString()); } catch (ClassCastException e) { throw new JsonGenerationException(\"Type mismatch: \" + e.getMessage()); }"
+    },
+    {
+      "id": 24,
+      "reasoning": "Incorrect type casting can cause a ClassCastException.",
+      "line": 73,
+      "precode": "jgen.writeNumber((BigDecimal) n);",
+      "aftercode": "try { jgen.writeNumber(n.toString()); } catch (ClassCastException e) { throw new JsonGenerationException(\"Type mismatch: \" + e.getMessage()); }"
+    },
+    {
+      "id": 25,
+      "reasoning": "Missing check for null token.",
+      "line": 14,
+      "precode": "if (t == null) break;",
+      "aftercode": "if (t != null && t == VALUE_NULL) jgen.writeNull();"
+    },
+    {
+      "id": 26,
+      "reasoning": "Missing check for null token.",
+      "line": 15,
+      "precode": "break;",
+      "aftercode": "if (t != null && t == VALUE_TRUE) jgen.writeBoolean(true);"
+    },
+    {
+      "id": 27,
+      "reasoning": "Missing check for null token.",
+      "line": 16,
+      "precode": "switch (t) {",
+      "aftercode": "if (t != null && t == VALUE_FALSE) jgen.writeBoolean(false);"
+    },
+    {
+      "id": 28,
+      "reasoning": "Missing check for null token.",
+      "line": 17,
+      "precode": "switch (t) {",
+      "aftercode": "if (t != null && t == VALUE_NULL) jgen.writeNull();"
+    },
+    {
+      "id": 29,
+      "reasoning": "Missing check for null token.",
+      "line": 19,
+      "precode": "case START_OBJECT: jgen.writeStartObject();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 30,
+      "reasoning": "Missing check for null token.",
+      "line": 22,
+      "precode": "case END_OBJECT: jgen.writeEndObject();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 31,
+      "reasoning": "Missing check for null token.",
+      "line": 26,
+      "precode": "case START_ARRAY: jgen.writeStartArray();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 32,
+      "reasoning": "Missing check for null token.",
+      "line": 30,
+      "precode": "case END_ARRAY: jgen.writeEndArray();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 33,
+      "reasoning": "Serialized field name is not written.",
+      "line": 36,
+      "precode": "jgen.writeFieldName((SerializableString) ob);",
+      "aftercode": "// do nothing"
+    },
+    {
+      "id": 34,
+      "reasoning": "Embedded object is not written.",
+      "line": 96,
+      "precode": "jgen.writeObject(segment.get(ptr));",
+      "aftercode": "// do nothing"
+    },
+    {
+      "id": 35,
+      "reasoning": "Incorrect token type can cause a JsonGenerationException.",
+      "line": 81,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "if (!(n instanceof Number)) throw new JsonGenerationException(\"Incorrect token type: \" + n.getClass().getName());"
+    },
+    {
+      "id": 36,
+      "reasoning": "Incorrect value type can cause a RuntimeException.",
+      "line": 82,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "if (!(n instanceof Number)) throw new RuntimeException(\"Incorrect value type: \" + n.getClass().getName());"
+    },
+    {
+      "id": 37,
+      "reasoning": "Missing check for null token.",
+      "line": 14,
+      "precode": "if (t == null) break;",
+      "aftercode": "if (t != null && t == VALUE_NULL) jgen.writeNull();"
+    },
+    {
+      "id": 38,
+      "reasoning": "Missing check for null token.",
+      "line": 15,
+      "precode": "break;",
+      "aftercode": "if (t != null && t == VALUE_TRUE) jgen.writeBoolean(true);"
+    },
+    {
+      "id": 39,
+      "reasoning": "Missing check for null token.",
+      "line": 16,
+      "precode": "switch (t) {",
+      "aftercode": "if (t != null && t == VALUE_FALSE) jgen.writeBoolean(false);"
+    },
+    {
+      "id": 40,
+      "reasoning": "Missing check for null token.",
+      "line": 17,
+      "precode": "switch (t) {",
+      "aftercode": "if (t != null && t == VALUE_NULL) jgen.writeNull();"
+    },
+    {
+      "id": 41,
+      "reasoning": "Missing check for null token.",
+      "line": 19,
+      "precode": "case START_OBJECT: jgen.writeStartObject();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 42,
+      "reasoning": "Missing check for null token.",
+      "line": 22,
+      "precode": "case END_OBJECT: jgen.writeEndObject();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 43,
+      "reasoning": "Missing check for null token.",
+      "line": 26,
+      "precode": "case START_ARRAY: jgen.writeStartArray();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 44,
+      "reasoning": "Missing check for null token.",
+      "line": 30,
+      "precode": "case END_ARRAY: jgen.writeEndArray();",
+      "aftercode": "if (t == null) break;"
+    },
+    {
+      "id": 45,
+      "reasoning": "Serialized field name is not written.",
+      "line": 36,
+      "precode": "jgen.writeFieldName((SerializableString) ob);",
+      "aftercode": "// do nothing"
+    },
+    {
+      "id": 46,
+      "reasoning": "Embedded object is not written.",
+      "line": 96,
+      "precode": "jgen.writeObject(segment.get(ptr));",
+      "aftercode": "// do nothing"
+    },
+    {
+      "id": 47,
+      "reasoning": "Incorrect token type can cause a JsonGenerationException.",
+      "line": 81,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "if (!(n instanceof Number)) throw new JsonGenerationException(\"Incorrect token type: \" + n.getClass().getName());"
+    },
+    {
+      "id": 48,
+      "reasoning": "Incorrect value type can cause a RuntimeException.",
+      "line": 82,
+      "precode": "throw new JsonGenerationException(\"Unrecognized value type for VALUE_NUMBER_FLOAT: \" + n.getClass().getName() + \", can not serialize\");",
+      "aftercode": "if (!(n instanceof Number)) throw new RuntimeException(\"Incorrect value type: \" + n.getClass().getName());"
+    }
+  ]
+}

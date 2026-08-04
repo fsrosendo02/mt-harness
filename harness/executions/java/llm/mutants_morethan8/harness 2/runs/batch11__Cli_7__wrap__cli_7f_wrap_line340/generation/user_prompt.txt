@@ -1,0 +1,129 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected static List wrap(final String text,
+ 2:                                final int width) {
+ 3:         // check for valid width
+ 4:         if (width < 1) {
+ 5:             throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,
+ 6:                                                                                              new Object[] {
+ 7:                                                                                                  new Integer(width)
+ 8:                                                                                              }));
+ 9:         }
+10: 
+11:         // handle degenerate case
+12:         if (text == null) {
+13:             return Collections.singletonList("");
+14:         }
+15: 
+16:         final List lines = new ArrayList();
+17:         final char[] chars = text.toCharArray();
+18:         int left = 0;
+19: 
+20:         // for each character in the string
+21:         while (left < chars.length) {
+22:             // sync left and right indeces
+23:             int right = left;
+24: 
+25:             // move right until we run out of characters, width or find a newline
+26:             while ((right < chars.length) && (chars[right] != '\n') &&
+27:                        (right < (left + width + 1))) {
+28:                 right++;
+29:             }
+30: 
+31:             // if a newline was found
+32:             if ((right < chars.length) && (chars[right] == '\n')) {
+33:                 // record the substring
+34:                 final String line = new String(chars, left, right - left);
+35:                 lines.add(line);
+36: 
+37:                 // move to the end of the substring
+38:                 left = right + 1;
+39: 
+40:                 if (left == chars.length) {
+41:                     lines.add("");
+42:                 }
+43: 
+44:                 // restart the loop
+45:                 continue;
+46:             }
+47: 
+48:             // move to the next ideal wrap point 
+49:             right = (left + width) - 1;
+50: 
+51:             // if we have run out of characters
+52:             if (chars.length <= right) {
+53:                 // record the substring
+54:                 final String line = new String(chars, left, chars.length - left);
+55:                 lines.add(line);
+56: 
+57:                 // abort the loop
+58:                 break;
+59:             }
+60: 
+61:             // back track the substring end until a space is found
+62:             while ((right >= left) && (chars[right] != ' ')) {
+63:                 right--;
+64:             }
+65: 
+66:             // if a space was found
+67:             if (right >= left) {
+68:                 // record the substring to space
+69:                 final String line = new String(chars, left, right - left);
+70:                 lines.add(line);
+71: 
+72:                 // absorb all the spaces before next substring
+73:                 while ((right < chars.length) && (chars[right] == ' ')) {
+74:                     right++;
+75:                 }
+76: 
+77:                 left = right;
+78: 
+79:                 // restart the loop
+80:                 continue;
+81:             }
+82: 
+83:             // move to the wrap position irrespective of spaces
+84:             right = Math.min(left + width, chars.length);
+85: 
+86:             // record the substring
+87:             final String line = new String(chars, left, right - left);
+88:             lines.add(line);
+89: 
+90:             // absorb any the spaces before next substring
+91:             while ((right < chars.length) && (chars[right] == ' ')) {
+92:                 right++;
+93:             }
+94: 
+95:             left = right;
+96:         }
+97: 
+98:         return lines;
+99:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

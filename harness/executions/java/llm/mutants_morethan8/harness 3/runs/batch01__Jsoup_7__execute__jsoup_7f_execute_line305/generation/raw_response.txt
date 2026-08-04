@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The protocol check only allows 'http' and 'https', but does not prevent execution of requests with protocols like 'ftp'.",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isFalse(protocol.equals(\"ftp\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "The request method check allows only 'GET' and 'POST', but does not consider other HTTP methods. This mutant tests the behavior of executing a request with a different method.",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.PUT && req.data().size() > 0)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The mutant introduces an incorrect protocol comparison, potentially allowing execution with invalid protocols.",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(protocol.equals(\"ftp\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 4,
+      "reasoning": "The mutant modifies the condition to always return true, bypassing the intended validation.",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(true, \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 5,
+      "reasoning": "The mutant removes the check for query string on 'GET' requests, potentially leading to unexpected behavior.",
+      "line": 9,
+      "precode": "serialiseRequestUrl(req); // appends query string",
+      "aftercode": "// serialiseRequestUrl(req); // appends query string"
+    },
+    {
+      "id": 6,
+      "reasoning": "The mutant changes the redirection check to always follow redirects, ignoring HTTP status codes.",
+      "line": 19,
+      "precode": "if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 7,
+      "reasoning": "The mutant changes the redirection handling to not follow redirects, even though HTTP codes indicate a redirect.",
+      "line": 21,
+      "precode": "needsRedirect = true;",
+      "aftercode": "// needsRedirect = true;"
+    },
+    {
+      "id": 8,
+      "reasoning": "The mutant changes the error handling to not throw an exception for non-200 status codes, potentially masking errors.",
+      "line": 22,
+      "precode": "else",
+      "aftercode": "// else"
+    },
+    {
+      "id": 9,
+      "reasoning": "The mutant modifies the way post data is written to avoid checking for 'POST' method, leading to incorrect handling of POST requests.",
+      "line": 12,
+      "precode": "if (req.method() == Connection.Method.POST)",
+      "aftercode": "// if (req.method() == Connection.Method.POST)"
+    },
+    {
+      "id": 10,
+      "reasoning": "The mutant introduces a false condition that always returns false, preventing the redirection from being processed.",
+      "line": 28,
+      "precode": "if (needsRedirect)",
+      "aftercode": "if (false)"
+    },
+    {
+      "id": 11,
+      "reasoning": "The mutant changes the input stream to directly read from the connection's input stream, bypassing any content encoding checks.",
+      "line": 34,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()))",
+      "aftercode": "new BufferedInputStream(conn.getInputStream())"
+    },
+    {
+      "id": 12,
+      "reasoning": "The mutant modifies the response handling to not set up the response from the connection, potentially leading to incomplete responses.",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "// res.setupFromConnection(conn);"
+    },
+    {
+      "id": 13,
+      "reasoning": "The mutant removes the check for 'Content-Encoding' header, potentially causing issues with compressed content.",
+      "line": 34,
+      "precode": "res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\")",
+      "aftercode": "// res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\")"
+    },
+    {
+      "id": 14,
+      "reasoning": "The mutant modifies the charset handling to always use UTF-8, ignoring any content type specified in the headers.",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"UTF-8\";"
+    },
+    {
+      "id": 15,
+      "reasoning": "The mutant changes the response object to not close the input stream, potentially causing resource leaks.",
+      "line": 40,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": "// if (inStream != null) inStream.close();"
+    },
+    {
+      "id": 16,
+      "reasoning": "The mutant modifies the response execution status to always be true, ignoring actual execution results.",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "// res.executed = true;"
+    },
+    {
+      "id": 17,
+      "reasoning": "The mutant modifies the redirection handling to use an incorrect URL constructor, potentially leading to malformed URLs.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "req.url(new URL(\"http://wrong\"));"
+    },
+    {
+      "id": 18,
+      "reasoning": "The mutant modifies the method of serializing request data to append query string, potentially leading to incorrect request execution.",
+      "line": 9,
+      "precode": "serialiseRequestUrl(req);",
+      "aftercode": "req.url().append(\"?incorrect=\" + req.data());"
+    },
+    {
+      "id": 19,
+      "reasoning": "The mutant changes the error handling to throw an exception for status code 200, which is a successful response.",
+      "line": 22,
+      "precode": "else",
+      "aftercode": "if (status == HttpURLConnection.HTTP_OK)"
+    },
+    {
+      "id": 20,
+      "reasoning": "The mutant modifies the input stream handling to read without buffering, potentially leading to performance issues or incorrect reading.",
+      "line": 36,
+      "precode": "new BufferedInputStream(conn.getInputStream())",
+      "aftercode": "conn.getInputStream()"
+    },
+    {
+      "id": 21,
+      "reasoning": "The mutant changes the way post data is written, potentially leading to incorrect handling of POST requests.",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "// writePost(req.data(), conn.getOutputStream());"
+    },
+    {
+      "id": 22,
+      "reasoning": "The mutant modifies the response execution status to always be false, regardless of actual execution results.",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "res.executed = false;"
+    },
+    {
+      "id": 23,
+      "reasoning": "The mutant modifies the URL protocol check to only allow 'https', potentially preventing valid 'http' requests.",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(protocol.equals(\"https\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 24,
+      "reasoning": "The mutant removes the connection setup and execution, potentially leading to failure to establish or execute connections.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "// HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 25,
+      "reasoning": "The mutant changes the way content encoding is checked, potentially leading to incorrect handling of compressed content.",
+      "line": 34,
+      "precode": "res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\")",
+      "aftercode": "res.hasHeader(\"Content-Encoding\")"
+    },
+    {
+      "id": 26,
+      "reasoning": "The mutant modifies the redirection handling to use an incorrect URL string, potentially leading to malformed URLs.",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "req.url(\"http://wrong\");"
+    },
+    {
+      "id": 27,
+      "reasoning": "The mutant modifies the charset handling to always use an incorrect charset, potentially leading to encoding issues.",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"ISO-8859-1\";"
+    },
+    {
+      "id": 28,
+      "reasoning": "The mutant modifies the response handling to not set up the response from the connection, potentially leading to incomplete responses.",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "// res.setupFromConnection(conn);"
+    },
+    {
+      "id": 29,
+      "reasoning": "The mutant modifies the input stream handling to read without buffering, potentially leading to performance issues or incorrect reading.",
+      "line": 36,
+      "precode": "new BufferedInputStream(conn.getInputStream())",
+      "aftercode": "conn.getInputStream()"
+    },
+    {
+      "id": 30,
+      "reasoning": "The mutant modifies the redirection handling to not follow redirects, even though HTTP codes indicate a redirect.",
+      "line": 21,
+      "precode": "needsRedirect = true;",
+      "aftercode": "// needsRedirect = true;"
+    },
+    {
+      "id": 31,
+      "reasoning": "The mutant modifies the error handling to throw an exception for status code 200, which is a successful response.",
+      "line": 22,
+      "precode": "else",
+      "aftercode": "if (status == HttpURLConnection.HTTP_OK)"
+    },
+    {
+      "id": 32,
+      "reasoning": "The mutant modifies the way post data is written, potentially leading to incorrect handling of POST requests.",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "// writePost(req.data(), conn.getOutputStream());"
+    }
+  ]
+}

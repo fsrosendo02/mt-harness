@@ -1,0 +1,462 @@
+{
+  "requested_count": 48,
+  "accepted_count": 4,
+  "rejected_count": 41,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 3,
+        "reasoning": "This mutant changes the logic to always add a change from a change set, even if it's not in replace mode. This violates the intended behavior of only adding from the change set when in replace mode.",
+        "line": 54,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": "true",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                } else if(type == Change.TYPE_DELETE_DIR && name != null) {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            true\n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "This mutant changes the condition in the loop that checks for deletion types, making all entries appear to be deletable directories. This violates the intended behavior of only deleting files or directories as specified by the 'Change' object.",
+        "line": 33,
+        "precode": "type == Change.TYPE_DELETE_DIR && name != null",
+        "aftercode": "true",
+        "candidate_code": "    public ChangeSetResults perform(ArchiveInputStream in, ArchiveOutputStream out)\n            throws IOException {\n        ChangeSetResults results = new ChangeSetResults();\n        \n        Set workingSet = new LinkedHashSet(changes);\n        \n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && change.isReplaceMode()) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n\n        ArchiveEntry entry = null;\n        while ((entry = in.getNextEntry()) != null) {\n            boolean copy = true;\n\n            for (Iterator it = workingSet.iterator(); it.hasNext();) {\n                Change change = (Change) it.next();\n\n                final int type = change.type();\n                final String name = entry.getName();\n                if (type == Change.TYPE_DELETE && name != null) {\n                    if (name.equals(change.targetFile())) {\n                        copy = false;\n                        it.remove();\n                        results.deleted(name);\n                        break;\n                    }\n                true {\n                    if (name.startsWith(change.targetFile() + \"/\")) {\n                        copy = false;\n                        results.deleted(name);\n                        break;\n                    }\n                }\n            }\n\n            if (copy) {\n                if (!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())) {\n                    copyStream(in, out, entry);\n                    results.addedFromStream(entry.getName());\n                }\n            }\n        }\n        \n        // Adds files which hasn't been added from the original and do not have replace mode on\n        for (Iterator it = workingSet.iterator(); it.hasNext();) {\n            Change change = (Change) it.next();\n\n            if (change.type() == Change.TYPE_ADD && \n                !change.isReplaceMode() && \n                !results.hasBeenAdded(change.getEntry().getName())) {\n                copyStream(change.getInput(), out, change.getEntry());\n                it.remove();\n                results.addedFromChangeSet(change.getEntry().getName());\n            }\n        }\n        \n        return results;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "This mutant removes the check for whether a change has been added from the stream, causing every entry to be copied even if it's already been added.",
+        "line": 43,
+        "precode": "!results.hasBeenAdded(entry.getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change has been added, causing every available change to be copied.",
+        "line": 54,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable directories, causing all such entries to be copied.",
+        "line": 34,
+        "precode": "name.startsWith(change.targetFile() + \"/\")",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method checks if an entry has been added later in the process. This mutant removes this check, causing every entry to be considered as not having been added later, regardless of any previous additions.",
+        "line": 43,
+        "precode": "!isDeletedLater(workingSet, entry) && !results.hasBeenAdded(entry.getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change is not in replace mode, causing every available change to be copied.",
+        "line": 55,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 27,
+        "precode": "name.equals(change.targetFile())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 10,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 56,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 11,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 28,
+        "precode": "copy = false",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 13,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable directories, causing all such entries to be copied.",
+        "line": 36,
+        "precode": "copy = false",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 57,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 14,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 29,
+        "precode": "it.remove();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change has been added, causing every available change to be copied.",
+        "line": 59,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable directories, causing all such entries to be copied.",
+        "line": 37,
+        "precode": "it.remove();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 58,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 15,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 30,
+        "precode": "results.deleted(name);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change has been added, causing every available change to be copied.",
+        "line": 60,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable directories, causing all such entries to be copied.",
+        "line": 38,
+        "precode": "results.deleted(name);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 61,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 16,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 31,
+        "precode": "break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change has been added, causing every available change to be copied.",
+        "line": 62,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable directories, causing all such entries to be copied.",
+        "line": 39,
+        "precode": "break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change is not in replace mode, causing every available change to be copied.",
+        "line": 56,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 17,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 32,
+        "precode": "break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 57,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 18,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable directories, causing all such entries to be copied.",
+        "line": 40,
+        "precode": "break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 40,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change has been added, causing every available change to be copied.",
+        "line": 59,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 41,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 41,
+        "reasoning": "The method checks for entries that match deletion conditions and skips copying them. This mutant removes the check for deletable files, causing all such entries to be copied.",
+        "line": 33,
+        "precode": "break;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 42,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 42,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the condition that checks if a change is not in replace mode, causing every available change to be copied.",
+        "line": 58,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 43,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 43,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 60,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 44,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 44,
+        "reasoning": "The method checks if an entry has been added from a change set. This mutant removes this check, causing every entry to be copied even if it's already been added.",
+        "line": 19,
+        "precode": "!results.hasBeenAdded(change.getEntry().getName())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 45,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 45,
+        "reasoning": "The method adds changes from the working set that haven't been added before. This mutant removes the check for adding changes that are not in replace mode, causing every available change to be copied.",
+        "line": 61,
+        "precode": "!change.isReplaceMode()",
+        "aftercode": ""
+      }
+    }
+  ]
+}

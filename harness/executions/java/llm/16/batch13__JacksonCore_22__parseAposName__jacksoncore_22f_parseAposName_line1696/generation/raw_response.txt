@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "EOF handling is bypassed, allowing invalid EOFs to be ignored",
+      "line": 5,
+      "precode": "                _reportInvalidEOF(\": was expecting closing '\'' for field name\", JsonToken.FIELD_NAME);",
+      "aftercode": "                return JsonToken.FIELD_NAME;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Special case for empty string is replaced with invalid value",
+      "line": 10,
+      "precode": "            return _fieldComplete(\"\");",
+      "aftercode": "            return _fieldComplete(\"invalid\");"
+    },
+    {
+      "id": 3,
+      "reasoning": "Double quotes are erroneously allowed in field names",
+      "line": 26,
+      "precode": "                if (ch != '\"' && codes[ch] != 0) {",
+      "aftercode": "                if (ch == '\"' && codes[ch] != 0) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Escape sequence decoding is replaced with invalid method",
+      "line": 32,
+      "precode": "                     ch = _decodeCharEscape();",
+      "aftercode": "                     ch = _decodeInvalidEscape();"
+    },
+    {
+      "id": 5,
+      "reasoning": "Unicode 2-byte handling condition is incorrectly modified",
+      "line": 44,
+      "precode": "                     if (ch < 0x800) { // 2-byte",
+      "aftercode": "                     if (ch < 0x1000) { // 2-byte"
+    },
+    {
+      "id": 6,
+      "reasoning": "Unicode 3-byte mask is corrupted",
+      "line": 49,
+      "precode": "                         currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));",
+      "aftercode": "                         currQuad = (currQuad << 8) | (0xe0 | (ch >> 12) & 0x0f);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Quad buffer overflow check is removed",
+      "line": 56,
+      "precode": "                             quads[qlen++] = currQuad;",
+      "aftercode": "                             quads[qlen++] = 0;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Byte shifting logic is corrupted",
+      "line": 70,
+      "precode": "                         currQuad = (currQuad << 8) | ch;",
+      "aftercode": "                         currQuad = (currQuad << 8) | (ch >> 8);"
+    },
+    {
+      "id": 9,
+      "reasoning": "EOF handling during loop is bypassed",
+      "line": 80,
+      "precode": "                     if (!_loadMore()) {",
+      "aftercode": "                     if (true) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Quad buffer growth is disabled",
+      "line": 89,
+      "precode": "                 _quadBuffer = quads = growArrayBy(quads, quads.length);",
+      "aftercode": "                 _quadBuffer = quads = new int[quads.length];"
+    },
+    {
+      "id": 11,
+      "reasoning": "Quad padding is skipped",
+      "line": 91,
+      "precode": "             quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);",
+      "aftercode": "             quads[qlen++] = currQuad;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Unquoted whitespace check is removed",
+      "line": 29,
+      "precode": "                     _throwUnquotedSpace(ch, \"name\");",
+      "aftercode": "                     // _throwUnquotedSpace(ch, \"name\");"
+    },
+    {
+      "id": 13,
+      "reasoning": "Unicode handling condition is always true",
+      "line": 35,
+      "precode": "                     if (ch > 127) {",
+      "aftercode": "                     if (true) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Quad byte count condition is modified",
+      "line": 67,
+      "precode": "             if (currQuadBytes < 4) {",
+      "aftercode": "             if (currQuadBytes < 5) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "Quad byte count is decremented instead of incremented",
+      "line": 69,
+      "precode": "                 ++currQuadBytes;",
+      "aftercode": "                 --currQuadBytes;"
+    },
+    {
+      "id": 16,
+      "reasoning": "Quad data is overwritten with zero",
+      "line": 75,
+      "precode": "                 quads[qlen++] = currQuad;",
+      "aftercode": "                 quads[qlen++] = 0;"
+    }
+  ]
+}

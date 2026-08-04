@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method does not handle cases where the input stream is closed or corrupted before reading the header length.",
+      "line": 9,
+      "precode": "while((ch = br.read()) != -1)",
+      "aftercode": "while(br.ready() && (ch = br.read()) != -1)"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method assumes that the length string always ends with a space. It does not handle cases where the format is incorrect.",
+      "line": 11,
+      "precode": "if (ch == ' ')",
+      "aftercode": "if (ch != '\\n' && ch != -1)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method does not check if the keyword contains invalid characters before using it as a map key.",
+      "line": 17,
+      "precode": "String keyword = sb.toString();",
+      "aftercode": "sb.setLength(0); String keyword = sb.toString().replaceAll(\"[^a-zA-Z0-9]\", \"\");"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method assumes that the value of a header does not exceed the specified length. It does not handle cases where this assumption is violated.",
+      "line": 19,
+      "precode": "char[] cbuf = new char[len-read];",
+      "aftercode": "int lenMinusRead = Math.max(len - read, 0); char[] cbuf = new char[lenMinusRead + 1];"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method does not handle cases where the value of a header contains the newline character.",
+      "line": 25,
+      "precode": "headers.put(keyword, value);",
+      "aftercode": "headers.put(keyword, value.replace(\"\\n\", \"\"));"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method does not reset the `read` counter after reading the header value. This could lead to incorrect handling of subsequent headers.",
+      "line": 28,
+      "precode": "sb.append((char)ch);",
+      "aftercode": "if (ch == '=') break; sb.append((char)ch);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method assumes that the entire header entry can be read in a single call to `br.read(cbuf)`. It does not handle cases where this is not possible.",
+      "line": 20,
+      "precode": "int got = br.read(cbuf);",
+      "aftercode": "int got = br.read();"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method sets the name of the current entry to the value of the 'path' header, even if the current entry is not a file.",
+      "line": 55,
+      "precode": "currEntry.setName(val);",
+      "aftercode": "if (currEntry.isFile()) currEntry.setName(val);"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method parses the 'size' header as a long, but does not check if the value is too large for an int.",
+      "line": 67,
+      "precode": "currEntry.setSize(Long.parseLong(val));",
+      "aftercode": "int size = Integer.parseInt(val); currEntry.setSize(size);"
+    },
+    {
+      "id": 10,
+      "reasoning": "The method does not handle cases where the 'gid' or 'uid' header value cannot be parsed into an integer.",
+      "line": 58,
+      "precode": "currEntry.setGroupId(Integer.parseInt(val));",
+      "aftercode": "try { currEntry.setGroupId(Integer.parseInt(val)); } catch (NumberFormatException e) {}"
+    },
+    {
+      "id": 11,
+      "reasoning": "The method sets the link name of the current entry to the value of the 'linkpath' header, even if the current entry is not a symbolic link.",
+      "line": 57,
+      "precode": "currEntry.setLinkName(val);",
+      "aftercode": "if (currEntry.isSymbolicLink()) currEntry.setLinkName(val);"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method does not handle cases where the 'uname' or 'gname' header value is too long for the respective fields.",
+      "line": 61,
+      "precode": "currEntry.setGroupName(val);",
+      "aftercode": "if (val.length() <= currEntry.getGroupName().length()) currEntry.setGroupName(val);"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method does not check if the 'uname' or 'gname' header value is valid for the user and group fields.",
+      "line": 65,
+      "precode": "currEntry.setUserName(val);",
+      "aftercode": "if (isValidUsername(val)) currEntry.setUserName(val);"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method does not handle cases where the 'uname' or 'gname' header value cannot be parsed into an integer.",
+      "line": 63,
+      "precode": "currEntry.setUserId(Integer.parseInt(val));",
+      "aftercode": "try { currEntry.setUserId(Integer.parseInt(val)); } catch (NumberFormatException e) {}"
+    },
+    {
+      "id": 15,
+      "reasoning": "The method does not handle cases where the 'size' header value is negative or zero.",
+      "line": 67,
+      "precode": "currEntry.setSize(Long.parseLong(val));",
+      "aftercode": "long size = Long.parseLong(val); if (size > 0) currEntry.setSize(size);"
+    },
+    {
+      "id": 16,
+      "reasoning": "The method does not handle cases where the 'path' header value is empty or contains only whitespace.",
+      "line": 55,
+      "precode": "currEntry.setName(val);",
+      "aftercode": "if (val.trim().length() > 0) currEntry.setName(val);"
+    }
+  ]
+}

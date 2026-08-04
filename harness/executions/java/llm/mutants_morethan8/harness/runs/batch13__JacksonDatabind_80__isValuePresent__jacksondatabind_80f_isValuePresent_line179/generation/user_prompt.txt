@@ -1,0 +1,127 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected abstract boolean _isValuePresent(T value);
+ 2: 
+ 3:     protected abstract Object _getReferenced(T value);
+ 4: 
+ 5:     protected abstract Object _getReferencedIfPresent(T value);
+ 6: 
+ 7:     /*
+ 8:     /**********************************************************
+ 9:     /* Contextualization (support for property annotations)
+10:     /**********************************************************
+11:      */
+12: 
+13:     @Override
+14:     public JsonSerializer<?> createContextual(SerializerProvider provider,
+15:             BeanProperty property) throws JsonMappingException
+16:     {
+17:         TypeSerializer typeSer = _valueTypeSerializer;
+18:         if (typeSer != null) {
+19:             typeSer = typeSer.forProperty(property);
+20:         }
+21:         // First: do we have an annotation override from property?
+22:         JsonSerializer<?> ser = findAnnotatedContentSerializer(provider, property);
+23:         if (ser == null) {
+24:             // If not, use whatever was configured by type
+25:             ser = _valueSerializer;
+26:             if (ser == null) {
+27:                 // A few conditions needed to be able to fetch serializer here:
+28:                 if (_useStatic(provider, property, _referredType)) {
+29:                     ser = _findSerializer(provider, _referredType, property);
+30:                 }
+31:             } else {
+32:                 ser = provider.handlePrimaryContextualization(ser, property);
+33:             }
+34:         }
+35:         // First, resolve wrt property, resolved serializers
+36:         ReferenceTypeSerializer<?> refSer;
+37:         if ((_property == property)
+38:                 && (_valueTypeSerializer == typeSer) && (_valueSerializer == ser)) {
+39:             refSer = this;
+40:         } else {
+41:             refSer = withResolved(property, typeSer, ser, _unwrapper);
+42:         }
+43: 
+44:         // and then see if we have property-inclusion overrides
+45:         if (property != null) {
+46:             JsonInclude.Value inclV = property.findPropertyInclusion(provider.getConfig(), handledType());
+47:             if (inclV != null) {
+48:                 JsonInclude.Include incl = inclV.getContentInclusion();
+49: 
+50:                 if (incl != JsonInclude.Include.USE_DEFAULTS) {
+51:                     Object valueToSuppress;
+52:                     boolean suppressNulls;
+53:                     switch (incl) {
+54:                     case NON_DEFAULT:
+55:                         valueToSuppress = BeanUtil.getDefaultValue(_referredType);
+56:                         suppressNulls = true;
+57:                         if (valueToSuppress != null) {
+58:                             if (valueToSuppress.getClass().isArray()) {
+59:                                 valueToSuppress = ArrayBuilders.getArrayComparator(valueToSuppress);
+60:                             }
+61:                         }
+62:                         break;
+63:                     case NON_ABSENT:
+64:                         suppressNulls = true;
+65:                         valueToSuppress = _referredType.isReferenceType() ? MARKER_FOR_EMPTY : null;
+66:                         break;
+67:                     case NON_EMPTY:
+68:                         suppressNulls = true;
+69:                         valueToSuppress = MARKER_FOR_EMPTY;
+70:                         break;
+71:                     case CUSTOM:
+72:                         valueToSuppress = provider.includeFilterInstance(null, inclV.getContentFilter());
+73:                         if (valueToSuppress == null) { // is this legal?
+74:                             suppressNulls = true;
+75:                         } else {
+76:                             suppressNulls = provider.includeFilterSuppressNulls(valueToSuppress);
+77:                         }
+78:                         break;
+79:                     case NON_NULL:
+80:                         valueToSuppress = null;
+81:                         suppressNulls = true;
+82:                         break;
+83:                     case ALWAYS: // default
+84:                     default:
+85:                         valueToSuppress = null;
+86:                         suppressNulls = false;
+87:                         break;
+88:                     }
+89:                     if ((_suppressableValue != valueToSuppress)
+90:                             || (_suppressNulls != suppressNulls)) {
+91:                         refSer = refSer.withContentInclusion(valueToSuppress, suppressNulls);
+92:                     }
+93:                 }
+94:             }
+95:         }
+96:         return refSer;
+97:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

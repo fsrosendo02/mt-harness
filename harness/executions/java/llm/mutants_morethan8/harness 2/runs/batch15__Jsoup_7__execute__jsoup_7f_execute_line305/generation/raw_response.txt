@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Validation of request protocol is skipped",
+      "line": 2,
+      "precode": "Validate.notNull(req, \"Request must not be null\")",
+      "aftercode": ""
+    },
+    {
+      "id": 2,
+      "reasoning": "Null URL protocol is treated as valid",
+      "line": 3,
+      "precode": "String protocol = req.url().getProtocol();",
+      "aftercode": "String protocol = (req.url() == null) ? \"http\" : req.url().getProtocol();"
+    },
+    {
+      "id": 3,
+      "reasoning": "Only http protocol is supported, not https",
+      "line": 5,
+      "precode": "Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\")",
+      "aftercode": "Validate.isTrue(protocol.equals(\"http\"), \"Only http protocol supported\")"
+    },
+    {
+      "id": 4,
+      "reasoning": "GET requests with data are not handled correctly",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.GET)"
+    },
+    {
+      "id": 5,
+      "reasoning": "POST requests without data are not handled correctly",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": ""
+    },
+    {
+      "id": 6,
+      "reasoning": "No exception is thrown for non-OK status codes",
+      "line": 19,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": ""
+    },
+    {
+      "id": 7,
+      "reasoning": "Redirection is not handled correctly for https to http",
+      "line": 27,
+      "precode": "if (needsRedirect) { ... }",
+      "aftercode": ""
+    },
+    {
+      "id": 8,
+      "reasoning": "GZIP encoding is always assumed",
+      "line": 34,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :",
+      "aftercode": "new BufferedInputStream(conn.getInputStream()) :"
+    },
+    {
+      "id": 9,
+      "reasoning": "Content encoding is not checked",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": ""
+    },
+    {
+      "id": 10,
+      "reasoning": "Charset is always assumed to be null",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"UTF-8\";"
+    },
+    {
+      "id": 11,
+      "reasoning": "executed flag is not set correctly",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": ""
+    },
+    {
+      "id": 12,
+      "reasoning": "Response object is reused without reset",
+      "line": 26,
+      "precode": "Response res = new Response();",
+      "aftercode": "Response res; // do not create a new response"
+    },
+    {
+      "id": 13,
+      "reasoning": "Input stream is not closed in case of exception",
+      "line": 41,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": ""
+    },
+    {
+      "id": 14,
+      "reasoning": "GZIP input stream is not created correctly",
+      "line": 34,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :",
+      "aftercode": "new BufferedInputStream(conn.getErrorStream()) :"
+    },
+    {
+      "id": 15,
+      "reasoning": "Charset is not set correctly for non-UTF-8 content type",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"ISO-8859-1\";"
+    },
+    {
+      "id": 16,
+      "reasoning": "Response object is not returned in case of redirection",
+      "line": 30,
+      "precode": "return res;",
+      "aftercode": ""
+    }
+  ]
+}

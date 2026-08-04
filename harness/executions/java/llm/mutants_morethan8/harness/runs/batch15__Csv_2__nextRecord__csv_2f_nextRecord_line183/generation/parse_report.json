@@ -1,0 +1,133 @@
+{
+  "requested_count": 24,
+  "accepted_count": 14,
+  "rejected_count": 10,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "A null pointer exception is not thrown for a null token.",
+        "line": 6,
+        "precode": "lexer.nextToken(reusableToken);",
+        "aftercode": "try { lexer.nextToken(reusableToken); } catch (NullPointerException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 9,
+        "reasoning": "The `recordNumber` variable is not incremented for empty records.",
+        "line": 34,
+        "precode": "if (!record.isEmpty()) {",
+        "aftercode": "// if (!record.isEmpty()) {",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        // if (!record.isEmpty()) { {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 13,
+        "reasoning": "A CSVRecord with empty lines is returned for an invalid record.",
+        "line": 40,
+        "precode": "",
+        "aftercode": "if (!record.isEmpty()) {"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 15,
+        "reasoning": "A record with invalid data is returned for an EOF token.",
+        "line": 17,
+        "precode": "if (reusableToken.isReady) {",
+        "aftercode": "// if (reusableToken.isReady) {",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                // if (reusableToken.isReady) { {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "A CSVRecord with null data is returned for an EORECORD token.",
+        "line": 14,
+        "precode": "record.add(reusableToken.content.toString());",
+        "aftercode": "// record.add(reusableToken.content.toString());",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                // record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "A CSVRecord with invalid data is returned for an EORECORD token.",
+        "line": 13,
+        "precode": "record.add(reusableToken.content.toString());",
+        "aftercode": "// record.add(reusableToken.content.toString());",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                // record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 21,
+        "reasoning": "The `recordNumber` variable is not incremented in case of an exception.",
+        "line": 35,
+        "precode": "if (!record.isEmpty()) {",
+        "aftercode": "// if (!record.isEmpty()) {",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        // if (!record.isEmpty()) { {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "A CSVRecord with null comment is returned for an empty record.",
+        "line": 36,
+        "precode": "final String comment = sb == null ? null : sb.toString();",
+        "aftercode": "final String comment = \"null\";",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = \"null\";\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "A CSVRecord with invalid data is returned for an empty record.",
+        "line": 37,
+        "precode": "result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);",
+        "aftercode": "result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, \"invalid\", this.recordNumber);",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, \"invalid\", this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "The `lexer` object is not checked for null in case of a comment.",
+        "line": 6,
+        "precode": "lexer.nextToken(reusableToken);",
+        "aftercode": "if (lexer == null) { throw new NullPointerException(); } lexer.nextToken(reusableToken);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

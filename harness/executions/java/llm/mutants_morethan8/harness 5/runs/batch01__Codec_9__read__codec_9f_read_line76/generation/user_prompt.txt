@@ -1,0 +1,72 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public int read(byte b[], int offset, int len) throws IOException {
+ 2:         if (b == null) {
+ 3:             throw new NullPointerException();
+ 4:         } else if (offset < 0 || len < 0) {
+ 5:             throw new IndexOutOfBoundsException();
+ 6:         } else if (offset > b.length || offset + len > b.length) {
+ 7:             throw new IndexOutOfBoundsException();
+ 8:         } else if (len == 0) {
+ 9:             return 0;
+10:         } else {
+11:             int readLen = 0;
+12:             /*
+13:              Rationale for while-loop on (readLen == 0):
+14:              -----
+15:              Base32.readResults() usually returns > 0 or EOF (-1).  In the
+16:              rare case where it returns 0, we just keep trying.
+17: 
+18:              This is essentially an undocumented contract for InputStream
+19:              implementors that want their code to work properly with
+20:              java.io.InputStreamReader, since the latter hates it when
+21:              InputStream.read(byte[]) returns a zero.  Unfortunately our
+22:              readResults() call must return 0 if a large amount of the data
+23:              being decoded was non-base32, so this while-loop enables proper
+24:              interop with InputStreamReader for that scenario.
+25:              -----
+26:              This is a fix for CODEC-101
+27:             */
+28:             while (readLen == 0) {
+29:                 if (!baseNCodec.hasData()) {
+30:                     byte[] buf = new byte[doEncode ? 4096 : 8192];
+31:                     int c = in.read(buf);
+32:                     if (doEncode) {
+33:                         baseNCodec.encode(buf, 0, c);
+34:                     } else {
+35:                         baseNCodec.decode(buf, 0, c);
+36:                     }
+37:                 }
+38:                 readLen = baseNCodec.readResults(b, offset, len);
+39:             }
+40:             return readLen;
+41:         }
+42:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

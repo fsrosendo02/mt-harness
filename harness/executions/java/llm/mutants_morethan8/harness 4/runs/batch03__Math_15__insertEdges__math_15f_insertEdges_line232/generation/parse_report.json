@@ -1,0 +1,333 @@
+{
+  "requested_count": 40,
+  "accepted_count": 11,
+  "rejected_count": 29,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "The 'node.insertCut(inserted.getLine())' call is not necessary.",
+        "line": 11,
+        "precode": "if (node.insertCut(inserted.getLine())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "The 'node.setAttribute(Boolean.TRUE)' call is not necessary.",
+        "line": 26,
+        "precode": "node.setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The 'if (endSide == Side.PLUS) { plusList.add(edge); }' branch is not necessary.",
+        "line": 53,
+        "precode": "plusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The 'if (endSide == Side.MINUS) { minusList.add(edge); }' branch is not necessary.",
+        "line": 63,
+        "precode": "minusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The 'FastMath.abs(startOffset)' call is not necessary.",
+        "line": 43,
+        "precode": "FastMath.abs(startOffset)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "The 'switch (startSide) { ... }' statement is incorrect.",
+        "line": 46,
+        "precode": "case PLUS:",
+        "aftercode": "default:",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    default:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The 'if (endSide == Side.MINUS) { ... } else { ... }' branch is incorrect.",
+        "line": 47,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "The 'if (endSide == Side.PLUS) { ... } else { ... }' branch is incorrect.",
+        "line": 48,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The 'if (endSide == Side.MINUS) { ... } else { ... }' branch is incorrect.",
+        "line": 49,
+        "precode": "minusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The 'if (endSide == Side.PLUS) { ... } else { ... }' branch is incorrect.",
+        "line": 50,
+        "precode": "plusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The 'splitPoint.getIncoming()' call is not necessary.",
+        "line": 51,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "The 'splitPoint.getOutgoing()' call is not necessary.",
+        "line": 52,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "The 'minusList' list is not updated correctly.",
+        "line": 53,
+        "precode": "minusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "The 'plusList' list is not updated correctly.",
+        "line": 54,
+        "precode": "plusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The 'if (!minusList.isEmpty()) { ... } else { ... }' branch is incorrect.",
+        "line": 79,
+        "precode": "insertEdges(hyperplaneThickness, node.getPlus(),  plusList);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The 'if (!plusList.isEmpty()) { ... } else { ... }' branch is incorrect.",
+        "line": 80,
+        "precode": "node.getPlus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The 'if (!minusList.isEmpty()) { ... } else { ... }' branch is incorrect.",
+        "line": 83,
+        "precode": "insertEdges(hyperplaneThickness, node.getMinus(), minusList);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The 'if (!plusList.isEmpty()) { ... } else { ... }' branch is incorrect.",
+        "line": 84,
+        "precode": "node.getMinus().setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The 'switch (startSide)' statement is incorrect.",
+        "line": 46,
+        "precode": "case PLUS:",
+        "aftercode": "default:",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    default:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "The 'if (endSide == Side.MINUS) { ... } else { ... }' branch is incorrect.",
+        "line": 48,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "The 'if (endSide == Side.PLUS) { ... } else { ... }' branch is incorrect.",
+        "line": 49,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "The 'if (endSide == Side.MINUS) { ... } else { ... }' branch is incorrect.",
+        "line": 50,
+        "precode": "minusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 34,
+        "reasoning": "The 'if (endSide == Side.PLUS) { ... } else { ... }' branch is incorrect.",
+        "line": 51,
+        "precode": "plusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "The 'splitPoint.getIncoming()' call is not necessary.",
+        "line": 52,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 36,
+        "reasoning": "The 'splitPoint.getOutgoing()' call is not necessary.",
+        "line": 53,
+        "precode": "plusList.add(splitPoint.getIncoming());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "The 'minusList' list is not updated correctly.",
+        "line": 54,
+        "precode": "minusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 38,
+        "reasoning": "The 'plusList' list is not updated correctly.",
+        "line": 55,
+        "precode": "plusList.add(edge);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "The 'hyperplaneThickness' variable is used incorrectly in the switch statement.",
+        "line": 46,
+        "precode": "case PLUS:",
+        "aftercode": "default:",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    default:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method does not handle the case where 'edges.size()' is 0.",
+        "line": 8,
+        "precode": "while (inserted == null && index < edges.size())",
+        "aftercode": "if (edges.isEmpty()) { return; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

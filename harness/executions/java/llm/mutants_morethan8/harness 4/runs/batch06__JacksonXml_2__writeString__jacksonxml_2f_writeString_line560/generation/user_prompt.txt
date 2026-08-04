@@ -1,0 +1,66 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     public void writeString(String text) throws IOException
+ 3:     {
+ 4:         _verifyValueWrite("write String value");
+ 5:         if (_nextName == null) {
+ 6:             handleMissingName();
+ 7:         }
+ 8:         try {
+ 9:             if (_nextIsAttribute) { // must write attribute name and value with one call
+10:                 _xmlWriter.writeAttribute(_nextName.getNamespaceURI(), _nextName.getLocalPart(), text);
+11:             } else if (checkNextIsUnwrapped()) {
+12:                 // [Issue#56] Should figure out how to prevent indentation for end element
+13:                 //   but for now, let's just make sure structure is correct
+14:                 //if (_xmlPrettyPrinter != null) { ... }
+15:                 if(_nextIsCData) {
+16:                     _xmlWriter.writeCData(text);
+17:                 } else {
+18:                     _xmlWriter.writeCharacters(text);
+19:                 }
+20:             } else if (_xmlPrettyPrinter != null) {
+21:                 _xmlPrettyPrinter.writeLeafElement(_xmlWriter,
+22:                         _nextName.getNamespaceURI(), _nextName.getLocalPart(),
+23:                         text, _nextIsCData);
+24:             } else {
+25:                 _xmlWriter.writeStartElement(_nextName.getNamespaceURI(), _nextName.getLocalPart());
+26:                 if(_nextIsCData) {
+27:                     _xmlWriter.writeCData(text);
+28:                 } else {
+29:                     _xmlWriter.writeCharacters(text);
+30:                 }
+31:                 _xmlWriter.writeEndElement();
+32:             } 
+33:         } catch (XMLStreamException e) {
+34:             StaxUtil.throwXmlAsIOException(e);
+35:         }
+36:     }    
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The original behavior ensures that the version needed to extract is set correctly based on the compression method. The mutant changes this logic, potentially leading to incorrect extraction.",
+      "line": 16,
+      "precode": "putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort(0, buf, LFH_VERSION_NEEDED_OFFSET);"
+    },
+    {
+      "id": 2,
+      "reasoning": "The original behavior checks for Zip64 requirements before deciding how to handle the file header fields. The mutant incorrectly sets the phased variable without considering the Zip64 requirement.",
+      "line": 13,
+      "precode": "if (phased && !isZip64Required(entry.entry, zip64Mode)){",
+      "aftercode": "if (!phased && isZip64Required(entry.entry, zip64Mode)){"
+    },
+    {
+      "id": 3,
+      "reasoning": "The original behavior sets the general purpose bits based on encoding and Zip method. The mutant sets them incorrectly without considering these factors.",
+      "line": 20,
+      "precode": "generalPurposeBit.encode(buf, LFH_GPB_OFFSET);",
+      "aftercode": "new GeneralPurposeBit().encode(buf, LFH_GPB_OFFSET);"
+    },
+    {
+      "id": 4,
+      "reasoning": "The original behavior correctly handles different compression methods for CRC calculation. The mutant incorrectly uses a constant value instead of the actual CRC.",
+      "line": 30,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "putLong(0x1234567890ABCDEFL, buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 5,
+      "reasoning": "The original behavior correctly handles different scenarios for compressed and uncompressed sizes. The mutant incorrectly sets these values without considering the scenario.",
+      "line": 42,
+      "precode": "ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(0x1234567890ABCDEFL, buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 6,
+      "reasoning": "The original behavior correctly handles encoding of the file name length. The mutant incorrectly sets this value without considering the actual length.",
+      "line": 55,
+      "precode": "putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);",
+      "aftercode": "putShort(0xFFFF, buf, LFH_FILENAME_LENGTH_OFFSET);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The original behavior correctly sets the extra field length. The mutant incorrectly sets this value without considering the actual length.",
+      "line": 58,
+      "precode": "putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);",
+      "aftercode": "putShort(0xFFFF, buf, LFH_EXTRA_LENGTH_OFFSET);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The original behavior copies the file name into the buffer. The mutant incorrectly does not copy the file name, leading to a malformed header.",
+      "line": 61,
+      "precode": "System.arraycopy(name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);",
+      "aftercode": "// System.arraycopy(name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);"
+    },
+    {
+      "id": 9,
+      "reasoning": "The original behavior copies the extra field into the buffer. The mutant incorrectly does not copy the extra field, leading to a malformed header.",
+      "line": 63,
+      "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+      "aftercode": "// System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);"
+    },
+    {
+      "id": 10,
+      "reasoning": "The original behavior uses the correct method to calculate the size of the local file header. The mutant incorrectly calculates the size without considering the actual content.",
+      "line": 5,
+      "precode": "int len= LFH_FILENAME_OFFSET + nameLen + extra.length;",
+      "aftercode": "int len = LFH_FILENAME_OFFSET + 0; // Incorrect calculation"
+    },
+    {
+      "id": 11,
+      "reasoning": "The original behavior uses the correct method to copy the local file header signature. The mutant incorrectly sets an invalid signature.",
+      "line": 8,
+      "precode": "System.arraycopy(LFH_SIG, 0, buf, LFH_SIG_OFFSET, WORD);",
+      "aftercode": "System.arraycopy(new byte[]{0x11, 0x22}, 0, buf, LFH_SIG_OFFSET, 2);"
+    },
+    {
+      "id": 12,
+      "reasoning": "The original behavior uses the correct method to store the compression method. The mutant incorrectly sets an invalid method.",
+      "line": 23,
+      "precode": "putShort(zipMethod, buf, LFH_METHOD_OFFSET);",
+      "aftercode": "putShort(0x0005, buf, LFH_METHOD_OFFSET);"
+    },
+    {
+      "id": 13,
+      "reasoning": "The original behavior uses the correct method to store the time. The mutant incorrectly sets an invalid time.",
+      "line": 25,
+      "precode": "ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);",
+      "aftercode": "ZipUtil.toDosTime(null, null, buf, LFH_TIME_OFFSET);"
+    },
+    {
+      "id": 14,
+      "reasoning": "The original behavior uses the correct method to store the CRC. The mutant incorrectly sets an invalid CRC.",
+      "line": 29,
+      "precode": "putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);",
+      "aftercode": "putLong(0xFFFFFFFFFFFFFFFFL, buf, LFH_CRC_OFFSET);"
+    },
+    {
+      "id": 15,
+      "reasoning": "The original behavior uses the correct method to store compressed and uncompressed sizes. The mutant incorrectly sets an invalid size.",
+      "line": 46,
+      "precode": "putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);",
+      "aftercode": "putLong(0xFFFFFFFFFFFFFFFFL, buf, LFH_COMPRESSED_SIZE_OFFSET);"
+    },
+    {
+      "id": 16,
+      "reasoning": "The original behavior uses the correct method to store compressed and uncompressed sizes. The mutant incorrectly sets an invalid size.",
+      "line": 47,
+      "precode": "putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);",
+      "aftercode": "putLong(0xFFFFFFFFFFFFFFFFL, buf, LFH_ORIGINAL_SIZE_OFFSET);"
+    },
+    {
+      "id": 17,
+      "reasoning": "The original behavior copies the file name into the buffer. The mutant incorrectly sets an invalid position for copying.",
+      "line": 61,
+      "precode": "System.arraycopy(name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);",
+      "aftercode": "System.arraycopy(name.array(), name.arrayOffset() + 1, buf, LFH_FILENAME_OFFSET, nameLen - 1);"
+    },
+    {
+      "id": 18,
+      "reasoning": "The original behavior copies the extra field into the buffer. The mutant incorrectly sets an invalid position for copying.",
+      "line": 63,
+      "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+      "aftercode": "System.arraycopy(extra, 1, buf, LFH_FILENAME_OFFSET + nameLen, extra.length - 1);"
+    },
+    {
+      "id": 19,
+      "reasoning": "The original behavior initializes a buffer for the local file header. The mutant incorrectly sets an invalid length for the buffer.",
+      "line": 6,
+      "precode": "byte[] buf = new byte[len];",
+      "aftercode": "byte[] buf = new byte[0];"
+    },
+    {
+      "id": 20,
+      "reasoning": "The original behavior uses the correct method to copy the local file header fields. The mutant incorrectly sets an invalid position for copying.",
+      "line": 61,
+      "precode": "System.arraycopy(name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);",
+      "aftercode": "System.arraycopy(new byte[]{0x00}, 0, buf, 100000, 1);"
+    },
+    {
+      "id": 21,
+      "reasoning": "The original behavior uses the correct method to copy the local file header fields. The mutant incorrectly sets an invalid position for copying.",
+      "line": 63,
+      "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+      "aftercode": "System.arraycopy(new byte[]{0x00}, 0, buf, 100000, 1);"
+    },
+    {
+      "id": 22,
+      "reasoning": "The original behavior initializes the local file header with a specific structure. The mutant incorrectly changes the structure of the header.",
+      "line": 5,
+      "precode": "int len= LFH_FILENAME_OFFSET + nameLen + extra.length;",
+      "aftercode": "int len = 1;"
+    },
+    {
+      "id": 23,
+      "reasoning": "The original behavior sets the version needed to extract based on the compression method and Zip64 requirements. The mutant incorrectly uses a constant value instead of calculating it.",
+      "line": 16,
+      "precode": "putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);",
+      "aftercode": "putShort(0xFFFF, buf, LFH_VERSION_NEEDED_OFFSET);"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonCore_25",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksoncore_25f__finishAposName__line2136",
+  "file_path": "src/main/java/com/fasterxml/jackson/core/json/async/NonBlockingJsonParser.java",
+  "function_name": "_finishAposName",
+  "start_line": 2136,
+  "end_line": 2231,
+  "mutant_id": "rej19",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 19,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch11__JacksonCore_25__finishAposName__jacksoncore_25f_finishAposName_line2136/generation/raw_response.txt",
+  "payload": {
+    "id": 19,
+    "reasoning": "Incorrect state transition after escape",
+    "line": 29,
+    "precode": "_minorState = MINOR_FIELD_NAME_ESCAPE;",
+    "aftercode": "_minorState = MINOR_FIELD_APOS_NAME;",
+    "candidate_code": "    private JsonToken _finishAposName(int qlen, int currQuad, int currQuadBytes)\n        throws IOException\n    {\n        int[] quads = _quadBuffer;\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (_inputPtr >= _inputEnd) {\n                _quadLength = qlen;\n                _pending32 = currQuad;\n                _pendingBytes = currQuadBytes;\n                _minorState = MINOR_FIELD_APOS_NAME;\n                return (_currToken = JsonToken.NOT_AVAILABLE);\n            }\n            int ch = _inputBuffer[_inputPtr++] & 0xFF;\n            if (ch == INT_APOS) {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if (ch != '\"' && codes[ch] != 0) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeCharEscape();\n                    if (ch < 0) { // method has set up state about escape sequence\n                        _minorState = MINOR_FIELD_APOS_NAME;\n                        _minorStateAfterSplit = MINOR_FIELD_APOS_NAME;\n                        _quadLength = qlen;\n                        _pending32 = currQuad;\n                        _pendingBytes = currQuadBytes;\n                        return (_currToken = JsonToken.NOT_AVAILABLE);\n                    }\n                }\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        } else if (qlen == 0) { // rare case but possible\n            return _fieldComplete(\"\");\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = _addName(quads, qlen, currQuadBytes);\n        }\n        return _fieldComplete(name);\n    }\n",
+    "resolution_reason": "exact_search_match"
+  },
+  "log_path": "harness/runs/batch11__JacksonCore_25__finishAposName__jacksoncore_25f_finishAposName_line2136/rejected/rej19.log",
+  "mutant_path": "harness/runs/batch11__JacksonCore_25__finishAposName__jacksoncore_25f_finishAposName_line2136/rejected/rej19.mutant.txt",
+  "original_path": "harness/runs/batch11__JacksonCore_25__finishAposName__jacksoncore_25f_finishAposName_line2136/rejected/original.txt"
+}

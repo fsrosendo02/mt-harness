@@ -1,0 +1,104 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)
+ 2:     {
+ 3:         boolean needMerge = true;
+ 4:         Nulls valueNulls = null;
+ 5:         Nulls contentNulls = null;
+ 6:         
+ 7:         // Slightly confusing: first, annotations should be accessed via primary member
+ 8:         // (mutator); but accessor is needed for actual merge operation. So:
+ 9:         AnnotatedMember prim = getPrimaryMember();
+10:         AnnotatedMember acc = getAccessor();
+11: 
+12:         if (prim != null) {
+13:             // Ok, first: does property itself have something to say?
+14:             if (_annotationIntrospector != null) {
+15:                 if (acc != null) {
+16:                     Boolean b = _annotationIntrospector.findMergeInfo(prim);
+17:                     if (b != null) {
+18:                         needMerge = false;
+19:                         if (b.booleanValue()) {
+20:                             metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));
+21:                         }
+22:                     }
+23:                 }
+24:                 JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);
+25:                 if (setterInfo != null) {
+26:                     valueNulls = setterInfo.nonDefaultValueNulls();
+27:                     contentNulls = setterInfo.nonDefaultContentNulls();
+28:                 }
+29:             }
+30:             // If not, config override?
+31:             // 25-Oct-2016, tatu: Either this, or type of accessor...
+32:             if (needMerge || (valueNulls == null) || (contentNulls == null)) {
+33:                 Class<?> rawType = getRawPrimaryType();
+34:                 ConfigOverride co = _config.getConfigOverride(rawType);
+35:                 JsonSetter.Value setterInfo = co.getSetterInfo();
+36:                 if (setterInfo != null) {
+37:                     if (valueNulls == null) {
+38:                         valueNulls = setterInfo.nonDefaultValueNulls();
+39:                     }
+40:                     if (contentNulls == null) {
+41:                         contentNulls = setterInfo.nonDefaultContentNulls();
+42:                     }
+43:                 }
+44:                 if (needMerge && (acc != null)) {
+45:                     Boolean b = co.getMergeable();
+46:                     if (b != null) {
+47:                         needMerge = false;
+48:                         if (b.booleanValue()) {
+49:                             metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));
+50:                         }
+51:                     }
+52:                 }
+53:             }
+54:         }
+55:         if (needMerge || (valueNulls == null) || (contentNulls == null)) {
+56:             JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();
+57:             if (valueNulls == null) {
+58:                 valueNulls = setterInfo.nonDefaultValueNulls();
+59:             }
+60:             if (contentNulls == null) {
+61:                 contentNulls = setterInfo.nonDefaultContentNulls();
+62:             }
+63:             if (needMerge) {
+64:                 Boolean b = _config.getDefaultMergeable();
+65:                 if (Boolean.TRUE.equals(b) && (acc != null)) {
+66:                     metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));
+67:                 }
+68:             }
+69:         }
+70:         if ((valueNulls != null) || (contentNulls != null)) {
+71:             metadata = metadata.withNulls(valueNulls, contentNulls);
+72:         }
+73:         return metadata;
+74:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

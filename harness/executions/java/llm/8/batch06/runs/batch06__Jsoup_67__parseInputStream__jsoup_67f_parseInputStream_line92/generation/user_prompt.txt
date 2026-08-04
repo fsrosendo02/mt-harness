@@ -1,0 +1,94 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     static Document parseInputStream(InputStream input, String charsetName, String baseUri, Parser parser) throws IOException  {
+ 2:         if (input == null) // empty body
+ 3:             return new Document(baseUri);
+ 4:         input = ConstrainableInputStream.wrap(input, bufferSize, 0);
+ 5: 
+ 6:         Document doc = null;
+ 7:         boolean fullyRead = false;
+ 8: 
+ 9:         // read the start of the stream and look for a BOM or meta charset
+10:         input.mark(firstReadBufferSize);
+11:         ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1); // -1 because we read one more to see if completed
+12:         fullyRead = input.read() == -1;
+13:         input.reset();
+14: 
+15:         // look for BOM - overrides any other header or input
+16:         BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);
+17:         if (bomCharset != null) {
+18:             charsetName = bomCharset.charset;
+19:             input.skip(bomCharset.offset);
+20:         }
+21: 
+22:         if (charsetName == null) { // determine from meta. safe first parse as UTF-8
+23:             String docData = Charset.forName(defaultCharset).decode(firstBytes).toString();
+24:             doc = parser.parseInput(docData, baseUri);
+25: 
+26:             // look for <meta http-equiv="Content-Type" content="text/html;charset=gb2312"> or HTML5 <meta charset="gb2312">
+27:             Elements metaElements = doc.select("meta[http-equiv=content-type], meta[charset]");
+28:             String foundCharset = null; // if not found, will keep utf-8 as best attempt
+29:             for (Element meta : metaElements) {
+30:                 if (meta.hasAttr("http-equiv"))
+31:                     foundCharset = getCharsetFromContentType(meta.attr("content"));
+32:                 if (foundCharset == null && meta.hasAttr("charset"))
+33:                     foundCharset = meta.attr("charset");
+34:                 if (foundCharset != null)
+35:                     break;
+36:             }
+37: 
+38:             // look for <?xml encoding='ISO-8859-1'?>
+39:             if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration) {
+40:                 XmlDeclaration prolog = (XmlDeclaration) doc.childNode(0);
+41:                 if (prolog.name().equals("xml"))
+42:                     foundCharset = prolog.attr("encoding");
+43:             }
+44:             foundCharset = validateCharset(foundCharset);
+45:             if (foundCharset != null && !foundCharset.equalsIgnoreCase(defaultCharset)) { // need to re-decode. (case insensitive check here to match how validate works)
+46:                 foundCharset = foundCharset.trim().replaceAll("[\"']", "");
+47:                 charsetName = foundCharset;
+48:                 doc = null;
+49:             } else if (!fullyRead) {
+50:                 doc = null;
+51:             }
+52:         } else { // specified by content type header (or by user on file load)
+53:             Validate.notEmpty(charsetName, "Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML");
+54:         }
+55:         if (doc == null) {
+56:             if (charsetName == null)
+57:                 charsetName = defaultCharset;
+58:             BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);
+59:             doc = parser.parseInput(reader, baseUri);
+60:             doc.outputSettings().charset(charsetName);
+61:         }
+62:         input.close();
+63:         return doc;
+64:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

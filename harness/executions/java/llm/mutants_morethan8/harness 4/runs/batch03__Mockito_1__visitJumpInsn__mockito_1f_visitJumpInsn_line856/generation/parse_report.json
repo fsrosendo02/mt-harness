@@ -1,0 +1,427 @@
+{
+  "requested_count": 40,
+  "accepted_count": 2,
+  "rejected_count": 38,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "No check if the label's status is Label.SUBROUTINE before marking it as such.",
+        "line": 17,
+        "precode": "if ((label.status & Label.SUBROUTINE) == 0)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "No increment of subroutines even if the label's status is not Label.SUBROUTINE.",
+        "line": 19,
+        "precode": "++subroutines",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "Always consider currentBlock.status as Label.JSR to test the JSR case of this method.",
+        "line": 21,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "No increment of stackSize even if opcode is not Opcodes.GOTO or Opcodes.JSR.",
+        "line": 35,
+        "precode": "stackSize += Frame.SIZE[opcode];",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 7,
+        "reasoning": "No check of the label's status before resolving it and storing its offset.",
+        "line": 41,
+        "precode": "(label.status & Label.RESOLVED) != 0",
+        "aftercode": "true",
+        "candidate_code": "    public void visitJumpInsn(final int opcode, final Label label) {\n        Label nextInsn = null;\n        // Label currentBlock = this.currentBlock;\n        if (currentBlock != null) {\n            if (compute == FRAMES) {\n                currentBlock.frame.execute(opcode, 0, null, null);\n                // 'label' is the target of a jump instruction\n                label.getFirst().status |= Label.TARGET;\n                // adds 'label' as a successor of this basic block\n                addSuccessor(Edge.NORMAL, label);\n                if (opcode != Opcodes.GOTO) {\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                }\n            } else {\n                if (opcode == Opcodes.JSR) {\n                    if ((label.status & Label.SUBROUTINE) == 0) {\n                        label.status |= Label.SUBROUTINE;\n                        ++subroutines;\n                    }\n                    currentBlock.status |= Label.JSR;\n                    addSuccessor(stackSize + 1, label);\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                    /*\n                     * note that, by construction in this method, a JSR block\n                     * has at least two successors in the control flow graph:\n                     * the first one leads the next instruction after the JSR,\n                     * while the second one leads to the JSR target.\n                     */\n                } else {\n                    // updates current stack size (max stack size unchanged\n                    // because stack size variation always negative in this\n                    // case)\n                    stackSize += Frame.SIZE[opcode];\n                    addSuccessor(stackSize, label);\n                }\n            }\n        }\n        // adds the instruction to the bytecode of the method\n        true\n                && label.position - code.length < Short.MIN_VALUE)\n        {\n            /*\n             * case of a backward jump with an offset < -32768. In this case we\n             * automatically replace GOTO with GOTO_W, JSR with JSR_W and IFxxx\n             * <l> with IFNOTxxx <l'> GOTO_W <l>, where IFNOTxxx is the\n             * \"opposite\" opcode of IFxxx (i.e., IFNE for IFEQ) and where <l'>\n             * designates the instruction just after the GOTO_W.\n             */\n            if (opcode == Opcodes.GOTO) {\n                code.putByte(200); // GOTO_W\n            } else if (opcode == Opcodes.JSR) {\n                code.putByte(201); // JSR_W\n            } else {\n                // if the IF instruction is transformed into IFNOT GOTO_W the\n                // next instruction becomes the target of the IFNOT instruction\n                if (nextInsn != null) {\n                    nextInsn.status |= Label.TARGET;\n                }\n                code.putByte(opcode <= 166\n                        ? ((opcode + 1) ^ 1) - 1\n                        : opcode ^ 1);\n                code.putShort(8); // jump offset\n                code.putByte(200); // GOTO_W\n            }\n            label.put(this, code, code.length - 1, true);\n        } else {\n            /*\n             * case of a backward jump with an offset >= -32768, or of a forward\n             * jump with, of course, an unknown offset. In these cases we store\n             * the offset in 2 bytes (which will be increased in\n             * resizeInstructions, if needed).\n             */\n            code.putByte(opcode);\n            label.put(this, code, code.length - 1, false);\n        }\n        if (currentBlock != null) {\n            if (nextInsn != null) {\n                // if the jump instruction is not a GOTO, the next instruction\n                // is also a successor of this instruction. Calling visitLabel\n                // adds the label of this next instruction as a successor of the\n                // current block, and starts a new basic block\n                visitLabel(nextInsn);\n            }\n            if (opcode == Opcodes.GOTO) {\n                noSuccessor();\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "No check of the label's position before resolving it and storing its offset.",
+        "line": 41,
+        "precode": "label.position - code.length < Short.MIN_VALUE",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Always consider opcode as Opcodes.GOTO to test the GOTO case of this method.",
+        "line": 52,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "No replacement of opcode with JSR_W when opcode is indeed JSR.",
+        "line": 54,
+        "precode": "else if (opcode == Opcodes.JSR) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Always replace the instruction with GOTO_W, regardless of opcode.",
+        "line": 56,
+        "precode": "if (nextInsn != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "No check if nextInsn is null before accessing its properties.",
+        "line": 59,
+        "precode": "if (nextInsn != null)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Always consider opcode as GOTO to test the GOTO case of this method.",
+        "line": 61,
+        "precode": "opcode <= 166",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "No replacement of opcode with its opposite for IFxxx instructions.",
+        "line": 62,
+        "precode": "(opcode + 1) ^ 1 - 1",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Always consider the label's position as code.length to test the case of a forward jump with an unknown offset.",
+        "line": 65,
+        "precode": "label.position - code.length < Short.MIN_VALUE",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "No update of current stack size in all cases, including GOTO and JSR instructions.",
+        "line": 35,
+        "precode": "stackSize += Frame.SIZE[opcode];",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Always consider the opcode as Opcodes.GOTO to test the case of a GOTO instruction with an offset < -32768.",
+        "line": 51,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "No replacement of opcode with JSR_W when opcode is indeed JSR, even in the case of a backward jump.",
+        "line": 54,
+        "precode": "else if (opcode == Opcodes.JSR) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "No update of current block status to Label.JSR in the JSR case, even when label's status is not Label.SUBROUTINE.",
+        "line": 21,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "Always consider nextInsn as null to test the case of a forward jump with an unknown offset.",
+        "line": 59,
+        "precode": "if (nextInsn != null)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "No update of current block status in all cases, including GOTO and JSR instructions.",
+        "line": 79,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "Always consider the opcode as Opcodes.GOTO to test the case of a GOTO instruction with an offset >= -32768.",
+        "line": 51,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "No replacement of opcode with JSR_W when opcode is indeed JSR, even in the case of a backward jump.",
+        "line": 54,
+        "precode": "else if (opcode == Opcodes.JSR) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "No update of current block status to Label.JSR in the JSR case, even when label's status is not Label.SUBROUTINE.",
+        "line": 21,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Always consider nextInsn as null to test the case of a forward jump with an unknown offset.",
+        "line": 59,
+        "precode": "if (nextInsn != null)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "No update of current block status in all cases, including GOTO and JSR instructions.",
+        "line": 79,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "Always consider opcode as Opcodes.GOTO to test the case of a GOTO instruction with an offset < -32768.",
+        "line": 51,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "No replacement of opcode with JSR_W when opcode is indeed JSR, even in the case of a backward jump.",
+        "line": 54,
+        "precode": "else if (opcode == Opcodes.JSR) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "No update of current block status to Label.JSR in the JSR case, even when label's status is not Label.SUBROUTINE.",
+        "line": 21,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "Always consider nextInsn as null to test the case of a forward jump with an unknown offset.",
+        "line": 59,
+        "precode": "if (nextInsn != null)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "No update of current block status in all cases, including GOTO and JSR instructions.",
+        "line": 79,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "Always consider opcode as Opcodes.GOTO to test the case of a GOTO instruction with an offset >= -32768.",
+        "line": 51,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "No replacement of opcode with JSR_W when opcode is indeed JSR, even in the case of a backward jump.",
+        "line": 54,
+        "precode": "else if (opcode == Opcodes.JSR) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 34,
+        "reasoning": "No update of current block status to Label.JSR in the JSR case, even when label's status is not Label.SUBROUTINE.",
+        "line": 21,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "Always consider nextInsn as null to test the case of a forward jump with an unknown offset.",
+        "line": 59,
+        "precode": "if (nextInsn != null)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 36,
+        "reasoning": "No update of current block status in all cases, including GOTO and JSR instructions.",
+        "line": 79,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "Always consider opcode as Opcodes.GOTO to test the case of a GOTO instruction with an offset < -32768.",
+        "line": 51,
+        "precode": "if (opcode == Opcodes.GOTO)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 38,
+        "reasoning": "No replacement of opcode with JSR_W when opcode is indeed JSR, even in the case of a backward jump.",
+        "line": 54,
+        "precode": "else if (opcode == Opcodes.JSR) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 39,
+        "reasoning": "No update of current block status to Label.JSR in the JSR case, even when label's status is not Label.SUBROUTINE.",
+        "line": 21,
+        "precode": "currentBlock.status |= Label.JSR;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 40,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 40,
+        "reasoning": "Always consider nextInsn as null to test the case of a forward jump with an unknown offset.",
+        "line": 59,
+        "precode": "if (nextInsn != null)",
+        "aftercode": ""
+      }
+    }
+  ]
+}

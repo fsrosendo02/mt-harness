@@ -1,0 +1,179 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition where no input is needed if endReached is true.",
+      "line": 8,
+      "precode": "while (len > 0) {",
+      "aftercode": "while (len > 0 && !endReached) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Changes the condition to always read input, violating the expected behavior.",
+      "line": 9,
+      "precode": "if (inf.needsInput()) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Removes the check for bufUsed being -1, potentially leading to an EOFException when it should not.",
+      "line": 16,
+      "precode": "if (bufUsed == -1)",
+      "aftercode": ""
+    },
+    {
+      "id": 4,
+      "reasoning": "Replaces the inflate call with a no-op, ignoring the actual decompression logic.",
+      "line": 23,
+      "precode": "ret = inf.inflate(b, off, len);",
+      "aftercode": "int ret = 0;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Modifies the CRC update to only consider the first byte of each read block.",
+      "line": 28,
+      "precode": "crc.update(b, off, ret);",
+      "aftercode": "crc.update(b, off, 1);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Changes the memberSize update to increment by a fixed value instead of the actual read size.",
+      "line": 29,
+      "precode": "memberSize += ret;",
+      "aftercode": "memberSize += 1;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Ignores the finished state of the inflater, potentially reading too much or not enough.",
+      "line": 35,
+      "precode": "if (inf.finished()) {",
+      "aftercode": ""
+    },
+    {
+      "id": 8,
+      "reasoning": "Removes the reset and skip calls after finishing, potentially leaving extra data in the buffer.",
+      "line": 41,
+      "precode": "in.reset();",
+      "aftercode": ""
+    },
+    {
+      "id": 9,
+      "reasoning": "Changes the CRC check to compare against a hardcoded value instead of the computed one.",
+      "line": 56,
+      "precode": "if (crcStored != crc.getValue())",
+      "aftercode": "if (crcStored != 0)"
+    },
+    {
+      "id": 10,
+      "reasoning": "Modifies the uncompressed size check to compare against a hardcoded value instead of the computed one.",
+      "line": 65,
+      "precode": "if (isize != memberSize)",
+      "aftercode": "if (isize != 0)"
+    },
+    {
+      "id": 11,
+      "reasoning": "Moves the endReached flag check inside the loop, potentially ending decompression prematurely.",
+      "line": 72,
+      "precode": "inf.end();",
+      "aftercode": ""
+    },
+    {
+      "id": 12,
+      "reasoning": "Changes the return value when endReached is true to always return -1, ignoring the actual read size.",
+      "line": 74,
+      "precode": "return size == 0 ? -1 : size;",
+      "aftercode": "return -1;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Removes the check for decompressConcatenated and always initializes the inflater, potentially leading to incorrect behavior with concatenated input.",
+      "line": 70,
+      "precode": "if (!decompressConcatenated || !init(false)) {",
+      "aftercode": ""
+    },
+    {
+      "id": 14,
+      "reasoning": "Changes the initialization of inData outside the loop, potentially leading to an IllegalStateException if reset is called.",
+      "line": 49,
+      "precode": "DataInputStream inData = new DataInputStream(in);",
+      "aftercode": ""
+    },
+    {
+      "id": 15,
+      "reasoning": "Removes the readUnsignedByte calls from the CRC and size checks, potentially leading to a NullPointerException.",
+      "line": 54,
+      "precode": "crcStored |= (long)inData.readUnsignedByte() << (i * 8);",
+      "aftercode": ""
+    },
+    {
+      "id": 16,
+      "reasoning": "Removes the readUnsignedByte calls from the size check, potentially leading to a NullPointerException.",
+      "line": 63,
+      "precode": "isize |= inData.readUnsignedByte() << (i * 8);",
+      "aftercode": ""
+    },
+    {
+      "id": 17,
+      "reasoning": "Changes the inflation call to read data into a temporary buffer instead of the provided one, potentially ignoring the client's buffer.",
+      "line": 23,
+      "precode": "ret = inf.inflate(b, off, len);",
+      "aftercode": "byte[] tempBuf = new byte[len]; ret = inf.inflate(tempBuf, 0, len);"
+    },
+    {
+      "id": 18,
+      "reasoning": "Modifies the CRC update to use an incorrect offset, potentially corrupting the CRC calculation.",
+      "line": 28,
+      "precode": "crc.update(b, off, ret);",
+      "aftercode": "crc.update(b, off + 1, ret - 1);"
+    },
+    {
+      "id": 19,
+      "reasoning": "Changes the memberSize update to increment by an incorrect value, potentially corrupting the size calculation.",
+      "line": 29,
+      "precode": "memberSize += ret;",
+      "aftercode": "memberSize += ret - 1;"
+    },
+    {
+      "id": 20,
+      "reasoning": "Modifies the skipAmount calculation to use an incorrect value, potentially skipping too little or too much data.",
+      "line": 43,
+      "precode": "int skipAmount = bufUsed - inf.getRemaining();",
+      "aftercode": "int skipAmount = bufUsed + inf.getRemaining();"
+    },
+    {
+      "id": 21,
+      "reasoning": "Changes the CRC check to use an incorrect value, potentially failing to detect corrupt data.",
+      "line": 56,
+      "precode": "if (crcStored != crc.getValue())",
+      "aftercode": "if (crcStored == crc.getValue())"
+    },
+    {
+      "id": 22,
+      "reasoning": "Modifies the uncompressed size check to use an incorrect value, potentially failing to detect corrupt data.",
+      "line": 65,
+      "precode": "if (isize != memberSize)",
+      "aftercode": "if (isize == memberSize)"
+    },
+    {
+      "id": 23,
+      "reasoning": "Changes the initialization of inData to use an incorrect stream, potentially leading to an IOException.",
+      "line": 49,
+      "precode": "DataInputStream inData = new DataInputStream(in);",
+      "aftercode": "DataInputStream inData = new DataInputStream(new ByteArrayInputStream(new byte[0]));"
+    },
+    {
+      "id": 24,
+      "reasoning": "Modifies the inflation call to use an incorrect buffer offset, potentially corrupting the output.",
+      "line": 23,
+      "precode": "ret = inf.inflate(b, off, len);",
+      "aftercode": "ret = inf.inflate(b, off + 1, len - 1);"
+    },
+    {
+      "id": 25,
+      "reasoning": "Changes the memberSize update to not include the read size, potentially underestimating the decompressed data size.",
+      "line": 29,
+      "precode": "memberSize += ret;",
+      "aftercode": ""
+    }
+  ]
+}

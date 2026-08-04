@@ -1,0 +1,109 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the handling of subnormal numbers by not adjusting the mantissa correctly when scaling down.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa | (1L << (-scaledExponent));"
+    },
+    {
+      "id": 2,
+      "reasoning": "Changes the handling of NaN, infinity, and zero to not return the input value.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isNaN(d) && !Double.isInfinite(d) && d != 0) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Changes the condition for scaling when n is negative to always use the slow path.",
+      "line": 28,
+      "precode": "if (n < 0)",
+      "aftercode": "if (n <= -1023)"
+    },
+    {
+      "id": 4,
+      "reasoning": "Changes the condition for scaling when n is positive to always use the slow path.",
+      "line": 54,
+      "precode": "if (exponent == 0)",
+      "aftercode": "if (scaledExponent >= 1024)"
+    },
+    {
+      "id": 5,
+      "reasoning": "Changes the condition for determining if a number is subnormal.",
+      "line": 22,
+      "precode": "int exponent = ((int) (bits >>> 52)) & 0x7ff;",
+      "aftercode": "int exponent = ((int) (bits >>> 53)) & 0x7fe;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Changes the handling of negative n to always return zero instead of -zero.",
+      "line": 13,
+      "precode": "return (d > 0) ? 0.0 : -0.0;",
+      "aftercode": "return 0.0;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Changes the handling of positive n to always return infinity instead of negative infinity.",
+      "line": 16,
+      "precode": "return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Changes the condition for returning a subnormal number to always return zero.",
+      "line": 33,
+      "precode": "if (scaledExponent > -53)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 9,
+      "reasoning": "Changes the normalization process for subnormal numbers by not shifting or masking the mantissa.",
+      "line": 58,
+      "precode": "mantissa = mantissa << 1;",
+      "aftercode": "// mantissa = mantissa << 1;"
+    },
+    {
+      "id": 10,
+      "reasoning": "Changes the condition for normalizing a subnormal number to never normalize it.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1)",
+      "aftercode": "while (true)"
+    },
+    {
+      "id": 11,
+      "reasoning": "Changes the rounding behavior when adding a bit to round up the result.",
+      "line": 44,
+      "precode": "mantissa++",
+      "aftercode": "// mantissa++"
+    },
+    {
+      "id": 12,
+      "reasoning": "Changes the computation of the scaled exponent by not adding n directly.",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Changes the computation of the most significant lost bit during scaling down by not using bitwise AND.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa + (1L << (-scaledExponent));"
+    },
+    {
+      "id": 14,
+      "reasoning": "Changes the computation of the mantissa during normalization by not clearing the high bit.",
+      "line": 62,
+      "precode": "mantissa = mantissa & 0x000fffffffffffffL;",
+      "aftercode": "// mantissa = mantissa & 0x000fffffffffffffL;"
+    },
+    {
+      "id": 15,
+      "reasoning": "Changes the condition for returning infinity when n is too large to not check the sign of d.",
+      "line": 16,
+      "precode": "return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return Double.POSITIVE_INFINITY;"
+    }
+  ]
+}

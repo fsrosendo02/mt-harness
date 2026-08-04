@@ -1,0 +1,123 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public void appendUsage(final StringBuffer buffer,
+ 2:                             final Set helpSettings,
+ 3:                             final Comparator comp,
+ 4:                             final String separator) {
+ 5:         final Set helpSettingsCopy = new HashSet(helpSettings);
+ 6: 
+ 7:         final boolean optional =
+ 8:             (minimum == 0) && helpSettingsCopy.contains(DisplaySetting.DISPLAY_OPTIONAL);
+ 9: 
+10:         final boolean expanded =
+11:             (name == null) || helpSettingsCopy.contains(DisplaySetting.DISPLAY_GROUP_EXPANDED);
+12: 
+13:         final boolean named =
+14:             !expanded ||
+15:             ((name != null) && helpSettingsCopy.contains(DisplaySetting.DISPLAY_GROUP_NAME));
+16: 
+17:         final boolean arguments = helpSettingsCopy.contains(DisplaySetting.DISPLAY_GROUP_ARGUMENT);
+18: 
+19:         final boolean outer = helpSettingsCopy.contains(DisplaySetting.DISPLAY_GROUP_OUTER);
+20: 
+21:         helpSettingsCopy.remove(DisplaySetting.DISPLAY_GROUP_OUTER);
+22: 
+23:         final boolean both = named && expanded;
+24: 
+25:         if (optional) {
+26:             buffer.append('[');
+27:         }
+28: 
+29:         if (named) {
+30:             buffer.append(name);
+31:         }
+32: 
+33:         if (both) {
+34:             buffer.append(" (");
+35:         }
+36: 
+37:         if (expanded) {
+38:             final Set childSettings;
+39: 
+40:             if (!helpSettingsCopy.contains(DisplaySetting.DISPLAY_GROUP_EXPANDED)) {
+41:                 childSettings = DisplaySetting.NONE;
+42:             } else {
+43:                 childSettings = new HashSet(helpSettingsCopy);
+44:                 childSettings.remove(DisplaySetting.DISPLAY_OPTIONAL);
+45:             }
+46: 
+47:             // grab a list of the group's options.
+48:             final List list;
+49: 
+50:             if (comp == null) {
+51:                 // default to using the initial order
+52:                 list = options;
+53:             } else {
+54:                 // sort options if comparator is supplied
+55:                 list = new ArrayList(options);
+56:                 Collections.sort(list, comp);
+57:             }
+58: 
+59:             // for each option.
+60:             for (final Iterator i = list.iterator(); i.hasNext();) {
+61:                 final Option option = (Option) i.next();
+62: 
+63:                 // append usage information
+64:                 option.appendUsage(buffer, childSettings, comp);
+65: 
+66:                 // add separators as needed
+67:                 if (i.hasNext()) {
+68:                     buffer.append(separator);
+69:                 }
+70:             }
+71:         }
+72: 
+73:         if (both) {
+74:             buffer.append(')');
+75:         }
+76: 
+77:         if (optional && outer) {
+78:             buffer.append(']');
+79:         }
+80: 
+81:         if (arguments) {
+82:             for (final Iterator i = anonymous.iterator(); i.hasNext();) {
+83:                 buffer.append(' ');
+84: 
+85:                 final Option option = (Option) i.next();
+86:                 option.appendUsage(buffer, helpSettingsCopy, comp);
+87:             }
+88:         }
+89: 
+90:         if (optional && !outer) {
+91:             buffer.append(']');
+92:         }
+93:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

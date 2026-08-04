@@ -1,0 +1,81 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static String parseToken(String pattern, int[] indexRef) {
+ 2:         StringBuffer buf = new StringBuffer();
+ 3: 
+ 4:         int i = indexRef[0];
+ 5:         int length = pattern.length();
+ 6: 
+ 7:         char c = pattern.charAt(i);
+ 8:         if (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z') {
+ 9:             // Scan a run of the same character, which indicates a time
+10:             // pattern.
+11:             buf.append(c);
+12: 
+13:             while (i + 1 < length) {
+14:                 char peek = pattern.charAt(i + 1);
+15:                 if (peek == c) {
+16:                     buf.append(c);
+17:                     i++;
+18:                 } else {
+19:                     break;
+20:                 }
+21:             }
+22:         } else {
+23:             // This will identify token as text.
+24:             buf.append('\'');
+25: 
+26:             boolean inLiteral = false;
+27: 
+28:             for (; i < length; i++) {
+29:                 c = pattern.charAt(i);
+30:                 
+31:                 if (c == '\'') {
+32:                     if (i + 1 < length && pattern.charAt(i + 1) == '\'') {
+33:                         // '' is treated as escaped '
+34:                         i++;
+35:                         buf.append(c);
+36:                     } else {
+37:                         inLiteral = !inLiteral;
+38:                     }
+39:                 } else if (!inLiteral &&
+40:                            (c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z')) {
+41:                     i--;
+42:                     break;
+43:                 } else {
+44:                     buf.append(c);
+45:                 }
+46:             }
+47:         }
+48: 
+49:         indexRef[0] = i;
+50:         return buf.toString();
+51:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

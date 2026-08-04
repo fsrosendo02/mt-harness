@@ -1,0 +1,70 @@
+{
+  "requested_count": 16,
+  "accepted_count": 11,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violation of the 'handle EOL condition' property",
+        "line": 5,
+        "precode": "if (readEndOfLine(ch)) { token.type = EORECORD; break; }",
+        "aftercode": "if (ch == '\\n') { return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violation of the 'handle EOF condition' property",
+        "line": 8,
+        "precode": "else if (isEndOfFile(ch)) { token.type = EOF; token.isReady = true; break; }",
+        "aftercode": "else if (ch == '\\u0000') { return token; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violation of the 'handle delimiter condition' property",
+        "line": 11,
+        "precode": "else if (isDelimiter(ch)) { token.type = TOKEN; break; }",
+        "aftercode": "else if (ch == '\\t') { return token; }",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            else if (ch == '\\t') { return token; } {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violation of the 'break on delimiter condition' property",
+        "line": 11,
+        "precode": "else if (isDelimiter(ch)) { token.type = TOKEN; break; }",
+        "aftercode": "return token;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            return token; {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.content.append((char) ch);\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violation of the 'handle normal character' property",
+        "line": 23,
+        "precode": "token.content.append((char) ch);",
+        "aftercode": "token.type = TOKEN;",
+        "candidate_code": "    private Token parseSimpleToken(final Token token, int ch) throws IOException {\n        // Faster to use while(true)+break than while(token.type == INVALID)\n        while (true) {\n            if (readEndOfLine(ch)) {\n                token.type = EORECORD;\n                break;\n            } else if (isEndOfFile(ch)) {\n                token.type = EOF;\n                token.isReady = true; // There is data at EOF\n                break;\n            } else if (isDelimiter(ch)) {\n                token.type = TOKEN;\n                break;\n            } else if (isEscape(ch)) {\n                final int unescaped = readEscape();\n                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape\n                    token.content.append((char) ch).append((char) in.getLastChar());\n                } else {\n                    token.content.append((char) unescaped);\n                }\n                ch = in.read(); // continue\n            } else {\n                token.type = TOKEN;\n                ch = in.read(); // continue\n            }\n        }\n\n        if (ignoreSurroundingSpaces) {\n            trimTrailingSpaces(token.content);\n        }\n\n        return token;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

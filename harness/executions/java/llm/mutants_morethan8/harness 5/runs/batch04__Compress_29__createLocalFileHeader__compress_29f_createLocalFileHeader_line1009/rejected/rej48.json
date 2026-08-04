@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_29",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_29f_createLocalFileHeader__line1009",
+  "file_path": "src/main/java/org/apache/commons/compress/archivers/zip/ZipArchiveOutputStream.java",
+  "function_name": "createLocalFileHeader",
+  "start_line": 1009,
+  "end_line": 1073,
+  "mutant_id": "rej48",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 48,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch04__Compress_29__createLocalFileHeader__compress_29f_createLocalFileHeader_line1009/generation/raw_response.txt",
+  "payload": {
+    "id": 48,
+    "reasoning": "Extra field data is not copied",
+    "line": 63,
+    "precode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);",
+    "aftercode": "System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, 0);",
+    "candidate_code": "    private byte[] createLocalFileHeader(ZipArchiveEntry ze, ByteBuffer name, boolean encodable,\n                                         boolean phased)  {\n        byte[] extra = ze.getLocalFileDataExtra();\n        final int nameLen = name.limit() - name.position();\n        int len= LFH_FILENAME_OFFSET + nameLen + extra.length;\n        byte[] buf = new byte[len];\n\n        System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);\n\n        //store method in local variable to prevent multiple method calls\n        final int zipMethod = ze.getMethod();\n\n        if (phased &&  !isZip64Required(entry.entry, zip64Mode)){\n            putShort(INITIAL_VERSION, buf, LFH_VERSION_NEEDED_OFFSET);\n        } else {\n            putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);\n        }\n\n        GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, !encodable && fallbackToUTF8);\n        generalPurposeBit.encode(buf, LFH_GPB_OFFSET);\n\n        // compression method\n        putShort(zipMethod, buf, LFH_METHOD_OFFSET);\n\n        ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);\n\n        // CRC\n        if (phased){\n            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);\n        } else if (zipMethod == DEFLATED || raf != null) {\n            System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);\n        } else {\n            putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);\n        }\n\n        // compressed length\n        // uncompressed length\n        if (hasZip64Extra(entry.entry)){\n            // point to ZIP64 extended information extra field for\n            // sizes, may get rewritten once sizes are known if\n            // stream is seekable\n            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);\n            ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);\n        } else if (phased) {\n            putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);\n            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);\n        } else if (zipMethod == DEFLATED || raf != null) {\n            System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);\n            System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);\n        } else { // Stored\n            putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);\n            putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);\n        }\n        // file name length\n        putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);\n\n        // extra field length\n        putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);\n\n        // file name\n        System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);\n\n        System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, 0);\n        return buf;\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch04__Compress_29__createLocalFileHeader__compress_29f_createLocalFileHeader_line1009/rejected/rej48.log",
+  "mutant_path": "harness/runs/batch04__Compress_29__createLocalFileHeader__compress_29f_createLocalFileHeader_line1009/rejected/rej48.mutant.txt",
+  "original_path": "harness/runs/batch04__Compress_29__createLocalFileHeader__compress_29f_createLocalFileHeader_line1009/rejected/original.txt"
+}

@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Incorrectly skips special case handling for NaN",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isInfinite(d) || (d == 0)) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Incorrect fast path exponent calculation",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 53);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Incorrectly returns zero for very negative n",
+      "line": 12,
+      "precode": "if (n < -2098) {",
+      "aftercode": "if (n < -2097) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Incorrectly returns infinity for very positive n",
+      "line": 15,
+      "precode": "if (n > 2097) {",
+      "aftercode": "if (n > 2098) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Incorrect exponent extraction from bits",
+      "line": 22,
+      "precode": "int  exponent   = ((int) (bits >>> 52)) & 0x7ff;",
+      "aftercode": "int  exponent   = ((int) (bits >>> 53)) & 0x7ff;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Inverted scaling direction",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrect condition for normal number scaling",
+      "line": 30,
+      "precode": "if (scaledExponent > 0) {",
+      "aftercode": "if (scaledExponent <= 0) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "Incorrect subnormal number boundary check",
+      "line": 33,
+      "precode": "else if (scaledExponent > -53) {",
+      "aftercode": "else if (scaledExponent <= -53) {"
+    },
+    {
+      "id": 9,
+      "reasoning": "Missing hidden mantissa bit recovery",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa;"
+    },
+    {
+      "id": 10,
+      "reasoning": "Incorrectly calculates lost bit position",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa & (1L << (scaledExponent + 1));"
+    },
+    {
+      "id": 11,
+      "reasoning": "Always rounds up instead of conditionally rounding",
+      "line": 42,
+      "precode": "if (mostSignificantLostBit != 0) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "Incorrect rounding direction",
+      "line": 45,
+      "precode": "mantissa++;",
+      "aftercode": "mantissa--;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Incorrect subnormal number normalization check",
+      "line": 54,
+      "precode": "if (exponent == 0) {",
+      "aftercode": "if (exponent != 0) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Incorrect normalization loop condition",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 52) == 1) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "Incorrect normalization mantissa shift",
+      "line": 59,
+      "precode": "mantissa = mantissa << 1;",
+      "aftercode": "mantissa = mantissa >> 1;"
+    },
+    {
+      "id": 16,
+      "reasoning": "Incorrectly decrements scaled exponent",
+      "line": 61,
+      "precode": "++scaledExponent;",
+      "aftercode": "--scaledExponent;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Incorrect overflow check for normalized numbers",
+      "line": 65,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent >= 2047) {"
+    },
+    {
+      "id": 18,
+      "reasoning": "Incorrectly returns zero instead of infinity",
+      "line": 67,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign == 0L) ? 0.0 : -0.0;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Incorrect overflow check for subnormal numbers",
+      "line": 70,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent >= 2047) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Incorrectly returns zero instead of infinity",
+      "line": 73,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign == 0L) ? 0.0 : -0.0;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Incorrectly skips sign handling for zero",
+      "line": 10,
+      "precode": "return d;",
+      "aftercode": "return 0.0;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Incorrectly returns positive infinity for negative numbers",
+      "line": 13,
+      "precode": "return (d > 0) ? 0.0 : -0.0;",
+      "aftercode": "return (d > 0) ? 0.0 : Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 23,
+      "reasoning": "Incorrectly returns negative infinity for positive numbers",
+      "line": 16,
+      "precode": "return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (d > 0) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Incorrectly sets mantissa bits during recomposition",
+      "line": 32,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 51) | mantissa);"
+    }
+  ]
+}

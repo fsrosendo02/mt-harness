@@ -1,0 +1,131 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+  1:     public static boolean isNumber(String str) {
+  2:         if (StringUtils.isEmpty(str)) {
+  3:             return false;
+  4:         }
+  5:         char[] chars = str.toCharArray();
+  6:         int sz = chars.length;
+  7:         boolean hasExp = false;
+  8:         boolean hasDecPoint = false;
+  9:         boolean allowSigns = false;
+ 10:         boolean foundDigit = false;
+ 11:         // deal with any possible sign up front
+ 12:         int start = (chars[0] == '-') ? 1 : 0;
+ 13:         if (sz > start + 1 && chars[start] == '0' && chars[start + 1] == 'x') {
+ 14:             int i = start + 2;
+ 15:             if (i == sz) {
+ 16:                 return false; // str == "0x"
+ 17:             }
+ 18:             // checking hex (it can't be anything else)
+ 19:             for (; i < chars.length; i++) {
+ 20:                 if ((chars[i] < '0' || chars[i] > '9')
+ 21:                     && (chars[i] < 'a' || chars[i] > 'f')
+ 22:                     && (chars[i] < 'A' || chars[i] > 'F')) {
+ 23:                     return false;
+ 24:                 }
+ 25:             }
+ 26:             return true;
+ 27:         }
+ 28:         sz--; // don't want to loop to the last char, check it afterwords
+ 29:               // for type qualifiers
+ 30:         int i = start;
+ 31:         // loop to the next to last char or to the last char if we need another digit to
+ 32:         // make a valid number (e.g. chars[0..5] = "1234E")
+ 33:         while (i < sz || (i < sz + 1 && allowSigns && !foundDigit)) {
+ 34:             if (chars[i] >= '0' && chars[i] <= '9') {
+ 35:                 foundDigit = true;
+ 36:                 allowSigns = false;
+ 37: 
+ 38:             } else if (chars[i] == '.') {
+ 39:                 if (hasDecPoint || hasExp) {
+ 40:                     // two decimal points or dec in exponent   
+ 41:                     return false;
+ 42:                 }
+ 43:                 hasDecPoint = true;
+ 44:             } else if (chars[i] == 'e' || chars[i] == 'E') {
+ 45:                 // we've already taken care of hex.
+ 46:                 if (hasExp) {
+ 47:                     // two E's
+ 48:                     return false;
+ 49:                 }
+ 50:                 if (!foundDigit) {
+ 51:                     return false;
+ 52:                 }
+ 53:                 hasExp = true;
+ 54:                 allowSigns = true;
+ 55:             } else if (chars[i] == '+' || chars[i] == '-') {
+ 56:                 if (!allowSigns) {
+ 57:                     return false;
+ 58:                 }
+ 59:                 allowSigns = false;
+ 60:                 foundDigit = false; // we need a digit after the E
+ 61:             } else {
+ 62:                 return false;
+ 63:             }
+ 64:             i++;
+ 65:         }
+ 66:         if (i < chars.length) {
+ 67:             if (chars[i] >= '0' && chars[i] <= '9') {
+ 68:                 // no type qualifier, OK
+ 69:                 return true;
+ 70:             }
+ 71:             if (chars[i] == 'e' || chars[i] == 'E') {
+ 72:                 // can't have an E at the last byte
+ 73:                 return false;
+ 74:             }
+ 75:             if (chars[i] == '.') {
+ 76:                 if (hasDecPoint || hasExp) {
+ 77:                     // two decimal points or dec in exponent
+ 78:                     return false;
+ 79:                 }
+ 80:                 // single trailing decimal point after non-exponent is ok
+ 81:                 return foundDigit;
+ 82:             }
+ 83:             if (!allowSigns
+ 84:                 && (chars[i] == 'd'
+ 85:                     || chars[i] == 'D'
+ 86:                     || chars[i] == 'f'
+ 87:                     || chars[i] == 'F')) {
+ 88:                 return foundDigit;
+ 89:             }
+ 90:             if (chars[i] == 'l'
+ 91:                 || chars[i] == 'L') {
+ 92:                 // not allowing L with an exponent or decimal point
+ 93:                 return foundDigit && !hasExp && !hasDecPoint;
+ 94:             }
+ 95:             // last character is illegal
+ 96:             return false;
+ 97:         }
+ 98:         // allowSigns is true iff the val ends in 'E'
+ 99:         // found digit it to make sure weird stuff like '.' and '1E-' doesn't pass
+100:         return !allowSigns && foundDigit;
+101:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Codec_9",
+  "language": "java",
+  "version": "f",
+  "target_id": "codec_9f_read__line76",
+  "file_path": "src/java/org/apache/commons/codec/binary/BaseNCodecInputStream.java",
+  "function_name": "read",
+  "start_line": 76,
+  "end_line": 117,
+  "mutant_id": "rej03",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 3,
+  "rejection_reason": "non_executable_structural_change: unclosed delimiter(s): {",
+  "raw_response_path": "harness/runs/batch02__Codec_9__read__codec_9f_read_line76/generation/raw_response.txt",
+  "payload": {
+    "id": 3,
+    "reasoning": "Violates offset greater than array length check",
+    "line": 6,
+    "precode": "else if (offset > b.length || offset + len > b.length) {",
+    "aftercode": "else if (offset <= b.length || offset + len <= b.length) {",
+    "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        else if (offset <= b.length || offset + len <= b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/runs/batch02__Codec_9__read__codec_9f_read_line76/rejected/rej03.log",
+  "mutant_path": "harness/runs/batch02__Codec_9__read__codec_9f_read_line76/rejected/rej03.mutant.txt",
+  "original_path": "harness/runs/batch02__Codec_9__read__codec_9f_read_line76/rejected/original.txt"
+}

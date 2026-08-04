@@ -1,0 +1,77 @@
+{
+  "requested_count": 16,
+  "accepted_count": 10,
+  "rejected_count": 6,
+  "rejections": [
+    {
+      "index": 7,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Insert an edge with a hyperplane that is not within the node's boundaries",
+        "line": 19,
+        "precode": "// no suitable edge was found, the node remains a leaf node",
+        "aftercode": "// no suitable edge was found, the node is split and becomes a non-leaf node"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Insert an edge with a hyperplane that intersects another edge in the same subtree",
+        "line": 23,
+        "precode": "// we have split the node by inserted an edge as a cut sub-hyperplane",
+        "aftercode": "// we have split the node by inserted an edge as a cut sub-hyperplane and it intersects another edge in the same subtree"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Insert an edge with a hyperplane that is not within the same side as another edge in the same subtree",
+        "line": 34,
+        "precode": "// distribute the remaining edges in the two sub-trees",
+        "aftercode": "// distribute the remaining edges in the two sub-trees and it intersects an edge on the opposite side of the hyperplane"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Insert an edge with a hyperplane that is not within the same side as another edge in the opposite subtree",
+        "line": 45,
+        "precode": "switch (startSide) {",
+        "aftercode": "switch (startSide) {"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "Insert an edge with a hyperplane that intersects another edge in the opposite subtree",
+        "line": 60,
+        "precode": "final Vertex splitPoint = edge.split(inserted.getLine());",
+        "aftercode": "final Vertex splitPoint = inserted.getLine().split(edge);",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    case PLUS:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = inserted.getLine().split(edge);\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "Insert an edge with a hyperplane that is not within the same side as another edge in the opposite subtree",
+        "line": 70,
+        "precode": "if (endSide == Side.PLUS) {",
+        "aftercode": "if (endSide == Side.MINUS) {",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    case PLUS:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.MINUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The method returns a new Document object even if the input is null.",
+      "line": 2,
+      "precode": "return new Document(baseUri);",
+      "aftercode": "throw new IOException(\"Input stream cannot be null\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "The input stream is not wrapped with a ConstrainableInputStream.",
+      "line": 4,
+      "precode": "input = ConstrainableInputStream.wrap(input, bufferSize, 0);",
+      "aftercode": "input = new InputStream(){};"
+    },
+    {
+      "id": 3,
+      "reasoning": "The first read buffer size is not checked for being greater than zero.",
+      "line": 10,
+      "precode": "input.mark(firstReadBufferSize);",
+      "aftercode": "input.mark(-1);"
+    },
+    {
+      "id": 4,
+      "reasoning": "The mark() method is called on an unmarked input stream.",
+      "line": 11,
+      "precode": "ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1);",
+      "aftercode": "ByteBuffer firstBytes = readToByteBuffer(input, -1);"
+    },
+    {
+      "id": 5,
+      "reasoning": "The input stream is not reset after reading to the first buffer.",
+      "line": 13,
+      "precode": "input.reset();",
+      "aftercode": ""
+    },
+    {
+      "id": 6,
+      "reasoning": "The charset detection from BOM does not handle null cases correctly.",
+      "line": 16,
+      "precode": "bomCharset = detectCharsetFromBom(firstBytes, charsetName);",
+      "aftercode": "bomCharset = detectCharsetFromBom(null, charsetName);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The charset override from BOM does not handle null cases correctly.",
+      "line": 19,
+      "precode": "input.skip(bomCharset.offset);",
+      "aftercode": ""
+    },
+    {
+      "id": 8,
+      "reasoning": "The default charset is used instead of the determined one when it's found from meta tags.",
+      "line": 38,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "foundCharset = \"UTF-8\";"
+    },
+    {
+      "id": 9,
+      "reasoning": "The validation of the determined charset does not handle null cases correctly.",
+      "line": 44,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "foundCharset = null;"
+    },
+    {
+      "id": 10,
+      "reasoning": "The re-decoding of the input stream is not done when a new charset is determined.",
+      "line": 46,
+      "precode": "reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);",
+      "aftercode": ""
+    },
+    {
+      "id": 11,
+      "reasoning": "The output settings of the document are not updated with the new charset.",
+      "line": 60,
+      "precode": "doc.outputSettings().charset(charsetName);",
+      "aftercode": ""
+    },
+    {
+      "id": 12,
+      "reasoning": "The input stream is not closed after parsing.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": ""
+    },
+    {
+      "id": 13,
+      "reasoning": "The method throws an IOException if the charset is null and defaultCharset is used instead.",
+      "line": 56,
+      "precode": "if (charsetName == null)",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 14,
+      "reasoning": "The BufferedReader reader is not closed after parsing.",
+      "line": 59,
+      "precode": "BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);",
+      "aftercode": ""
+    },
+    {
+      "id": 15,
+      "reasoning": "The method does not throw an exception when the input stream is closed.",
+      "line": 63,
+      "precode": "return doc;",
+      "aftercode": "throw new IOException(\"Input stream cannot be read\");"
+    },
+    {
+      "id": 16,
+      "reasoning": "The method does not handle null cases correctly when creating a Document object.",
+      "line": 2,
+      "precode": "return new Document(baseUri);",
+      "aftercode": "return null;"
+    }
+  ]
+}

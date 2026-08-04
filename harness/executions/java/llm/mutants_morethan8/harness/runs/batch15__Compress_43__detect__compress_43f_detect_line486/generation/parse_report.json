@@ -1,0 +1,188 @@
+{
+  "requested_count": 24,
+  "accepted_count": 9,
+  "rejected_count": 15,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method does not handle IOException properly",
+        "line": 16,
+        "precode": "throw new ArchiveException(\"IOException while reading signature.\", e);",
+        "aftercode": "try { IOUtils.readFully(in, signature); } catch (IOException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method does not check if the InputStream is a ZipArchiveInputStream",
+        "line": 20,
+        "precode": "if (ZipArchiveInputStream.matches(signature, signatureLength)) { return ZIP; }",
+        "aftercode": "if (!ZipArchiveInputStream.matches(signature, signatureLength)) { return ZIP; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method does not check if the InputStream is a JarArchiveInputStream",
+        "line": 21,
+        "precode": "else if (JarArchiveInputStream.matches(signature, signatureLength)) { return JAR; }",
+        "aftercode": "else if (!JarArchiveInputStream.matches(signature, signatureLength)) { return JAR; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method does not check if the InputStream is an ArArchiveInputStream",
+        "line": 22,
+        "precode": "else if (ArArchiveInputStream.matches(signature, signatureLength)) { return AR; }",
+        "aftercode": "else if (!ArArchiveInputStream.matches(signature, signatureLength)) { return AR; }",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        else if (!ArArchiveInputStream.matches(signature, signatureLength)) { return AR; } {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not check if the InputStream is a CpioArchiveInputStream",
+        "line": 23,
+        "precode": "else if (CpioArchiveInputStream.matches(signature, signatureLength)) { return CPIO; }",
+        "aftercode": "else if (!CpioArchiveInputStream.matches(signature, signatureLength)) { return CPIO; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method does not check if the InputStream is an ArjArchiveInputStream",
+        "line": 24,
+        "precode": "else if (ArjArchiveInputStream.matches(signature, signatureLength)) { return ARJ; }",
+        "aftercode": "else if (!ArjArchiveInputStream.matches(signature, signatureLength)) { return ARJ; }",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        else if (!ArjArchiveInputStream.matches(signature, signatureLength)) { return ARJ; } {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not check if the InputStream is a SevenZFile",
+        "line": 25,
+        "precode": "else if (SevenZFile.matches(signature, signatureLength)) { return SEVEN_Z; }",
+        "aftercode": "else if (!SevenZFile.matches(signature, signatureLength)) { return SEVEN_Z; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not check for null InputStream in the second try block",
+        "line": 37,
+        "precode": "in.mark(dumpsig.length);",
+        "aftercode": "if (in != null) { in.mark(dumpsig.length); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not handle IOException properly in the second try block",
+        "line": 40,
+        "precode": "throw new ArchiveException(\"IOException while reading dump signature\", e);",
+        "aftercode": "try { IOUtils.readFully(in, dumpsig); } catch (IOException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not check if the InputStream is a DumpArchiveInputStream in the second try block",
+        "line": 43,
+        "precode": "if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) { return DUMP; }",
+        "aftercode": "if (!DumpArchiveInputStream.matches(dumpsig, signatureLength)) { return DUMP; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method does not check if the InputStream is a TarArchiveInputStream in the second try block",
+        "line": 56,
+        "precode": "if (TarArchiveInputStream.matches(tarHeader, signatureLength)) { return TAR; }",
+        "aftercode": "if (!TarArchiveInputStream.matches(tarHeader, signatureLength)) { return TAR; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method does not check if the header checksum is OK in the second try block",
+        "line": 66,
+        "precode": "if (tais.getNextTarEntry().isCheckSumOK()) { return TAR; }",
+        "aftercode": "if (!tais.getNextTarEntry().isCheckSumOK()) { return TAR; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not catch and handle exceptions in the second try block",
+        "line": 69,
+        "precode": "// can generate IllegalArgumentException as well as IOException",
+        "aftercode": "// do nothing"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method does not close the TarArchiveInputStream in a finally block",
+        "line": 74,
+        "precode": "IOUtils.closeQuietly(tais);",
+        "aftercode": "if (tais != null) { IOUtils.closeQuietly(tais); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method does not throw an ArchiveException if the InputStream is a TarArchiveInputStream but not in TAR format",
+        "line": 77,
+        "precode": "throw new ArchiveException(\"No Archiver found for the stream signature\");",
+        "aftercode": "if (TarArchiveInputStream.matches(tarHeader, signatureLength)) { throw new ArchiveException(\"No Archiver found for the stream signature\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+    protected static List wrap(final String text,
+                               final int width) {
+        // check for valid width
+        if (width < 1) {
+            throw new IllegalArgumentException(ResourceHelper.getResourceHelper().getMessage(ResourceConstants.HELPFORMATTER_WIDTH_TOO_NARROW,
+                                                                                             new Object[] {
+                                                                                                 new Integer(width)
+                                                                                             }));
+        }
+
+        // handle degenerate case
+        if (text == null) {
+            return Collections.singletonList("");
+        }
+
+        final List lines = new ArrayList();
+        final char[] chars = text.toCharArray();
+        int left = 0;
+
+        // for each character in the string
+        while (left < chars.length) {
+            // sync left and right indeces
+            int right = left;
+
+            // move right until we run out of characters, width or find a newline
+            while ((right < chars.length) && (chars[right] != '\n') &&
+                       (right < (left + width + 1))) {
+                right++;
+            }
+
+            // if a newline was found
+            if ((right < chars.length) && (chars[right] == '\n')) {
+                // record the substring
+                final String line = new String(chars, left, right - left) + "\n";
+                lines.add(line);
+
+                // move to the end of the substring
+                left = right + 1;
+
+                if (left == chars.length) {
+                    lines.add("");
+                }
+
+                // restart the loop
+                continue;
+            }
+
+            // move to the next ideal wrap point 
+            right = (left + width) - 1;
+
+            // if we have run out of characters
+            if (chars.length <= right) {
+                // record the substring
+                final String line = new String(chars, left, chars.length - left);
+                lines.add(line);
+
+                // abort the loop
+                break;
+            }
+
+            // back track the substring end until a space is found
+            while ((right >= left) && (chars[right] != ' ')) {
+                right--;
+            }
+
+            // if a space was found
+            if (right >= left) {
+                // record the substring to space
+                final String line = new String(chars, left, right - left);
+                lines.add(line);
+
+                // absorb all the spaces before next substring
+                while ((right < chars.length) && (chars[right] == ' ')) {
+                    right++;
+                }
+
+                left = right;
+
+                // restart the loop
+                continue;
+            }
+
+            // move to the wrap position irrespective of spaces
+            right = Math.min(left + width, chars.length);
+
+            // record the substring
+            final String line = new String(chars, left, right - left);
+            lines.add(line);
+
+            // absorb any the spaces before next substring
+            while ((right < chars.length) && (chars[right] == ' ')) {
+                right++;
+            }
+
+            left = right;
+        }
+
+        return lines;
+    }

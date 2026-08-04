@@ -1,0 +1,145 @@
+{
+  "requested_count": 40,
+  "accepted_count": 9,
+  "rejected_count": 11,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 13,
+        "precode": "constructors.add(_constructConstructor(ctor, false));",
+        "aftercode": "if (constructors == null) { constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length)); } constructors.add(_constructConstructor(ctor, true));",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates the computation by not considering all methods in the class.",
+        "line": 50,
+        "precode": "for (Method m : _class.getDeclaredMethods())",
+        "aftercode": "for (int i = 0; i < declaredCtors.length; i++) { Method m = declaredCtors[i]; // code to be mutated }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 61,
+        "precode": "creatorMethods.add(_constructCreatorMethod(m));",
+        "aftercode": "if (creatorMethods == null) { creatorMethods = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length)); } creatorMethods.add(_constructCreatorMethod(m));",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the computation by not considering all constructors in the class.",
+        "line": 72,
+        "precode": "if (_defaultConstructor != null) {",
+        "aftercode": "if (_defaultConstructor == null) {",
+        "candidate_code": "    private void resolveCreators()\n    {\n        // Then see which constructors we have\n        List<AnnotatedConstructor> constructors = null;\n        Constructor<?>[] declaredCtors = _class.getDeclaredConstructors();\n        for (Constructor<?> ctor : declaredCtors) {\n            if (ctor.getParameterTypes().length == 0) {\n                _defaultConstructor = _constructConstructor(ctor, true);\n            } else {\n                if (constructors == null) {\n                    constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length));\n                }\n                constructors.add(_constructConstructor(ctor, false));\n            }\n        }\n        if (constructors == null) {\n            _constructors = Collections.emptyList();\n        } else {\n            _constructors = constructors;\n        }\n        // and if need be, augment with mix-ins\n        if (_primaryMixIn != null) {\n            if (_defaultConstructor != null || !_constructors.isEmpty()) {\n                _addConstructorMixIns(_primaryMixIn);\n            }\n        }\n\n\n        /* And then... let's remove all constructors that are deemed\n         * ignorable after all annotations have been properly collapsed.\n         */\n        // 14-Feb-2011, tatu: AnnotationIntrospector is null if annotations not enabled; if so, can skip:\n        if (_annotationIntrospector != null) {\n            if (_defaultConstructor == null) {\n                if (_annotationIntrospector.hasIgnoreMarker(_defaultConstructor)) {\n                    _defaultConstructor = null;\n                }\n            }\n            if (_constructors != null) {\n                // count down to allow safe removal\n                for (int i = _constructors.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_constructors.get(i))) {\n                        _constructors.remove(i);\n                    }\n                }\n            }\n        }\n        List<AnnotatedMethod> creatorMethods = null;\n        \n        // Then static methods which are potential factory methods\n        for (Method m : _class.getDeclaredMethods()) {\n            if (!Modifier.isStatic(m.getModifiers())) {\n                continue;\n            }\n            // all factory methods are fine, as per [JACKSON-850]\n            //int argCount = m.getParameterTypes().length;\n            if (creatorMethods == null) {\n                creatorMethods = new ArrayList<AnnotatedMethod>(8);\n            }\n            creatorMethods.add(_constructCreatorMethod(m));\n        }\n        if (creatorMethods == null) {\n            _creatorMethods = Collections.emptyList();\n        } else {\n            _creatorMethods = creatorMethods;\n            // mix-ins to mix in?\n            if (_primaryMixIn != null) {\n                _addFactoryMixIns(_primaryMixIn);\n            }\n            // anything to ignore at this point?\n            if (_annotationIntrospector != null) {\n                // count down to allow safe removal\n                for (int i = _creatorMethods.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_creatorMethods.get(i))) {\n                        _creatorMethods.remove(i);\n                    }\n                }\n            }\n        }\n        _creatorsResolved = true;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 85,
+        "precode": "if (constructors == null) { constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length)); } constructors.add(_constructConstructor(ctor, false));",
+        "aftercode": "if (constructors != null && constructors.size() > 0) { _defaultConstructor = constructors.get(0); } else { _defaultConstructor = _constructConstructor(ctor, true); constructors.add(_defaultConstructor); }",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 108,
+        "precode": "_defaultConstructor = _constructConstructor(ctor, true);",
+        "aftercode": "_defaultConstructor = null;",
+        "candidate_code": "    private void resolveCreators()\n    {\n        // Then see which constructors we have\n        List<AnnotatedConstructor> constructors = null;\n        Constructor<?>[] declaredCtors = _class.getDeclaredConstructors();\n        for (Constructor<?> ctor : declaredCtors) {\n            if (ctor.getParameterTypes().length == 0) {\n                _defaultConstructor = null;\n            } else {\n                if (constructors == null) {\n                    constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length));\n                }\n                constructors.add(_constructConstructor(ctor, false));\n            }\n        }\n        if (constructors == null) {\n            _constructors = Collections.emptyList();\n        } else {\n            _constructors = constructors;\n        }\n        // and if need be, augment with mix-ins\n        if (_primaryMixIn != null) {\n            if (_defaultConstructor != null || !_constructors.isEmpty()) {\n                _addConstructorMixIns(_primaryMixIn);\n            }\n        }\n\n\n        /* And then... let's remove all constructors that are deemed\n         * ignorable after all annotations have been properly collapsed.\n         */\n        // 14-Feb-2011, tatu: AnnotationIntrospector is null if annotations not enabled; if so, can skip:\n        if (_annotationIntrospector != null) {\n            if (_defaultConstructor != null) {\n                if (_annotationIntrospector.hasIgnoreMarker(_defaultConstructor)) {\n                    _defaultConstructor = null;\n                }\n            }\n            if (_constructors != null) {\n                // count down to allow safe removal\n                for (int i = _constructors.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_constructors.get(i))) {\n                        _constructors.remove(i);\n                    }\n                }\n            }\n        }\n        List<AnnotatedMethod> creatorMethods = null;\n        \n        // Then static methods which are potential factory methods\n        for (Method m : _class.getDeclaredMethods()) {\n            if (!Modifier.isStatic(m.getModifiers())) {\n                continue;\n            }\n            // all factory methods are fine, as per [JACKSON-850]\n            //int argCount = m.getParameterTypes().length;\n            if (creatorMethods == null) {\n                creatorMethods = new ArrayList<AnnotatedMethod>(8);\n            }\n            creatorMethods.add(_constructCreatorMethod(m));\n        }\n        if (creatorMethods == null) {\n            _creatorMethods = Collections.emptyList();\n        } else {\n            _creatorMethods = creatorMethods;\n            // mix-ins to mix in?\n            if (_primaryMixIn != null) {\n                _addFactoryMixIns(_primaryMixIn);\n            }\n            // anything to ignore at this point?\n            if (_annotationIntrospector != null) {\n                // count down to allow safe removal\n                for (int i = _creatorMethods.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_creatorMethods.get(i))) {\n                        _creatorMethods.remove(i);\n                    }\n                }\n            }\n        }\n        _creatorsResolved = true;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 113,
+        "precode": "constructors.add(_constructConstructor(ctor, false));",
+        "aftercode": "if (constructors != null && constructors.size() > 0) { _defaultConstructor = constructors.get(0); } else { _defaultConstructor = _constructConstructor(ctor, true); constructors.add(_defaultConstructor); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 120,
+        "precode": "_creatorMethods = creatorMethods;",
+        "aftercode": "_creatorMethods = Collections.singletonList(_defaultConstructor);",
+        "candidate_code": "    private void resolveCreators()\n    {\n        // Then see which constructors we have\n        List<AnnotatedConstructor> constructors = null;\n        Constructor<?>[] declaredCtors = _class.getDeclaredConstructors();\n        for (Constructor<?> ctor : declaredCtors) {\n            if (ctor.getParameterTypes().length == 0) {\n                _defaultConstructor = _constructConstructor(ctor, true);\n            } else {\n                if (constructors == null) {\n                    constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length));\n                }\n                constructors.add(_constructConstructor(ctor, false));\n            }\n        }\n        if (constructors == null) {\n            _constructors = Collections.emptyList();\n        } else {\n            _constructors = constructors;\n        }\n        // and if need be, augment with mix-ins\n        if (_primaryMixIn != null) {\n            if (_defaultConstructor != null || !_constructors.isEmpty()) {\n                _addConstructorMixIns(_primaryMixIn);\n            }\n        }\n\n\n        /* And then... let's remove all constructors that are deemed\n         * ignorable after all annotations have been properly collapsed.\n         */\n        // 14-Feb-2011, tatu: AnnotationIntrospector is null if annotations not enabled; if so, can skip:\n        if (_annotationIntrospector != null) {\n            if (_defaultConstructor != null) {\n                if (_annotationIntrospector.hasIgnoreMarker(_defaultConstructor)) {\n                    _defaultConstructor = null;\n                }\n            }\n            if (_constructors != null) {\n                // count down to allow safe removal\n                for (int i = _constructors.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_constructors.get(i))) {\n                        _constructors.remove(i);\n                    }\n                }\n            }\n        }\n        List<AnnotatedMethod> creatorMethods = null;\n        \n        // Then static methods which are potential factory methods\n        for (Method m : _class.getDeclaredMethods()) {\n            if (!Modifier.isStatic(m.getModifiers())) {\n                continue;\n            }\n            // all factory methods are fine, as per [JACKSON-850]\n            //int argCount = m.getParameterTypes().length;\n            if (creatorMethods == null) {\n                creatorMethods = new ArrayList<AnnotatedMethod>(8);\n            }\n            creatorMethods.add(_constructCreatorMethod(m));\n        }\n        if (creatorMethods == null) {\n            _creatorMethods = Collections.emptyList();\n        } else {\n            _creatorMethods = Collections.singletonList(_defaultConstructor);\n            // mix-ins to mix in?\n            if (_primaryMixIn != null) {\n                _addFactoryMixIns(_primaryMixIn);\n            }\n            // anything to ignore at this point?\n            if (_annotationIntrospector != null) {\n                // count down to allow safe removal\n                for (int i = _creatorMethods.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_creatorMethods.get(i))) {\n                        _creatorMethods.remove(i);\n                    }\n                }\n            }\n        }\n        _creatorsResolved = true;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 123,
+        "precode": "_constructors = constructors;",
+        "aftercode": "_constructors = Collections.singletonList(_defaultConstructor);",
+        "candidate_code": "    private void resolveCreators()\n    {\n        // Then see which constructors we have\n        List<AnnotatedConstructor> constructors = null;\n        Constructor<?>[] declaredCtors = _class.getDeclaredConstructors();\n        for (Constructor<?> ctor : declaredCtors) {\n            if (ctor.getParameterTypes().length == 0) {\n                _defaultConstructor = _constructConstructor(ctor, true);\n            } else {\n                if (constructors == null) {\n                    constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length));\n                }\n                constructors.add(_constructConstructor(ctor, false));\n            }\n        }\n        if (constructors == null) {\n            _constructors = Collections.emptyList();\n        } else {\n            _constructors = Collections.singletonList(_defaultConstructor);\n        }\n        // and if need be, augment with mix-ins\n        if (_primaryMixIn != null) {\n            if (_defaultConstructor != null || !_constructors.isEmpty()) {\n                _addConstructorMixIns(_primaryMixIn);\n            }\n        }\n\n\n        /* And then... let's remove all constructors that are deemed\n         * ignorable after all annotations have been properly collapsed.\n         */\n        // 14-Feb-2011, tatu: AnnotationIntrospector is null if annotations not enabled; if so, can skip:\n        if (_annotationIntrospector != null) {\n            if (_defaultConstructor != null) {\n                if (_annotationIntrospector.hasIgnoreMarker(_defaultConstructor)) {\n                    _defaultConstructor = null;\n                }\n            }\n            if (_constructors != null) {\n                // count down to allow safe removal\n                for (int i = _constructors.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_constructors.get(i))) {\n                        _constructors.remove(i);\n                    }\n                }\n            }\n        }\n        List<AnnotatedMethod> creatorMethods = null;\n        \n        // Then static methods which are potential factory methods\n        for (Method m : _class.getDeclaredMethods()) {\n            if (!Modifier.isStatic(m.getModifiers())) {\n                continue;\n            }\n            // all factory methods are fine, as per [JACKSON-850]\n            //int argCount = m.getParameterTypes().length;\n            if (creatorMethods == null) {\n                creatorMethods = new ArrayList<AnnotatedMethod>(8);\n            }\n            creatorMethods.add(_constructCreatorMethod(m));\n        }\n        if (creatorMethods == null) {\n            _creatorMethods = Collections.emptyList();\n        } else {\n            _creatorMethods = creatorMethods;\n            // mix-ins to mix in?\n            if (_primaryMixIn != null) {\n                _addFactoryMixIns(_primaryMixIn);\n            }\n            // anything to ignore at this point?\n            if (_annotationIntrospector != null) {\n                // count down to allow safe removal\n                for (int i = _creatorMethods.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_creatorMethods.get(i))) {\n                        _creatorMethods.remove(i);\n                    }\n                }\n            }\n        }\n        _creatorsResolved = true;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 130,
+        "precode": "_creatorMethods = creatorMethods;",
+        "aftercode": "_creatorMethods = Collections.singletonList(_defaultConstructor);",
+        "candidate_code": "    private void resolveCreators()\n    {\n        // Then see which constructors we have\n        List<AnnotatedConstructor> constructors = null;\n        Constructor<?>[] declaredCtors = _class.getDeclaredConstructors();\n        for (Constructor<?> ctor : declaredCtors) {\n            if (ctor.getParameterTypes().length == 0) {\n                _defaultConstructor = _constructConstructor(ctor, true);\n            } else {\n                if (constructors == null) {\n                    constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length));\n                }\n                constructors.add(_constructConstructor(ctor, false));\n            }\n        }\n        if (constructors == null) {\n            _constructors = Collections.emptyList();\n        } else {\n            _constructors = constructors;\n        }\n        // and if need be, augment with mix-ins\n        if (_primaryMixIn != null) {\n            if (_defaultConstructor != null || !_constructors.isEmpty()) {\n                _addConstructorMixIns(_primaryMixIn);\n            }\n        }\n\n\n        /* And then... let's remove all constructors that are deemed\n         * ignorable after all annotations have been properly collapsed.\n         */\n        // 14-Feb-2011, tatu: AnnotationIntrospector is null if annotations not enabled; if so, can skip:\n        if (_annotationIntrospector != null) {\n            if (_defaultConstructor != null) {\n                if (_annotationIntrospector.hasIgnoreMarker(_defaultConstructor)) {\n                    _defaultConstructor = null;\n                }\n            }\n            if (_constructors != null) {\n                // count down to allow safe removal\n                for (int i = _constructors.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_constructors.get(i))) {\n                        _constructors.remove(i);\n                    }\n                }\n            }\n        }\n        List<AnnotatedMethod> creatorMethods = null;\n        \n        // Then static methods which are potential factory methods\n        for (Method m : _class.getDeclaredMethods()) {\n            if (!Modifier.isStatic(m.getModifiers())) {\n                continue;\n            }\n            // all factory methods are fine, as per [JACKSON-850]\n            //int argCount = m.getParameterTypes().length;\n            if (creatorMethods == null) {\n                creatorMethods = new ArrayList<AnnotatedMethod>(8);\n            }\n            creatorMethods.add(_constructCreatorMethod(m));\n        }\n        if (creatorMethods == null) {\n            _creatorMethods = Collections.emptyList();\n        } else {\n            _creatorMethods = Collections.singletonList(_defaultConstructor);\n            // mix-ins to mix in?\n            if (_primaryMixIn != null) {\n                _addFactoryMixIns(_primaryMixIn);\n            }\n            // anything to ignore at this point?\n            if (_annotationIntrospector != null) {\n                // count down to allow safe removal\n                for (int i = _creatorMethods.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_creatorMethods.get(i))) {\n                        _creatorMethods.remove(i);\n                    }\n                }\n            }\n        }\n        _creatorsResolved = true;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the computation by always picking the first constructor with no parameters.",
+        "line": 133,
+        "precode": "_constructors = constructors;",
+        "aftercode": "_constructors = Collections.singletonList(_defaultConstructor);",
+        "candidate_code": "    private void resolveCreators()\n    {\n        // Then see which constructors we have\n        List<AnnotatedConstructor> constructors = null;\n        Constructor<?>[] declaredCtors = _class.getDeclaredConstructors();\n        for (Constructor<?> ctor : declaredCtors) {\n            if (ctor.getParameterTypes().length == 0) {\n                _defaultConstructor = _constructConstructor(ctor, true);\n            } else {\n                if (constructors == null) {\n                    constructors = new ArrayList<AnnotatedConstructor>(Math.max(10, declaredCtors.length));\n                }\n                constructors.add(_constructConstructor(ctor, false));\n            }\n        }\n        if (constructors == null) {\n            _constructors = Collections.emptyList();\n        } else {\n            _constructors = Collections.singletonList(_defaultConstructor);\n        }\n        // and if need be, augment with mix-ins\n        if (_primaryMixIn != null) {\n            if (_defaultConstructor != null || !_constructors.isEmpty()) {\n                _addConstructorMixIns(_primaryMixIn);\n            }\n        }\n\n\n        /* And then... let's remove all constructors that are deemed\n         * ignorable after all annotations have been properly collapsed.\n         */\n        // 14-Feb-2011, tatu: AnnotationIntrospector is null if annotations not enabled; if so, can skip:\n        if (_annotationIntrospector != null) {\n            if (_defaultConstructor != null) {\n                if (_annotationIntrospector.hasIgnoreMarker(_defaultConstructor)) {\n                    _defaultConstructor = null;\n                }\n            }\n            if (_constructors != null) {\n                // count down to allow safe removal\n                for (int i = _constructors.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_constructors.get(i))) {\n                        _constructors.remove(i);\n                    }\n                }\n            }\n        }\n        List<AnnotatedMethod> creatorMethods = null;\n        \n        // Then static methods which are potential factory methods\n        for (Method m : _class.getDeclaredMethods()) {\n            if (!Modifier.isStatic(m.getModifiers())) {\n                continue;\n            }\n            // all factory methods are fine, as per [JACKSON-850]\n            //int argCount = m.getParameterTypes().length;\n            if (creatorMethods == null) {\n                creatorMethods = new ArrayList<AnnotatedMethod>(8);\n            }\n            creatorMethods.add(_constructCreatorMethod(m));\n        }\n        if (creatorMethods == null) {\n            _creatorMethods = Collections.emptyList();\n        } else {\n            _creatorMethods = creatorMethods;\n            // mix-ins to mix in?\n            if (_primaryMixIn != null) {\n                _addFactoryMixIns(_primaryMixIn);\n            }\n            // anything to ignore at this point?\n            if (_annotationIntrospector != null) {\n                // count down to allow safe removal\n                for (int i = _creatorMethods.size(); --i >= 0; ) {\n                    if (_annotationIntrospector.hasIgnoreMarker(_creatorMethods.get(i))) {\n                        _creatorMethods.remove(i);\n                    }\n                }\n            }\n        }\n        _creatorsResolved = true;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

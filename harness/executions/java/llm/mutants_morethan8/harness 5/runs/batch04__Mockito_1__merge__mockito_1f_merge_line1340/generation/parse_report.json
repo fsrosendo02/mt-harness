@@ -1,0 +1,315 @@
+{
+  "requested_count": 48,
+  "accepted_count": 24,
+  "rejected_count": 24,
+  "rejections": [
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "Alters dimension and base kind comparison",
+        "line": 29,
+        "precode": "if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {",
+        "aftercode": "if ((t & (DIM | BASE_KIND)) != (u & (DIM | BASE_KIND))) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            if ((t & (DIM | BASE_KIND)) != (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Alters reference type comparison logic",
+        "line": 42,
+        "precode": "if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {",
+        "aftercode": "if ((t & BASE_KIND) == OBJECT && (t & DIM) != 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "Modifies reference type merging calculation",
+        "line": 34,
+        "precode": "v = (t & DIM) | OBJECT",
+        "aftercode": "v = (t & BASE_KIND) | OBJECT",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & BASE_KIND) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Alters reference type comparison logic",
+        "line": 42,
+        "precode": "if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {",
+        "aftercode": "if ((t & BASE_KIND) != OBJECT || (t & DIM) == 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "Prevents type update when value changes",
+        "line": 58,
+        "precode": "types[index] = v;",
+        "aftercode": "// types[index] = v;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            // types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Modifies equality check condition",
+        "line": 8,
+        "precode": "if (u == t) {",
+        "aftercode": "if (u != t) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u != t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Changes NULL type condition",
+        "line": 12,
+        "precode": "if ((t & ~DIM) == NULL) {",
+        "aftercode": "if ((t & DIM) == NULL) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "Changes unassigned type detection",
+        "line": 18,
+        "precode": "if (u == 0) {",
+        "aftercode": "if (u == 1) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 1) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Changes NULL type merging",
+        "line": 26,
+        "precode": "if (t == NULL) {",
+        "aftercode": "if (t != NULL) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t != NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 32,
+        "reasoning": "Alters dimension and base kind comparison",
+        "line": 29,
+        "precode": "if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {",
+        "aftercode": "if ((t & (DIM | BASE_KIND)) != (u & (DIM | BASE_KIND))) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            if ((t & (DIM | BASE_KIND)) != (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "Modifies merged type calculation",
+        "line": 34,
+        "precode": "v = (t & DIM) | OBJECT",
+        "aftercode": "v = (t & BASE_KIND) | OBJECT",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & BASE_KIND) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "Changes default merge for array types",
+        "line": 39,
+        "precode": "v = OBJECT | cw.addType(\"java/lang/Object\");",
+        "aftercode": "v = DIM | cw.addType(\"java/lang/Object\");",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = DIM | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "Alters reference type comparison",
+        "line": 42,
+        "precode": "if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {",
+        "aftercode": "if ((t & BASE_KIND) != OBJECT || (t & DIM) == 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Changes default merge for non-reference types",
+        "line": 47,
+        "precode": "v = TOP;",
+        "aftercode": "v = OBJECT;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = OBJECT;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "Modifies NULL type merging logic",
+        "line": 52,
+        "precode": "v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;",
+        "aftercode": "v = (t & BASE_KIND) != OBJECT || (t & DIM) == 0 ? t : TOP;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) != OBJECT || (t & DIM) == 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Changes default merge for non-reference types",
+        "line": 54,
+        "precode": "v = TOP;",
+        "aftercode": "v = NULL;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = NULL;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Prevents type update when value changes",
+        "line": 58,
+        "precode": "types[index] = v;",
+        "aftercode": "// types[index] = v;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            // types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Modifies equality check return value",
+        "line": 10,
+        "precode": "return false;",
+        "aftercode": "return true;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return true;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "Changes NULL assignment condition",
+        "line": 13,
+        "precode": "if (u == NULL) {",
+        "aftercode": "if (u != NULL) {",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u != NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 43,
+        "reasoning": "Changes unassigned type assignment logic",
+        "line": 20,
+        "precode": "types[index] = t;",
+        "aftercode": "types[index] = 0;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = 0;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 44,
+        "reasoning": "Modifies reference type merging calculation",
+        "line": 34,
+        "precode": "v = (t & DIM) | OBJECT",
+        "aftercode": "v = (t & BASE_KIND) | OBJECT",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & BASE_KIND) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 46,
+        "reasoning": "Alters reference type comparison logic",
+        "line": 42,
+        "precode": "if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {",
+        "aftercode": "if ((t & BASE_KIND) != OBJECT || (t & DIM) == 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 47,
+        "reasoning": "Changes default merge for non-reference types",
+        "line": 47,
+        "precode": "v = TOP;",
+        "aftercode": "v = OBJECT;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = OBJECT;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "Modifies NULL type merging logic",
+        "line": 52,
+        "precode": "v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;",
+        "aftercode": "v = (t & BASE_KIND) != OBJECT || (t & DIM) == 0 ? t : TOP;",
+        "candidate_code": "    private static boolean merge(\n        final ClassWriter cw,\n        int t,\n        final int[] types,\n        final int index)\n    {\n        int u = types[index];\n        if (u == t) {\n            // if the types are equal, merge(u,t)=u, so there is no change\n            return false;\n        }\n        if ((t & ~DIM) == NULL) {\n            if (u == NULL) {\n                return false;\n            }\n            t = NULL;\n        }\n        if (u == 0) {\n            // if types[index] has never been assigned, merge(u,t)=t\n            types[index] = t;\n            return true;\n        }\n        int v;\n        if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {\n            // if u is a reference type of any dimension\n            if (t == NULL) {\n                // if t is the NULL type, merge(u,t)=u, so there is no change\n                return false;\n            } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {\n                if ((u & BASE_KIND) == OBJECT) {\n                    // if t is also a reference type, and if u and t have the\n                    // same dimension merge(u,t) = dim(t) | common parent of the\n                    // element types of u and t\n                    v = (t & DIM) | OBJECT\n                            | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);\n                } else {\n                    // if u and t are array types, but not with the same element\n                    // type, merge(u,t)=java/lang/Object\n                    v = OBJECT | cw.addType(\"java/lang/Object\");\n                }\n            } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {\n                // if t is any other reference or array type,\n                // merge(u,t)=java/lang/Object\n                v = OBJECT | cw.addType(\"java/lang/Object\");\n            } else {\n                // if t is any other type, merge(u,t)=TOP\n                v = TOP;\n            }\n        } else if (u == NULL) {\n            // if u is the NULL type, merge(u,t)=t,\n            // or TOP if t is not a reference type\n            v = (t & BASE_KIND) != OBJECT || (t & DIM) == 0 ? t : TOP;\n        } else {\n            // if u is any other type, merge(u,t)=TOP whatever t\n            v = TOP;\n        }\n        if (u != v) {\n            types[index] = v;\n            return true;\n        }\n        return false;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

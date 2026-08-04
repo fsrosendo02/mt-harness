@@ -1,0 +1,44 @@
+{
+  "requested_count": 16,
+  "accepted_count": 11,
+  "rejected_count": 3,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method incorrectly returns an ArrayList for EnumSet, violating the assumption that it should return an EnumSet.",
+        "line": 28,
+        "precode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashSet<Object>(); } };",
+        "aftercode": "return new ObjectConstructor<T>() { @SuppressWarnings(\"rawtypes\") public T construct() { if (type instanceof ParameterizedType) { Type elementType = ((ParameterizedType) type).getActualTypeArguments()[0]; if (elementType instanceof Class) { return (T) EnumSet.noneOf((Class)elementType); } else { throw new JsonIOException(\"Invalid EnumSet type: \" + type.toString()); } } else { throw new JsonIOException(\"Invalid EnumSet type: \" + type.toString()); } } };",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method incorrectly returns a LinkedHashSet for Map types, violating the assumption that it should return a LinkedHashMap.",
+        "line": 49,
+        "precode": "return new ObjectConstructor<T>() { public T construct() { return (T) new TreeMap<Object, Object>(); } };",
+        "aftercode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashSet<Object>(); } };",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method incorrectly returns a LinkedHashMap for the type Map, violating the assumption that it should return a LinkedTreeMap.",
+        "line": 62,
+        "precode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedTreeMap<String, Object>(); } };",
+        "aftercode": "return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashMap<Object, Object>(); } };",
+        "candidate_code": "  @SuppressWarnings(\"unchecked\") // use runtime checks to guarantee that 'T' is what it is\n  private <T> ObjectConstructor<T> newDefaultImplementationConstructor(\n      final Type type, Class<? super T> rawType) {\n    if (Collection.class.isAssignableFrom(rawType)) {\n      if (SortedSet.class.isAssignableFrom(rawType)) {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new TreeSet<Object>();\n          }\n        };\n      } else if (EnumSet.class.isAssignableFrom(rawType)) {\n        return new ObjectConstructor<T>() {\n          @SuppressWarnings(\"rawtypes\")\n          public T construct() {\n            if (type instanceof ParameterizedType) {\n              Type elementType = ((ParameterizedType) type).getActualTypeArguments()[0];\n              if (elementType instanceof Class) {\n                return (T) EnumSet.noneOf((Class)elementType);\n              } else {\n                throw new JsonIOException(\"Invalid EnumSet type: \" + type.toString());\n              }\n            } else {\n              throw new JsonIOException(\"Invalid EnumSet type: \" + type.toString());\n            }\n          }\n        };\n      } else if (Set.class.isAssignableFrom(rawType)) {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new LinkedHashSet<Object>();\n          }\n        };\n      } else if (Queue.class.isAssignableFrom(rawType)) {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new LinkedList<Object>();\n          }\n        };\n      } else {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new ArrayList<Object>();\n          }\n        };\n      }\n    }\n\n    if (Map.class.isAssignableFrom(rawType)) {\n      if (SortedMap.class.isAssignableFrom(rawType)) {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new TreeMap<Object, Object>();\n          }\n        };\n      } else if (type instanceof ParameterizedType && !(String.class.isAssignableFrom(\n          TypeToken.get(((ParameterizedType) type).getActualTypeArguments()[0]).getRawType()))) {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new LinkedHashMap<Object, Object>();\n          }\n        };\n      return new ObjectConstructor<T>() { public T construct() { return (T) new LinkedHashMap<Object, Object>(); } }; {\n        return new ObjectConstructor<T>() {\n          public T construct() {\n            return (T) new LinkedTreeMap<String, Object>();\n          }\n        };\n      }\n    }\n\n    return null;\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

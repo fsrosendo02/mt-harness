@@ -1,0 +1,118 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public Map<String, DateTimeZone> compile(File outputDir, File[] sources) throws IOException {
+ 2:         if (sources != null) {
+ 3:             for (int i=0; i<sources.length; i++) {
+ 4:                 BufferedReader in = new BufferedReader(new FileReader(sources[i]));
+ 5:                 parseDataFile(in);
+ 6:                 in.close();
+ 7:             }
+ 8:         }
+ 9: 
+10:         if (outputDir != null) {
+11:             if (!outputDir.exists()) {
+12:                 throw new IOException("Destination directory doesn't exist: " + outputDir);
+13:             }
+14:             if (!outputDir.isDirectory()) {
+15:                 throw new IOException("Destination is not a directory: " + outputDir);
+16:             }
+17:         }
+18: 
+19:         Map<String, DateTimeZone> map = new TreeMap<String, DateTimeZone>();
+20: 
+21:         System.out.println("Writing zoneinfo files");
+22:         for (int i=0; i<iZones.size(); i++) {
+23:             Zone zone = iZones.get(i);
+24:             DateTimeZoneBuilder builder = new DateTimeZoneBuilder();
+25:             zone.addToBuilder(builder, iRuleSets);
+26:             final DateTimeZone original = builder.toDateTimeZone(zone.iName, true);
+27:             DateTimeZone tz = original;
+28:             if (test(tz.getID(), tz)) {
+29:                 map.put(tz.getID(), tz);
+30:                 if (outputDir != null) {
+31:                     if (ZoneInfoCompiler.verbose()) {
+32:                         System.out.println("Writing " + tz.getID());
+33:                     }
+34:                     File file = new File(outputDir, tz.getID());
+35:                     if (!file.getParentFile().exists()) {
+36:                         file.getParentFile().mkdirs();
+37:                     }
+38:                     OutputStream out = new FileOutputStream(file);
+39:                     builder.writeTo(zone.iName, out);
+40:                     out.close();
+41: 
+42:                     // Test if it can be read back.
+43:                     InputStream in = new FileInputStream(file);
+44:                     DateTimeZone tz2 = DateTimeZoneBuilder.readFrom(in, tz.getID());
+45:                     in.close();
+46: 
+47:                     if (!original.equals(tz2)) {
+48:                         System.out.println("*e* Error in " + tz.getID() +
+49:                                            ": Didn't read properly from file");
+50:                     }
+51:                 }
+52:             }
+53:         }
+54: 
+55:         for (int pass=0; pass<2; pass++) {
+56:             for (int i=0; i<iLinks.size(); i += 2) {
+57:                 String id = iLinks.get(i);
+58:                 String alias = iLinks.get(i + 1);
+59:                 DateTimeZone tz = map.get(id);
+60:                 if (tz == null) {
+61:                     if (pass > 0) {
+62:                         System.out.println("Cannot find time zone '" + id +
+63:                                            "' to link alias '" + alias + "' to");
+64:                     }
+65:                 } else {
+66:                     map.put(alias, tz);
+67:                 }
+68:             }
+69:         }
+70: 
+71:         if (outputDir != null) {
+72:             System.out.println("Writing ZoneInfoMap");
+73:             File file = new File(outputDir, "ZoneInfoMap");
+74:             if (!file.getParentFile().exists()) {
+75:                 file.getParentFile().mkdirs();
+76:             }
+77: 
+78:             OutputStream out = new FileOutputStream(file);
+79:             DataOutputStream dout = new DataOutputStream(out);
+80:             // Sort and filter out any duplicates that match case.
+81:             Map<String, DateTimeZone> zimap = new TreeMap<String, DateTimeZone>(String.CASE_INSENSITIVE_ORDER);
+82:             zimap.putAll(map);
+83:             writeZoneInfoMap(dout, zimap);
+84:             dout.close();
+85:         }
+86: 
+87:         return map;
+88:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

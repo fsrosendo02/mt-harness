@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the behavior of returning null when reader is empty.",
+      "line": 2,
+      "precode": "if (reader.isEmpty())",
+      "aftercode": "if (!reader.isEmpty())"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the behavior of checking additional allowed character.",
+      "line": 4,
+      "precode": "if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())",
+      "aftercode": "if (additionalAllowedCharacter == null || additionalAllowedCharacter != reader.current())"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the behavior of checking for whitespace and special characters.",
+      "line": 6,
+      "precode": "if (reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&'))",
+      "aftercode": "if (!reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&'))"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the behavior of marking the reader position.",
+      "line": 9,
+      "precode": "reader.mark();",
+      "aftercode": "// reader.mark();"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the behavior of matching '#' for numbered references.",
+      "line": 10,
+      "precode": "if (reader.matchConsume("#")) { // numbered",
+      "aftercode": "if (!reader.matchConsume("#")) { // numbered"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the behavior of matching 'X' for hex mode.",
+      "line": 11,
+      "precode": "boolean isHexMode = reader.matchConsumeIgnoreCase("X");",
+      "aftercode": "boolean isHexMode = !reader.matchConsumeIgnoreCase("X");"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the behavior of consuming hex sequence.",
+      "line": 12,
+      "precode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();",
+      "aftercode": "String numRef = !isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the behavior of checking if numRef is empty.",
+      "line": 13,
+      "precode": "if (numRef.length() == 0) { // didn't match anything",
+      "aftercode": "if (numRef.length() != 0) { // didn't match anything"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the behavior of calling characterReferenceError for no numerals.",
+      "line": 14,
+      "precode": "characterReferenceError("numeric reference with no numerals");",
+      "aftercode": "// characterReferenceError("numeric reference with no numerals");"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the behavior of rewinding reader on no numerals.",
+      "line": 15,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "// reader.rewindToMark();"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the behavior of returning null on no numerals.",
+      "line": 16,
+      "precode": "return null;",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the behavior of matching semicolon after numeric reference.",
+      "line": 18,
+      "precode": "if (!reader.matchConsume(";"))",
+      "aftercode": "if (reader.matchConsume(";"))"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the behavior of setting base for hex and decimal.",
+      "line": 22,
+      "precode": "int base = isHexMode ? 16 : 10;",
+      "aftercode": "int base = !isHexMode ? 16 : 10;"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the behavior of parsing integer value.",
+      "line": 23,
+      "precode": "charval = Integer.valueOf(numRef, base);",
+      "aftercode": "charval = -1;" // always invalid
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the behavior of handling NumberFormatException.",
+      "line": 24,
+      "precode": "int charval = -1;",
+      "aftercode": "charval = Integer.valueOf(numRef, base); // re-parse"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the behavior of checking valid character range.",
+      "line": 26,
+      "precode": "if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {",
+      "aftercode": "if (charval != -1 && !(charval >= 0xD800 && charval <= 0xDFFF) && charval <= 0x10FFFF) {"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the behavior of calling characterReferenceError for invalid range.",
+      "line": 27,
+      "precode": "characterReferenceError("character outside of valid range");",
+      "aftercode": "// characterReferenceError("character outside of valid range");"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the behavior of returning replacementChar for invalid range.",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "return (char) charval;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the behavior of returning character value for valid range.",
+      "line": 30,
+      "precode": "return (char) charval;",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the behavior of consuming letter and digit sequence for named references.",
+      "line": 36,
+      "precode": "String nameRef = reader.consumeLetterThenDigitSequence();",
+      "aftercode": "String nameRef = reader.consumeDigitThenLetterSequence();"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the behavior of checking if named reference looks legit.",
+      "line": 37,
+      "precode": "boolean looksLegit = reader.matches(';');",
+      "aftercode": "boolean looksLegit = !reader.matches(';');"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the behavior of determining if named reference is found.",
+      "line": 39,
+      "precode": "boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));",
+      "aftercode": "boolean found = !(Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the behavior of rewinding reader if not found.",
+      "line": 42,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "// reader.rewindToMark();"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the behavior of calling characterReferenceError for invalid named reference.",
+      "line": 44,
+      "precode": "characterReferenceError(String.format("invalid named referenece '%s'", nameRef));",
+      "aftercode": "// characterReferenceError(String.format("invalid named referenece '%s'", nameRef));"
+    },
+    {
+      "id": 25,
+      "reasoning": "Violates the behavior of returning null if not found.",
+      "line": 45,
+      "precode": "return null;",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 26,
+      "reasoning": "Violates the behavior of checking for illegal attributes after named reference.",
+      "line": 47,
+      "precode": "if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {",
+      "aftercode": "if (!inAttribute || !(reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {"
+    },
+    {
+      "id": 27,
+      "reasoning": "Violates the behavior of rewinding reader if illegal attribute.",
+      "line": 49,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "// reader.rewindToMark();"
+    },
+    {
+      "id": 28,
+      "reasoning": "Violates the behavior of returning null if illegal attribute.",
+      "line": 50,
+      "precode": "return null;",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 29,
+      "reasoning": "Violates the behavior of matching semicolon after named reference.",
+      "line": 53,
+      "precode": "if (!reader.matchConsume(";"))",
+      "aftercode": "if (reader.matchConsume(";"))"
+    },
+    {
+      "id": 30,
+      "reasoning": "Violates the behavior of returning character by name.",
+      "line": 54,
+      "precode": "return Entities.getCharacterByName(nameRef);",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 31,
+      "reasoning": "Violates the behavior of checking for empty reader after numeric reference.",
+      "line": 15,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "if (!reader.isEmpty()) { reader.rewindToMark(); }"
+    },
+    {
+      "id": 32,
+      "reasoning": "Violates the behavior of checking for empty reader after named reference.",
+      "line": 42,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "if (!reader.isEmpty()) { reader.rewindToMark(); }"
+    },
+    {
+      "id": 33,
+      "reasoning": "Violates the behavior of checking for empty reader after illegal attribute.",
+      "line": 49,
+      "precode": "reader.rewindToMark();",
+      "aftercode": "if (!reader.isEmpty()) { reader.rewindToMark(); }"
+    },
+    {
+      "id": 34,
+      "reasoning": "Violates the behavior of returning null after invalid named reference.",
+      "line": 45,
+      "precode": "return null;",
+      "aftercode": "if (looksLegit) return null; else return replacementChar;"
+    },
+    {
+      "id": 35,
+      "reasoning": "Violates the behavior of returning null after illegal attribute.",
+      "line": 50,
+      "precode": "return null;",
+      "aftercode": "if (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_')) return null; else return replacementChar;"
+    },
+    {
+      "id": 36,
+      "reasoning": "Violates the behavior of returning character by name after semicolon.",
+      "line": 54,
+      "precode": "return Entities.getCharacterByName(nameRef);",
+      "aftercode": "if (reader.matches(';')) return Entities.getCharacterByName(nameRef); else return replacementChar;"
+    },
+    {
+      "id": 37,
+      "reasoning": "Violates the behavior of consuming hex sequence for decimal mode.",
+      "line": 12,
+      "precode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();",
+      "aftercode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeHexSequence();"
+    },
+    {
+      "id": 38,
+      "reasoning": "Violates the behavior of consuming digit sequence for hex mode.",
+      "line": 12,
+      "precode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();",
+      "aftercode": "String numRef = isHexMode ? reader.consumeDigitSequence() : reader.consumeDigitSequence();"
+    },
+    {
+      "id": 39,
+      "reasoning": "Violates the behavior of setting base for decimal and hex.",
+      "line": 22,
+      "precode": "int base = isHexMode ? 16 : 10;",
+      "aftercode": "int base = isHexMode ? 10 : 16;"
+    },
+    {
+      "id": 40,
+      "reasoning": "Violates the behavior of returning replacementChar for valid range.",
+      "line": 30,
+      "precode": "return (char) charval;",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 41,
+      "reasoning": "Violates the behavior of checking if named reference is base or extended entity.",
+      "line": 39,
+      "precode": "boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));",
+      "aftercode": "boolean found = !(Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));"
+    },
+    {
+      "id": 42,
+      "reasoning": "Violates the behavior of checking for empty reader after invalid range.",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "if (!reader.isEmpty()) return replacementChar; else return (char) charval;"
+    },
+    {
+      "id": 43,
+      "reasoning": "Violates the behavior of returning character value for invalid range.",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "return (char) charval;"
+    },
+    {
+      "id": 44,
+      "reasoning": "Violates the behavior of checking for empty reader after missing semicolon in numeric reference.",
+      "line": 18,
+      "precode": "if (!reader.matchConsume(";"))",
+      "aftercode": "if (!reader.matchConsume(";") && !reader.isEmpty()) { characterReferenceError("missing semicolon"); return null; }"
+    },
+    {
+      "id": 45,
+      "reasoning": "Violates the behavior of checking for empty reader after missing semicolon in named reference.",
+      "line": 53,
+      "precode": "if (!reader.matchConsume(";"))",
+      "aftercode": "if (!reader.matchConsume(";") && !reader.isEmpty()) { characterReferenceError("missing semicolon"); return null; }"
+    },
+    {
+      "id": 46,
+      "reasoning": "Violates the behavior of returning replacementChar after invalid range.",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "if (charval >= 0xD800 && charval <= 0xDFFF) return replacementChar; else return (char) charval;"
+    },
+    {
+      "id": 47,
+      "reasoning": "Violates the behavior of returning null after invalid range.",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "if (charval > 0x10FFFF) return null; else return (char) charval;"
+    },
+    {
+      "id": 48,
+      "reasoning": "Violates the behavior of returning character value for invalid range.",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "if ((charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) return (char) charval; else return replacementChar;"
+    }
+  ]
+}

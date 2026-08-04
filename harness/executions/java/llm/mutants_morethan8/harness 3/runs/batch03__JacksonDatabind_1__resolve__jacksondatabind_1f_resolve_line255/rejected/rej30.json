@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonDatabind_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksondatabind_1f_resolve__line255",
+  "file_path": "src/main/java/com/fasterxml/jackson/databind/ser/std/BeanSerializerBase.java",
+  "function_name": "resolve",
+  "start_line": 255,
+  "end_line": 328,
+  "mutant_id": "rej30",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 30,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch03__JacksonDatabind_1__resolve__jacksondatabind_1f_resolve_line255/generation/raw_response.txt",
+  "payload": {
+    "id": 30,
+    "reasoning": "Always returns false for value serializer check",
+    "line": 43,
+    "precode": "ser = provider.findValueSerializer(type, prop);",
+    "aftercode": "ser = null;",
+    "candidate_code": "    @Override\n    public void resolve(SerializerProvider provider)\n        throws JsonMappingException\n    {\n        int filteredCount = (_filteredProps == null) ? 0 : _filteredProps.length;\n        for (int i = 0, len = _props.length; i < len; ++i) {\n            BeanPropertyWriter prop = _props[i];\n            // let's start with null serializer resolution actually\n            if (!prop.willSuppressNulls() && !prop.hasNullSerializer()) {\n                JsonSerializer<Object> nullSer = provider.findNullValueSerializer(prop);\n                if (nullSer != null) {\n                    prop.assignNullSerializer(nullSer);\n                    // also: remember to replace filtered property too? (see [JACKSON-364])\n                    if (i < filteredCount) {\n                        BeanPropertyWriter w2 = _filteredProps[i];\n                        if (w2 != null) {\n                            w2.assignNullSerializer(nullSer);\n                        }\n                    }\n                }\n            }\n            \n            if (prop.hasSerializer()) {\n                continue;\n            }\n            // [Issue#124]: allow use of converters\n            JsonSerializer<Object> ser = findConvertingSerializer(provider, prop);\n            if (ser == null) {\n                // Was the serialization type hard-coded? If so, use it\n                JavaType type = prop.getSerializationType();\n                \n                // It not, we can use declared return type if and only if declared type is final:\n                // if not, we don't really know the actual type until we get the instance.\n                if (type == null) {\n                    type = provider.constructType(prop.getGenericPropertyType());\n                    if (!type.isFinal()) {\n                        if (type.isContainerType() || type.containedTypeCount() > 0) {\n                            prop.setNonTrivialBaseType(type);\n                        }\n                        continue;\n                    }\n                }\n                ser = null;\n                /* 04-Feb-2010, tatu: We may have stashed type serializer for content types\n                 *   too, earlier; if so, it's time to connect the dots here:\n                 */\n                if (type.isContainerType()) {\n                    TypeSerializer typeSer = type.getContentType().getTypeHandler();\n                    if (typeSer != null) {\n                        // for now, can do this only for standard containers...\n                        if (ser instanceof ContainerSerializer<?>) {\n                            // ugly casts... but necessary\n                            @SuppressWarnings(\"unchecked\")\n                            JsonSerializer<Object> ser2 = (JsonSerializer<Object>)((ContainerSerializer<?>) ser).withValueTypeSerializer(typeSer);\n                            ser = ser2;\n                        }\n                    }\n                }\n            }\n            prop.assignSerializer(ser);\n            // and maybe replace filtered property too? (see [JACKSON-364])\n            if (i < filteredCount) {\n                BeanPropertyWriter w2 = _filteredProps[i];\n                if (w2 != null) {\n                    w2.assignSerializer(ser);\n                }\n            }\n        }\n\n        // also, any-getter may need to be resolved\n        if (_anyGetterWriter != null) {\n            _anyGetterWriter.resolve(provider);\n        }\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch03__JacksonDatabind_1__resolve__jacksondatabind_1f_resolve_line255/rejected/rej30.log",
+  "mutant_path": "harness/runs/batch03__JacksonDatabind_1__resolve__jacksondatabind_1f_resolve_line255/rejected/rej30.mutant.txt",
+  "original_path": "harness/runs/batch03__JacksonDatabind_1__resolve__jacksondatabind_1f_resolve_line255/rejected/original.txt"
+}

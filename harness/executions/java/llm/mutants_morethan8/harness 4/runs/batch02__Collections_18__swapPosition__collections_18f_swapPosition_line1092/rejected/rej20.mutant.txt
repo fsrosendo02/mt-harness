@@ -1,0 +1,90 @@
+    private void swapPosition(final Node<K, V> x, final Node<K, V> y, final DataElement dataElement) {
+        // Save initial values.
+        Node<K, V> xFormerParent = x.getParent(dataElement);
+        Node<K, V> xFormerLeftChild = x.getLeft(dataElement);
+        Node<K, V> xFormerRightChild = x.getRight(dataElement);
+        Node<K, V> yFormerParent = y.getParent(dataElement);
+        Node<K, V> yFormerLeftChild = y.getLeft(dataElement);
+        Node<K, V> yFormerRightChild = y.getRight(dataElement);
+        boolean xWasLeftChild =
+                (x.getParent(dataElement) != null) && (x == x.getParent(dataElement).getLeft(dataElement));
+        boolean yWasLeftChild =
+                (y.getParent(dataElement) != null) && (y == y.getParent(dataElement).getLeft(dataElement));
+
+        // Swap, handling special cases of one being the other's parent.
+        if (x == yFormerParent) { // x was y's parent
+            x.setParent(y, dataElement);
+
+            if (yWasLeftChild) {
+                y.setLeft(x, dataElement);
+                y.setRight(xFormerRightChild, dataElement);
+            } else {
+                y.setRight(x, dataElement);
+                y.setLeft(xFormerLeftChild, dataElement);
+            }
+        } else {
+            x.setParent(yFormerParent, dataElement);
+
+            if (yFormerParent != null) {
+                if (yWasLeftChild) {
+                    yFormerParent.setLeft(x, dataElement);
+                } else {
+                    yFormerParent.setRight(x, dataElement);
+                }
+            }
+
+            y.setLeft(xFormerLeftChild, dataElement);
+            y.setRight(xFormerRightChild, dataElement);
+        }
+
+        if (y == xFormerParent) { // y was x's parent
+            y.setParent(x, dataElement);
+
+            if (xWasLeftChild) {
+                x.setLeft(y, dataElement);
+                x.setRight(yFormerRightChild, dataElement);
+            } else {
+                x.setRight(y, dataElement);
+                x.setLeft(yFormerLeftChild, dataElement);
+            }
+        } else {
+            y.setLeft(xFormerParent, dataElement);
+
+            if (xFormerParent != null) {
+                if (xWasLeftChild) {
+                    xFormerParent.setLeft(y, dataElement);
+                } else {
+                    xFormerParent.setRight(y, dataElement);
+                }
+            }
+
+            x.setLeft(yFormerLeftChild, dataElement);
+            x.setRight(yFormerRightChild, dataElement);
+        }
+
+        // Fix children's parent pointers
+        if (x.getLeft(dataElement) != null) {
+            x.getLeft(dataElement).setParent(x, dataElement);
+        }
+
+        if (x.getRight(dataElement) != null) {
+            x.getRight(dataElement).setParent(x, dataElement);
+        }
+
+        if (y.getLeft(dataElement) != null) {
+            y.getLeft(dataElement).setParent(y, dataElement);
+        }
+
+        if (y.getRight(dataElement) != null) {
+            y.getRight(dataElement).setParent(y, dataElement);
+        }
+
+        x.swapColors(y, dataElement);
+
+        // Check if root changed
+        if (rootNode[dataElement.ordinal()] == x) {
+            rootNode[dataElement.ordinal()] = y;
+        } else if (rootNode[dataElement.ordinal()] == y) {
+            rootNode[dataElement.ordinal()] = x;
+        }
+    }

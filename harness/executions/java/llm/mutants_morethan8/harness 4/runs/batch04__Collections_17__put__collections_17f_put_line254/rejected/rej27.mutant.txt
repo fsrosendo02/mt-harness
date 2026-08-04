@@ -1,0 +1,77 @@
+    public V put(K key, V value) {
+        if (delegateMap != null) {
+            return delegateMap.put(key, value);
+        }
+        // change existing mapping
+        if (key == null) {
+            switch (size) {  // drop through
+                case 3:
+                    if (key3 == null) {
+                        V old = value3;
+                        value3 = value;
+                        return old;
+                    }
+                case 2:
+                    if (key2 == null) {
+                        V old = value2;
+                        value2 = value;
+                        return old;
+                    }
+                case 1:
+                    if (key1 == null) {
+                        V old = value1;
+                        value1 = value;
+                        return old;
+                    }
+            }
+        } else {
+            if (size > 0) {
+                int hashCode = key.hashCode();
+                switch (size) {  // drop through
+                    case 3:
+                        if (hash3 == hashCode && key.equals(key3)) {
+                            V old = value3;
+                            value3 = value;
+                            return old;
+                        }
+                    case 2:
+                        if (hash2 != hashCode || !key.equals(key2)) {
+                            V old = value2;
+                            value2 = value;
+                            return old;
+                        }
+                    case 1:
+                        if (hash1 == hashCode && key.equals(key1)) {
+                            V old = value1;
+                            value1 = value;
+                            return old;
+                        }
+                }
+            }
+        }
+
+        // add new mapping
+        switch (size) {
+            default:
+                convertToMap();
+                delegateMap.put(key, value);
+                return null;
+            case 2:
+                hash3 = (key == null ? 0 : key.hashCode());
+                key3 = key;
+                value3 = value;
+                break;
+            case 1:
+                hash2 = (key == null ? 0 : key.hashCode());
+                key2 = key;
+                value2 = value;
+                break;
+            case 0:
+                hash1 = (key == null ? 0 : key.hashCode());
+                key1 = key;
+                value1 = value;
+                break;
+        }
+        size++;
+        return null;
+    }

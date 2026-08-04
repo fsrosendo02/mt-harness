@@ -1,0 +1,57 @@
+{
+  "requested_count": 40,
+  "accepted_count": 36,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method does not check if the buffer has been filled before attempting to read from it.",
+        "line": 43,
+        "precode": "do {",
+        "aftercode": "// do {",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    // do { {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method does not differentiate between an opening and closing brace, leading to incorrect JSON parsing.",
+        "line": 17,
+        "precode": "case '{':",
+        "aftercode": "case '}':",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method incorrectly appends the entire segment of the buffer to the builder, leading to incorrect JSON parsing.",
+        "line": 33,
+        "precode": "builder.append(buffer, start, pos - start);",
+        "aftercode": "// builder.append(buffer, start, pos - start);",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            // builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method does not handle the case where a closing brace is encountered after an escape sequence, leading to incorrect JSON parsing.",
+        "line": 29,
+        "precode": "return \"skipped!\";",
+        "aftercode": "case '}': return \"skipped!\";",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

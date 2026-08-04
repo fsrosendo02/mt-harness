@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonXml_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksonxml_1f_serializeAsField__line78",
+  "file_path": "src/main/java/com/fasterxml/jackson/dataformat/xml/ser/XmlBeanPropertyWriter.java",
+  "function_name": "serializeAsField",
+  "start_line": 78,
+  "end_line": 152,
+  "mutant_id": "rej15",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 15,
+  "rejection_reason": "non_executable_structural_change: unclosed delimiter(s): {",
+  "raw_response_path": "harness/runs/batch05__JacksonXml_1__serializeAsField__jacksonxml_1f_serializeAsField_line78/generation/raw_response.txt",
+  "payload": {
+    "id": 15,
+    "reasoning": "Violates the property that cycle handling should be correctly implemented.",
+    "line": 57,
+    "precode": "_handleSelfReference(bean, jgen, prov, ser)",
+    "aftercode": "voidMethod();",
+    "candidate_code": "    @Override\n    public void serializeAsField(Object bean, JsonGenerator jgen, SerializerProvider prov)\n        throws Exception\n    {\n        Object value = get(bean);\n\n        /* 13-Feb-2014, tatu: As per [#103], default handling does not really\n         *   work here. Rather, we need just a wrapping and should NOT call\n         *   null handler, as it does not know what to do...\n         *   \n         *   Question, however, is what should it be serialized as. We have two main\n         *   choices; equivalent empty List, and \"nothing\" (missing). Let's start with\n         *   empty List? But producing missing entry is non-trivial...\n         */\n        if (value == null) {\n            // if (_nullSerializer != null) { ... }\n\n            // For Empty List, we'd do this:\n            /*\n            @SuppressWarnings(\"resource\")\n            final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n            if (xmlGen != null) {\n                xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n                xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n            }\n            */\n            // but for missing thing, well, just output nothing\n            \n            return;\n        }\n\n        // then find serializer to use\n        JsonSerializer<Object> ser = _serializer;\n        if (ser == null) {\n            Class<?> cls = value.getClass();\n            PropertySerializerMap map = _dynamicSerializers;\n            ser = map.serializerFor(cls);\n            if (ser == null) {\n                ser = _findAndAddDynamic(map, cls, prov);\n            }\n        }\n        // and then see if we must suppress certain values (default, empty)\n        if (_suppressableValue != null) {\n            if (MARKER_FOR_EMPTY == _suppressableValue) {\n                if (ser.isEmpty(prov, value)) {\n                    return;\n                }\n            } else if (_suppressableValue.equals(value)) {\n                return;\n            }\n        }\n        // For non-nulls: simple check for direct cycles\n        if (value == bean) {\n            // NOTE: method signature here change 2.3->2.4\n            if (_handleSelfReference(bean, jgen, prov, ser)) {\n                return;\n            voidMethod();\n        }\n\n        final ToXmlGenerator xmlGen = (jgen instanceof ToXmlGenerator) ? (ToXmlGenerator) jgen : null;\n        // Ok then; addition we want to do is to add wrapper element, and that's what happens here\n        // 19-Aug-2013, tatu: ... except for those nasty 'convertValue()' calls...\n        if (xmlGen != null) {\n            xmlGen.startWrappedValue(_wrapperQName, _wrappedQName);\n        }\n        jgen.writeFieldName(_name);\n        if (_typeSerializer == null) {\n            ser.serialize(value, jgen, prov);\n        } else {\n            ser.serializeWithType(value, jgen, prov, _typeSerializer);\n        }\n        if (xmlGen != null) {\n            xmlGen.finishWrappedValue(_wrapperQName, _wrappedQName);\n        }\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/runs/batch05__JacksonXml_1__serializeAsField__jacksonxml_1f_serializeAsField_line78/rejected/rej15.log",
+  "mutant_path": "harness/runs/batch05__JacksonXml_1__serializeAsField__jacksonxml_1f_serializeAsField_line78/rejected/rej15.mutant.txt",
+  "original_path": "harness/runs/batch05__JacksonXml_1__serializeAsField__jacksonxml_1f_serializeAsField_line78/rejected/original.txt"
+}

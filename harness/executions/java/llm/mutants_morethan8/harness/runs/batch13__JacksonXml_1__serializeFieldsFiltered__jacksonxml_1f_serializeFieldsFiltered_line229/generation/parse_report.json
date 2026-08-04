@@ -1,0 +1,133 @@
+{
+  "requested_count": 24,
+  "accepted_count": 12,
+  "rejected_count": 11,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "The original code checks if the generator is an instance of ToXmlGenerator. This mutant violates this by not performing this check, potentially allowing serialization to proceed without validation.",
+        "line": 7,
+        "precode": "// 19-Aug-2013, tatu: During 'convertValue()', need to skip",
+        "aftercode": "if (gen0 instanceof ToXmlGenerator) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "The original code checks if _filteredProps is not null and the active view is not null before using it. This mutant removes this check, potentially causing a NullPointerException.",
+        "line": 15,
+        "precode": "if (_filteredProps != null && provider.getActiveView() != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "The original code sets xgen to be an attribute if attrCount is greater than 0. This mutant removes this condition, allowing attributes to always be set regardless of attrCount.",
+        "line": 30,
+        "precode": "if (attrCount > 0) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The original code checks if the current property is the textIndex and sets xgen to be unwrapped. This mutant removes this check, potentially causing unexpected behavior when serializing text properties.",
+        "line": 46,
+        "precode": "if (i == textIndex) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "The original code sets xgen to be a CData element if it is in the cdata BitSet. This mutant removes this check, potentially allowing properties to be serialized as CData even when not specified.",
+        "line": 52,
+        "precode": "if ((cdata != null) && cdata.get(i)) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The original code resets xgen's attribute flag if it is unwrapping and the current property index matches attrCount. This mutant removes this reset, potentially causing unexpected behavior in unwrapped serializers.",
+        "line": 42,
+        "precode": "xgen.setNextIsAttribute(false);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 8,
+        "reasoning": "The original code handles exceptions by wrapping and throwing them. This mutant removes the try-catch block, potentially allowing unhandled exceptions to propagate.",
+        "line": 36,
+        "precode": "int i = 0; try {",
+        "aftercode": "int i = 0;",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[i]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The original code catches StackOverflowErrors and throws a JsonMappingException. This mutant removes the catch block for StackOverflowError, potentially allowing this error to propagate.",
+        "line": 69,
+        "precode": "catch (StackOverflowError e) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "The original code handles the case where an exception occurs while serializing properties. This mutant removes the catch block for exceptions, potentially allowing unrelated errors to pass through.",
+        "line": 66,
+        "precode": "catch (Exception e) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The original code handles the case where an anyGetterWriter exists. This mutant removes the check for _anyGetterWriter, potentially skipping serialization of any properties marked as 'anySetter'.",
+        "line": 59,
+        "precode": "if (_anyGetterWriter != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 23,
+        "reasoning": "The original code catches exceptions by wrapping and throwing them. This mutant changes the exception type caught, potentially making it harder to handle unexpected errors.",
+        "line": 38,
+        "precode": "for (final int len = props.length; i < len; ++i) {",
+        "aftercode": "try { for (final int len = props.length; i < len; ++i) {",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            try { for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[i]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

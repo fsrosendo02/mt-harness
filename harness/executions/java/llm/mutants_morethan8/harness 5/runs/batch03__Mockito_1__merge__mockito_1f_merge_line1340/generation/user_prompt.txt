@@ -1,0 +1,92 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static boolean merge(
+ 2:         final ClassWriter cw,
+ 3:         int t,
+ 4:         final int[] types,
+ 5:         final int index)
+ 6:     {
+ 7:         int u = types[index];
+ 8:         if (u == t) {
+ 9:             // if the types are equal, merge(u,t)=u, so there is no change
+10:             return false;
+11:         }
+12:         if ((t & ~DIM) == NULL) {
+13:             if (u == NULL) {
+14:                 return false;
+15:             }
+16:             t = NULL;
+17:         }
+18:         if (u == 0) {
+19:             // if types[index] has never been assigned, merge(u,t)=t
+20:             types[index] = t;
+21:             return true;
+22:         }
+23:         int v;
+24:         if ((u & BASE_KIND) == OBJECT || (u & DIM) != 0) {
+25:             // if u is a reference type of any dimension
+26:             if (t == NULL) {
+27:                 // if t is the NULL type, merge(u,t)=u, so there is no change
+28:                 return false;
+29:             } else if ((t & (DIM | BASE_KIND)) == (u & (DIM | BASE_KIND))) {
+30:                 if ((u & BASE_KIND) == OBJECT) {
+31:                     // if t is also a reference type, and if u and t have the
+32:                     // same dimension merge(u,t) = dim(t) | common parent of the
+33:                     // element types of u and t
+34:                     v = (t & DIM) | OBJECT
+35:                             | cw.getMergedType(t & BASE_VALUE, u & BASE_VALUE);
+36:                 } else {
+37:                     // if u and t are array types, but not with the same element
+38:                     // type, merge(u,t)=java/lang/Object
+39:                     v = OBJECT | cw.addType("java/lang/Object");
+40:                 }
+41:             } else if ((t & BASE_KIND) == OBJECT || (t & DIM) != 0) {
+42:                 // if t is any other reference or array type,
+43:                 // merge(u,t)=java/lang/Object
+44:                 v = OBJECT | cw.addType("java/lang/Object");
+45:             } else {
+46:                 // if t is any other type, merge(u,t)=TOP
+47:                 v = TOP;
+48:             }
+49:         } else if (u == NULL) {
+50:             // if u is the NULL type, merge(u,t)=t,
+51:             // or TOP if t is not a reference type
+52:             v = (t & BASE_KIND) == OBJECT || (t & DIM) != 0 ? t : TOP;
+53:         } else {
+54:             // if u is any other type, merge(u,t)=TOP whatever t
+55:             v = TOP;
+56:         }
+57:         if (u != v) {
+58:             types[index] = v;
+59:             return true;
+60:         }
+61:         return false;
+62:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

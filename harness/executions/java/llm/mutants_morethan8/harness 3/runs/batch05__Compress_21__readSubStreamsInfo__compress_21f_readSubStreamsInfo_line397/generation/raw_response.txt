@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The initial value of `numUnpackSubStreams` is always set to 1, regardless of the actual number of substreams.",
+      "line": 3,
+      "precode": "folder.numUnpackSubStreams = 1;",
+      "aftercode": "folder.numUnpackSubStreams = archive.folders.length;"
+    },
+    {
+      "id": 2,
+      "reasoning": "The `totalUnpackStreams` variable is not correctly updated when a new substream is found.",
+      "line": 9,
+      "precode": "totalUnpackStreams = 0;",
+      "aftercode": "totalUnpackStreams += folder.numUnpackSubStreams;"
+    },
+    {
+      "id": 3,
+      "reasoning": "The `numStreams` variable is not correctly updated when a new substream is found.",
+      "line": 12,
+      "precode": "folder.numUnpackSubStreams = (int) numStreams;",
+      "aftercode": "folder.numUnpackSubStreams = numStreams;"
+    },
+    {
+      "id": 4,
+      "reasoning": "The `subStreamsInfo.unpackSizes` array is not correctly initialized.",
+      "line": 20,
+      "precode": "subStreamsInfo.unpackSizes = new long[totalUnpackStreams];",
+      "aftercode": "subStreamsInfo.unpackSizes = new long[archive.folders.length];"
+    },
+    {
+      "id": 5,
+      "reasoning": "The `hasCrc` BitSet is not correctly updated.",
+      "line": 21,
+      "precode": "subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams);",
+      "aftercode": "subStreamsInfo.hasCrc = new BitSet(archive.folders.length);"
+    },
+    {
+      "id": 6,
+      "reasoning": "The `crcs` array is not correctly initialized.",
+      "line": 22,
+      "precode": "subStreamsInfo.crcs = new long[totalUnpackStreams];",
+      "aftercode": "subStreamsInfo.crcs = new long[archive.folders.length];"
+    },
+    {
+      "id": 7,
+      "reasoning": "The `nextUnpackStream` variable is not correctly updated.",
+      "line": 24,
+      "precode": "int nextUnpackStream = 0;",
+      "aftercode": "int nextUnpackStream = archive.folders.length;"
+    },
+    {
+      "id": 8,
+      "reasoning": "The `sum` variable is not correctly updated.",
+      "line": 28,
+      "precode": "long sum = 0;",
+      "aftercode": "long sum = folder.getUnpackSize();"
+    },
+    {
+      "id": 9,
+      "reasoning": "The last substream size is not correctly calculated.",
+      "line": 36,
+      "precode": "subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;",
+      "aftercode": "subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize();"
+    },
+    {
+      "id": 10,
+      "reasoning": "The `numDigests` variable is not correctly updated.",
+      "line": 43,
+      "precode": "numDigests += folder.numUnpackSubStreams;",
+      "aftercode": "numDigests -= folder.numUnpackSubStreams;"
+    },
+    {
+      "id": 11,
+      "reasoning": "The `hasMissingCrc` BitSet is not correctly updated.",
+      "line": 50,
+      "precode": "final BitSet hasMissingCrc = readAllOrBits(header, numDigests);",
+      "aftercode": "final BitSet hasMissingCrc = new BitSet(archive.folders.length);"
+    },
+    {
+      "id": 12,
+      "reasoning": "The `missingCrcs` array is not correctly initialized.",
+      "line": 51,
+      "precode": "final long[] missingCrcs = new long[numDigests];",
+      "aftercode": "final long[] missingCrcs = new long[archive.folders.length];"
+    },
+    {
+      "id": 13,
+      "reasoning": "The `nextMissingCrc` variable is not correctly updated.",
+      "line": 58,
+      "precode": "int nextMissingCrc = 0;",
+      "aftercode": "int nextMissingCrc = archive.folders.length;"
+    },
+    {
+      "id": 14,
+      "reasoning": "The `hasCrc` BitSet is not correctly updated for substreams with multiple CRCs.",
+      "line": 66,
+      "precode": "subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));",
+      "aftercode": "subStreamsInfo.hasCrc.set(nextCrc, true);"
+    },
+    {
+      "id": 15,
+      "reasoning": "The `crcs` array is not correctly updated for substreams with multiple CRCs.",
+      "line": 67,
+      "precode": "subStreamsInfo.crcs[nextCrc] = missingCrcs[nextMissingCrc];",
+      "aftercode": "subStreamsInfo.crcs[nextCrc] = folder.crc;"
+    },
+    {
+      "id": 16,
+      "reasoning": "The `nid` variable is not correctly updated after reading a substream.",
+      "line": 38,
+      "precode": "if (nid == NID.kSize) { nid = header.readUnsignedByte(); }",
+      "aftercode": "nid = header.readUnsignedByte();"
+    },
+    {
+      "id": 17,
+      "reasoning": "The `nid` variable is not correctly updated after reading a CRC.",
+      "line": 74,
+      "precode": "if (nid == NID.kEnd) { throw new IOException(\"Badly terminated SubStreamsInfo\"); }",
+      "aftercode": "throw new IOException(\"Badly terminated SubStreamsInfo\");"
+    },
+    {
+      "id": 18,
+      "reasoning": "The `archive.subStreamsInfo` field is not correctly updated.",
+      "line": 81,
+      "precode": "archive.subStreamsInfo = subStreamsInfo;",
+      "aftercode": "archive.subStreamsInfo = null;"
+    },
+    {
+      "id": 19,
+      "reasoning": "The `folder.numUnpackSubStreams` field is not correctly updated for substreams with no CRC.",
+      "line": 25,
+      "precode": "if (folder.numUnpackSubStreams == 0) { continue; }",
+      "aftercode": "folder.numUnpackSubStreams = -1;"
+    },
+    {
+      "id": 20,
+      "reasoning": "The `sum` variable is not correctly updated for substreams with multiple sizes.",
+      "line": 29,
+      "precode": "long sum += size;",
+      "aftercode": "sum -= size;"
+    },
+    {
+      "id": 21,
+      "reasoning": "The last substream size is not correctly calculated for substreams with multiple sizes.",
+      "line": 36,
+      "precode": "subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;",
+      "aftercode": "subStreamsInfo.unpackSizes[nextUnpackStream++] = -1;"
+    },
+    {
+      "id": 22,
+      "reasoning": "The `nid` variable is not correctly updated after reading a substream with multiple sizes.",
+      "line": 39,
+      "precode": "if (nid == NID.kSize) { nid = header.readUnsignedByte(); }",
+      "aftercode": "nid = -1;"
+    },
+    {
+      "id": 23,
+      "reasoning": "The `numDigests` variable is not correctly updated for substreams with multiple CRCs.",
+      "line": 44,
+      "precode": "if (folder.numUnpackSubStreams != 1 || !folder.hasCrc) { numDigests += folder.numUnpackSubStreams; }",
+      "aftercode": "numDigests -= folder.numUnpackSubStreams;"
+    },
+    {
+      "id": 24,
+      "reasoning": "The `hasMissingCrc` BitSet is not correctly updated for substreams with multiple CRCs.",
+      "line": 50,
+      "precode": "final BitSet hasMissingCrc = readAllOrBits(header, numDigests);",
+      "aftercode": "final BitSet hasMissingCrc = new BitSet(archive.folders.length);"
+    },
+    {
+      "id": 25,
+      "reasoning": "The `missingCrcs` array is not correctly initialized for substreams with multiple CRCs.",
+      "line": 51,
+      "precode": "final long[] missingCrcs = new long[numDigests];",
+      "aftercode": "final long[] missingCrcs = new long[archive.folders.length];"
+    },
+    {
+      "id": 26,
+      "reasoning": "The `nextMissingCrc` variable is not correctly updated for substreams with multiple CRCs.",
+      "line": 58,
+      "precode": "int nextMissingCrc = 0;",
+      "aftercode": "int nextMissingCrc = archive.folders.length;"
+    },
+    {
+      "id": 27,
+      "reasoning": "The `hasCrc` BitSet is not correctly updated for substreams with multiple CRCs.",
+      "line": 66,
+      "precode": "subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));",
+      "aftercode": "subStreamsInfo.hasCrc.set(nextCrc, true);"
+    },
+    {
+      "id": 28,
+      "reasoning": "The `crcs` array is not correctly updated for substreams with multiple CRCs.",
+      "line": 67,
+      "precode": "subStreamsInfo.crcs[nextCrc] = missingCrcs[nextMissingCrc];",
+      "aftercode": "subStreamsInfo.crcs[nextCrc] = folder.crc;"
+    },
+    {
+      "id": 29,
+      "reasoning": "The `nid` variable is not correctly updated after reading a CRC.",
+      "line": 74,
+      "precode": "if (nid == NID.kEnd) { throw new IOException(\"Badly terminated SubStreamsInfo\"); }",
+      "aftercode": "throw new IOException(\"Badly terminated SubStreamsInfo\");"
+    },
+    {
+      "id": 30,
+      "reasoning": "The `archive.subStreamsInfo` field is not correctly updated.",
+      "line": 81,
+      "precode": "archive.subStreamsInfo = subStreamsInfo;",
+      "aftercode": "archive.subStreamsInfo = null;"
+    },
+    {
+      "id": 31,
+      "reasoning": "The `folder.numUnpackSubStreams` field is not correctly updated for substreams with no CRC.",
+      "line": 25,
+      "precode": "if (folder.numUnpackSubStreams == 0) { continue; }",
+      "aftercode": "folder.numUnpackSubStreams = -1;"
+    },
+    {
+      "id": 32,
+      "reasoning": "The `sum` variable is not correctly updated for substreams with multiple sizes.",
+      "line": 29,
+      "precode": "long sum += size;",
+      "aftercode": "sum -= size;"
+    }
+  ]
+}

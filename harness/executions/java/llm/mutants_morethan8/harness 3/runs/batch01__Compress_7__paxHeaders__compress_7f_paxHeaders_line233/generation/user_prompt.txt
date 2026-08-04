@@ -1,0 +1,100 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void paxHeaders() throws IOException{
+ 2:         BufferedReader br = new BufferedReader(new InputStreamReader(this, "UTF-8"));
+ 3:         Map headers = new HashMap();
+ 4:         // Format is "length keyword=value\n";
+ 5:         while(true){ // get length
+ 6:             int ch;
+ 7:             int len=0;
+ 8:             int read=0;
+ 9:             while((ch = br.read()) != -1){
+10:                 read++;
+11:                 if (ch == ' '){ // End of length string
+12:                     // Get keyword
+13:                     StringBuffer sb = new StringBuffer();
+14:                     while((ch = br.read()) != -1){
+15:                         read++;
+16:                         if (ch == '='){ // end of keyword
+17:                             String keyword = sb.toString();
+18:                             // Get rest of entry
+19:                             char[] cbuf = new char[len-read];
+20:                             int got = br.read(cbuf);
+21:                             if (got != len-read){
+22:                                 throw new IOException("Failed to read Paxheader. Expected "+(len-read)+" chars, read "+got);
+23:                             }
+24:                             String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL
+25:                             headers.put(keyword, value);
+26:                             break;
+27:                         }
+28:                         sb.append((char)ch);
+29:                     }
+30:                     break; // Processed single header
+31:                 }
+32:                 len *= 10;
+33:                 len += ch - '0';
+34:             }
+35:             if (ch == -1){ // EOF
+36:                 break;
+37:             }
+38:         }
+39:         getNextEntry(); // Get the actual file entry
+40:         /*
+41:          * The following headers are defined for Pax.
+42:          * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields
+43:          * comment
+44:          * gid, gname
+45:          * linkpath
+46:          * size
+47:          * uid,uname
+48:          */
+49:         Iterator hdrs = headers.entrySet().iterator();
+50:         while(hdrs.hasNext()){
+51:             Entry ent = (Entry) hdrs.next();
+52:             String key = (String) ent.getKey();
+53:             String val = (String) ent.getValue();
+54:             if ("path".equals(key)){
+55:                 currEntry.setName(val);
+56:             } else if ("linkpath".equals(key)){
+57:                 currEntry.setLinkName(val);
+58:             } else if ("gid".equals(key)){
+59:                 currEntry.setGroupId(Integer.parseInt(val));
+60:             } else if ("gname".equals(key)){
+61:                 currEntry.setGroupName(val);
+62:             } else if ("uid".equals(key)){
+63:                 currEntry.setUserId(Integer.parseInt(val));
+64:             } else if ("uname".equals(key)){
+65:                 currEntry.setUserName(val);
+66:             } else if ("size".equals(key)){
+67:                 currEntry.setSize(Long.parseLong(val));
+68:             }
+69:         }
+70:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "requested_count": 24,
+  "accepted_count": 14,
+  "rejected_count": 10,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 5,
+        "reasoning": "The `input.reset()` method is not called when the input stream has been closed.",
+        "line": 13,
+        "precode": "input.reset();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The `BomCharset` object's `charset` property is not checked for being null before assignment.",
+        "line": 16,
+        "precode": "if (bomCharset != null) { charsetName = bomCharset.charset; }",
+        "aftercode": "if (bomCharset == null) { charsetName = bomCharset.charset; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The `input.skip(bomCharset.offset)` method is not called when the input stream has been closed.",
+        "line": 19,
+        "precode": "input.skip(bomCharset.offset);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "The `XmlDeclaration` object is not checked for being null before use in the `if (prolog.name().equals(\"xml\"))` condition.",
+        "line": 38,
+        "precode": "if (prolog.name().equals(\"xml\") && prolog instanceof XmlDeclaration) {",
+        "aftercode": "if (prolog != null && prolog.name().equals(\"xml\")) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The `BufferedReader` object is not closed when the input stream has been closed.",
+        "line": 58,
+        "precode": "BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);",
+        "aftercode": "try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The `input.close()` method is not called when the input stream has been closed.",
+        "line": 62,
+        "precode": "input.close();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "The `parser` object is not checked for being null before use in the `parser.parseInput` method.",
+        "line": 24,
+        "precode": "doc = parser.parseInput(docData, baseUri);",
+        "aftercode": "doc = parser.parseInput(null, baseUri);",
+        "candidate_code": "    static Document parseInputStream(InputStream input, String charsetName, String baseUri, Parser parser) throws IOException  {\n        if (input == null) // empty body\n            return new Document(baseUri);\n        input = ConstrainableInputStream.wrap(input, bufferSize, 0);\n\n        Document doc = null;\n        boolean fullyRead = false;\n\n        // read the start of the stream and look for a BOM or meta charset\n        input.mark(firstReadBufferSize);\n        ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1); // -1 because we read one more to see if completed\n        fullyRead = input.read() == -1;\n        input.reset();\n\n        // look for BOM - overrides any other header or input\n        BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);\n        if (bomCharset != null) {\n            charsetName = bomCharset.charset;\n            input.skip(bomCharset.offset);\n        }\n\n        if (charsetName == null) { // determine from meta. safe first parse as UTF-8\n            String docData = Charset.forName(defaultCharset).decode(firstBytes).toString();\n            doc = parser.parseInput(null, baseUri);\n\n            // look for <meta http-equiv=\"Content-Type\" content=\"text/html;charset=gb2312\"> or HTML5 <meta charset=\"gb2312\">\n            Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\");\n            String foundCharset = null; // if not found, will keep utf-8 as best attempt\n            for (Element meta : metaElements) {\n                if (meta.hasAttr(\"http-equiv\"))\n                    foundCharset = getCharsetFromContentType(meta.attr(\"content\"));\n                if (foundCharset == null && meta.hasAttr(\"charset\"))\n                    foundCharset = meta.attr(\"charset\");\n                if (foundCharset != null)\n                    break;\n            }\n\n            // look for <?xml encoding='ISO-8859-1'?>\n            if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration) {\n                XmlDeclaration prolog = (XmlDeclaration) doc.childNode(0);\n                if (prolog.name().equals(\"xml\"))\n                    foundCharset = prolog.attr(\"encoding\");\n            }\n            foundCharset = validateCharset(foundCharset);\n            if (foundCharset != null && !foundCharset.equalsIgnoreCase(defaultCharset)) { // need to re-decode. (case insensitive check here to match how validate works)\n                foundCharset = foundCharset.trim().replaceAll(\"[\\\"']\", \"\");\n                charsetName = foundCharset;\n                doc = null;\n            } else if (!fullyRead) {\n                doc = null;\n            }\n        } else { // specified by content type header (or by user on file load)\n            Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");\n        }\n        if (doc == null) {\n            if (charsetName == null)\n                charsetName = defaultCharset;\n            BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);\n            doc = parser.parseInput(reader, baseUri);\n            doc.outputSettings().charset(charsetName);\n        }\n        input.close();\n        return doc;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "The `defaultCharset` variable is not checked for being null before use in the `Charset.forName` method.",
+        "line": 22,
+        "precode": "String docData = Charset.forName(defaultCharset).decode(firstBytes).toString();",
+        "aftercode": "String docData = Charset.forName(null).decode(firstBytes).toString();",
+        "candidate_code": "    static Document parseInputStream(InputStream input, String charsetName, String baseUri, Parser parser) throws IOException  {\n        if (input == null) // empty body\n            return new Document(baseUri);\n        input = ConstrainableInputStream.wrap(input, bufferSize, 0);\n\n        Document doc = null;\n        boolean fullyRead = false;\n\n        // read the start of the stream and look for a BOM or meta charset\n        input.mark(firstReadBufferSize);\n        ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1); // -1 because we read one more to see if completed\n        fullyRead = input.read() == -1;\n        input.reset();\n\n        // look for BOM - overrides any other header or input\n        BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);\n        if (bomCharset != null) {\n            charsetName = bomCharset.charset;\n            input.skip(bomCharset.offset);\n        }\n\n        if (charsetName == null) { // determine from meta. safe first parse as UTF-8\n            String docData = Charset.forName(null).decode(firstBytes).toString();\n            doc = parser.parseInput(docData, baseUri);\n\n            // look for <meta http-equiv=\"Content-Type\" content=\"text/html;charset=gb2312\"> or HTML5 <meta charset=\"gb2312\">\n            Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\");\n            String foundCharset = null; // if not found, will keep utf-8 as best attempt\n            for (Element meta : metaElements) {\n                if (meta.hasAttr(\"http-equiv\"))\n                    foundCharset = getCharsetFromContentType(meta.attr(\"content\"));\n                if (foundCharset == null && meta.hasAttr(\"charset\"))\n                    foundCharset = meta.attr(\"charset\");\n                if (foundCharset != null)\n                    break;\n            }\n\n            // look for <?xml encoding='ISO-8859-1'?>\n            if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration) {\n                XmlDeclaration prolog = (XmlDeclaration) doc.childNode(0);\n                if (prolog.name().equals(\"xml\"))\n                    foundCharset = prolog.attr(\"encoding\");\n            }\n            foundCharset = validateCharset(foundCharset);\n            if (foundCharset != null && !foundCharset.equalsIgnoreCase(defaultCharset)) { // need to re-decode. (case insensitive check here to match how validate works)\n                foundCharset = foundCharset.trim().replaceAll(\"[\\\"']\", \"\");\n                charsetName = foundCharset;\n                doc = null;\n            } else if (!fullyRead) {\n                doc = null;\n            }\n        } else { // specified by content type header (or by user on file load)\n            Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");\n        }\n        if (doc == null) {\n            if (charsetName == null)\n                charsetName = defaultCharset;\n            BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);\n            doc = parser.parseInput(reader, baseUri);\n            doc.outputSettings().charset(charsetName);\n        }\n        input.close();\n        return doc;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "The `input` object is not checked for being closed before use in the `Charset.forName` method.",
+        "line": 58,
+        "precode": "BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);",
+        "aftercode": "try (BufferedReader reader = new BufferedReader(new InputStreamReader(null, charsetName), bufferSize)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The `doc` object is not checked for being null before use in the `return doc;` statement.",
+        "line": 63,
+        "precode": "return doc;",
+        "aftercode": "return null;",
+        "candidate_code": "    static Document parseInputStream(InputStream input, String charsetName, String baseUri, Parser parser) throws IOException  {\n        if (input == null) // empty body\n            return new Document(baseUri);\n        input = ConstrainableInputStream.wrap(input, bufferSize, 0);\n\n        Document doc = null;\n        boolean fullyRead = false;\n\n        // read the start of the stream and look for a BOM or meta charset\n        input.mark(firstReadBufferSize);\n        ByteBuffer firstBytes = readToByteBuffer(input, firstReadBufferSize - 1); // -1 because we read one more to see if completed\n        fullyRead = input.read() == -1;\n        input.reset();\n\n        // look for BOM - overrides any other header or input\n        BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);\n        if (bomCharset != null) {\n            charsetName = bomCharset.charset;\n            input.skip(bomCharset.offset);\n        }\n\n        if (charsetName == null) { // determine from meta. safe first parse as UTF-8\n            String docData = Charset.forName(defaultCharset).decode(firstBytes).toString();\n            doc = parser.parseInput(docData, baseUri);\n\n            // look for <meta http-equiv=\"Content-Type\" content=\"text/html;charset=gb2312\"> or HTML5 <meta charset=\"gb2312\">\n            Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\");\n            String foundCharset = null; // if not found, will keep utf-8 as best attempt\n            for (Element meta : metaElements) {\n                if (meta.hasAttr(\"http-equiv\"))\n                    foundCharset = getCharsetFromContentType(meta.attr(\"content\"));\n                if (foundCharset == null && meta.hasAttr(\"charset\"))\n                    foundCharset = meta.attr(\"charset\");\n                if (foundCharset != null)\n                    break;\n            }\n\n            // look for <?xml encoding='ISO-8859-1'?>\n            if (foundCharset == null && doc.childNodeSize() > 0 && doc.childNode(0) instanceof XmlDeclaration) {\n                XmlDeclaration prolog = (XmlDeclaration) doc.childNode(0);\n                if (prolog.name().equals(\"xml\"))\n                    foundCharset = prolog.attr(\"encoding\");\n            }\n            foundCharset = validateCharset(foundCharset);\n            if (foundCharset != null && !foundCharset.equalsIgnoreCase(defaultCharset)) { // need to re-decode. (case insensitive check here to match how validate works)\n                foundCharset = foundCharset.trim().replaceAll(\"[\\\"']\", \"\");\n                charsetName = foundCharset;\n                doc = null;\n            } else if (!fullyRead) {\n                doc = null;\n            }\n        } else { // specified by content type header (or by user on file load)\n            Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");\n        }\n        if (doc == null) {\n            if (charsetName == null)\n                charsetName = defaultCharset;\n            BufferedReader reader = new BufferedReader(new InputStreamReader(input, charsetName), bufferSize);\n            doc = parser.parseInput(reader, baseUri);\n            doc.outputSettings().charset(charsetName);\n        }\n        input.close();\n        return null;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+  @Override public JsonToken peek() throws IOException {
+    if (stack.isEmpty()) {
+      return JsonToken.END_DOCUMENT;
+    }
+
+    Object o = peekStack();
+    if (o instanceof Iterator) {
+      boolean isObject = stack.get(stack.size() - 2) instanceof JsonObject;
+      Iterator<?> iterator = (Iterator<?>) o;
+      if (iterator.hasNext()) {
+        if (isObject) {
+          return JsonToken.NAME;
+        } else {
+          stack.add(iterator.next());
+          return peek();
+        }
+      } else {
+        return isObject ? JsonToken.END_OBJECT : JsonToken.END_ARRAY;
+      }
+    } else if (o instanceof JsonObject) {
+      return JsonToken.BEGIN_OBJECT;
+    else if (true) {
+      return JsonToken.BEGIN_ARRAY;
+    } else if (o instanceof JsonPrimitive) {
+      JsonPrimitive primitive = (JsonPrimitive) o;
+      if (primitive.isString()) {
+        return JsonToken.STRING;
+      } else if (primitive.isBoolean()) {
+        return JsonToken.BOOLEAN;
+      } else if (primitive.isNumber()) {
+        return JsonToken.NUMBER;
+      } else {
+        throw new AssertionError();
+      }
+    } else if (o instanceof JsonNull) {
+      return JsonToken.NULL;
+    } else if (o == SENTINEL_CLOSED) {
+      throw new IllegalStateException("JsonReader is closed");
+    } else {
+      throw new AssertionError();
+    }
+  }

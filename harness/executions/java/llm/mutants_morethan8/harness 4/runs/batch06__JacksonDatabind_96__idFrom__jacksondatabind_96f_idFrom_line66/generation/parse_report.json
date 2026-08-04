@@ -1,0 +1,258 @@
+{
+  "requested_count": 40,
+  "accepted_count": 12,
+  "rejected_count": 21,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 29,
+        "precode": "if (str.indexOf('$') >= 0)",
+        "aftercode": "if (str.indexOf('$') < 0)",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        if (str.indexOf('$') < 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 37,
+        "precode": "Class<?> outer = ClassUtil.getOuterClass(cls);",
+        "aftercode": "if (outer == null) { str = cls.getName(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 40,
+        "precode": "Class<?> staticType = _baseType.getRawClass();",
+        "aftercode": "if (ClassUtil.getOuterClass(staticType) == null) { str = \"Fallback Value\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly handling internal types.",
+        "line": 16,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly identifying enum types.",
+        "line": 20,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly identifying enum types.",
+        "line": 22,
+        "precode": "str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();",
+        "aftercode": "if (enumClass == null) { str = \"Fallback Value\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly handling internal types.",
+        "line": 44,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly identifying enum types.",
+        "line": 45,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 43,
+        "precode": "if (ClassUtil.getOuterClass(staticType) == null)",
+        "aftercode": "if (ClassUtil.getOuterClass(staticType) != null)",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    if (ClassUtil.getOuterClass(staticType) != null)// Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly handling internal types.",
+        "line": 46,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly identifying enum types.",
+        "line": 20,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 32,
+        "precode": "* but that is just not possible due to various things.",
+        "aftercode": "* and it's actually quite easy if we try harder.",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * and it's actually quite easy if we try harder.\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly identifying enum types.",
+        "line": 22,
+        "precode": "str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();",
+        "aftercode": "if (enumClass == null) { str = \"Fallback Value\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 38,
+        "precode": "if (outer != null)",
+        "aftercode": "if (outer == null)",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer == null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 40,
+        "precode": "if (ClassUtil.getOuterClass(staticType) == null)",
+        "aftercode": "if (ClassUtil.getOuterClass(staticType) != null)",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                if (ClassUtil.getOuterClass(staticType) != null)// non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly handling internal types.",
+        "line": 44,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly identifying enum types.",
+        "line": 45,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 37,
+        "precode": "Class<?> outer = ClassUtil.getOuterClass(cls);",
+        "aftercode": "outer = cls; // Mutated to return a non-null but incorrect outer class.",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            outer = cls; // Mutated to return a non-null but incorrect outer class.\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 40,
+        "precode": "Class<?> staticType = _baseType.getRawClass();",
+        "aftercode": "staticType = cls; // Mutated to return a non-null but incorrect base type.",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                staticType = cls; // Mutated to return a non-null but incorrect base type.\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly handling inner classes.",
+        "line": 43,
+        "precode": "if (ClassUtil.getOuterClass(staticType) == null)",
+        "aftercode": "if (ClassUtil.getOuterClass(staticType) != null)",
+        "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    if (ClassUtil.getOuterClass(staticType) != null)// Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = cls.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly handling internal types.",
+        "line": 46,
+        "precode": "",
+        "aftercode": ""
+      }
+    }
+  ]
+}

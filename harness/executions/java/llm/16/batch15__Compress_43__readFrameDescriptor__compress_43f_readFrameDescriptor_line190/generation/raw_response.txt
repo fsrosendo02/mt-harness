@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "No check for premature end of stream when reading frame flags",
+      "line": 2,
+      "precode": "int flags = readOneByte();",
+      "aftercode": "int flags = -1;"
+    },
+    {
+      "id": 2,
+      "reasoning": "No update to contentHash when reading frame flags",
+      "line": 6,
+      "precode": "contentHash.update(flags);",
+      "aftercode": ""
+    },
+    {
+      "id": 3,
+      "reasoning": "Unsupported version not checked correctly",
+      "line": 7,
+      "precode": "(flags & VERSION_MASK) != SUPPORTED_VERSION",
+      "aftercode": "(flags & VERSION_MASK) == -1"
+    },
+    {
+      "id": 4,
+      "reasoning": "Block dependency buffer not initialized when expected",
+      "line": 11,
+      "precode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;",
+      "aftercode": "expectBlockDependency = true;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Block dependency buffer not cleared when not expected",
+      "line": 15,
+      "precode": "blockDependencyBuffer = null;",
+      "aftercode": ""
+    },
+    {
+      "id": 6,
+      "reasoning": "Expected block checksum not checked correctly",
+      "line": 18,
+      "precode": "(flags & BLOCK_CHECKSUM_MASK) != 0",
+      "aftercode": "(flags & BLOCK_CHECKSUM_MASK) == -1"
+    },
+    {
+      "id": 7,
+      "reasoning": "Expected content size not checked correctly",
+      "line": 19,
+      "precode": "(flags & CONTENT_SIZE_MASK) != 0",
+      "aftercode": "(flags & CONTENT_SIZE_MASK) == -1"
+    },
+    {
+      "id": 8,
+      "reasoning": "Expected content checksum not checked correctly",
+      "line": 20,
+      "precode": "(flags & CONTENT_CHECKSUM_MASK) != 0",
+      "aftercode": "(flags & CONTENT_CHECKSUM_MASK) == -1"
+    },
+    {
+      "id": 9,
+      "reasoning": "BD byte not read when expected block checksum",
+      "line": 22,
+      "precode": "int bdByte = readOneByte();",
+      "aftercode": ""
+    },
+    {
+      "id": 10,
+      "reasoning": "Content size not read when expected content size",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8]; int skipped = IOUtils.readFully(in, contentSize);",
+      "aftercode": ""
+    },
+    {
+      "id": 11,
+      "reasoning": "Header hash not read when expected header checksum",
+      "line": 36,
+      "precode": "int headerHash = readOneByte();",
+      "aftercode": ""
+    },
+    {
+      "id": 12,
+      "reasoning": "Expected hash not checked correctly",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);",
+      "aftercode": "int expectedHash = -1;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Header hash not compared correctly",
+      "line": 41,
+      "precode": "if (headerHash != expectedHash)",
+      "aftercode": "if (headerHash == expectedHash)"
+    },
+    {
+      "id": 14,
+      "reasoning": "No exception thrown when premature end of stream while reading frame flags",
+      "line": 3,
+      "precode": "throw new IOException(\"Premature end of stream while reading frame flags\");",
+      "aftercode": ""
+    },
+    {
+      "id": 15,
+      "reasoning": "No exception thrown when unsupported version",
+      "line": 8,
+      "precode": "throw new IOException(\"Unsupported version \" + (flags >> 6));",
+      "aftercode": ""
+    },
+    {
+      "id": 16,
+      "reasoning": "No exception thrown when premature end of stream while reading BD byte",
+      "line": 23,
+      "precode": "throw new IOException(\"Premature end of stream while reading frame BD byte\");",
+      "aftercode": ""
+    }
+  ]
+}

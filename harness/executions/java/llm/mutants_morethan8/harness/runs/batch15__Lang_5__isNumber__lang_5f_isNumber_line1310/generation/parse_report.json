@@ -1,0 +1,148 @@
+{
+  "requested_count": 24,
+  "accepted_count": 12,
+  "rejected_count": 12,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates property: allowing any characters in the hex number check",
+        "line": 19,
+        "precode": "for (; i < chars.length; i++) {",
+        "aftercode": "for (; i < chars.length; i++) { if (true) continue; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates property: not allowing signs in exponent",
+        "line": 45,
+        "precode": "// we've already taken care of hex.",
+        "aftercode": "// we've already taken care of hex. && chars[i] == '+'"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates property: not allowing exponents at the end of the number",
+        "line": 71,
+        "precode": "// can't have an E at the last byte",
+        "aftercode": "// can't have an E"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates property: not allowing decimal points at the end of the number without a digit",
+        "line": 75,
+        "precode": "// single trailing decimal point after non-exponent is ok",
+        "aftercode": "// single trailing decimal point"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates property: not allowing type qualifiers at the end of the number without a digit",
+        "line": 88,
+        "precode": "// not allowing L with an exponent or decimal point",
+        "aftercode": "// not allowing L"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates property: treating input as a hex number without checking",
+        "line": 19,
+        "precode": "// checking hex (it can't be anything else)",
+        "aftercode": "// not checking hex"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates property: not allowing numbers with an exponent and decimal point",
+        "line": 40,
+        "precode": "// two decimal points or dec in exponent   ",
+        "aftercode": "// two decimal points"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates property: treating input as a number without checking for signs",
+        "line": 12,
+        "precode": "int start = (chars[0] == '-') ? 1 : 0;",
+        "aftercode": "int start = 0;",
+        "candidate_code": "    public static boolean isNumber(String str) {\n        if (StringUtils.isEmpty(str)) {\n            return false;\n        }\n        char[] chars = str.toCharArray();\n        int sz = chars.length;\n        boolean hasExp = false;\n        boolean hasDecPoint = false;\n        boolean allowSigns = false;\n        boolean foundDigit = false;\n        // deal with any possible sign up front\n        int start = 0;\n        if (sz > start + 1 && chars[start] == '0' && chars[start + 1] == 'x') {\n            int i = start + 2;\n            if (i == sz) {\n                return false; // str == \"0x\"\n            }\n            // checking hex (it can't be anything else)\n            for (; i < chars.length; i++) {\n                if ((chars[i] < '0' || chars[i] > '9')\n                    && (chars[i] < 'a' || chars[i] > 'f')\n                    && (chars[i] < 'A' || chars[i] > 'F')) {\n                    return false;\n                }\n            }\n            return true;\n        }\n        sz--; // don't want to loop to the last char, check it afterwords\n              // for type qualifiers\n        int i = start;\n        // loop to the next to last char or to the last char if we need another digit to\n        // make a valid number (e.g. chars[0..5] = \"1234E\")\n        while (i < sz || (i < sz + 1 && allowSigns && !foundDigit)) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                foundDigit = true;\n                allowSigns = false;\n\n            } else if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent   \n                    return false;\n                }\n                hasDecPoint = true;\n            } else if (chars[i] == 'e' || chars[i] == 'E') {\n                // we've already taken care of hex.\n                if (hasExp) {\n                    // two E's\n                    return false;\n                }\n                if (!foundDigit) {\n                    return false;\n                }\n                hasExp = true;\n                allowSigns = true;\n            } else if (chars[i] == '+' || chars[i] == '-') {\n                if (!allowSigns) {\n                    return false;\n                }\n                allowSigns = false;\n                foundDigit = false; // we need a digit after the E\n            } else {\n                return false;\n            }\n            i++;\n        }\n        if (i < chars.length) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                // no type qualifier, OK\n                return true;\n            }\n            if (chars[i] == 'e' || chars[i] == 'E') {\n                // can't have an E at the last byte\n                return false;\n            }\n            if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent\n                    return false;\n                }\n                // single trailing decimal point after non-exponent is ok\n                return foundDigit;\n            }\n            if (!allowSigns\n                && (chars[i] == 'd'\n                    || chars[i] == 'D'\n                    || chars[i] == 'f'\n                    || chars[i] == 'F')) {\n                return foundDigit;\n            }\n            if (chars[i] == 'l'\n                || chars[i] == 'L') {\n                // not allowing L with an exponent or decimal point\n                return foundDigit && !hasExp && !hasDecPoint;\n            }\n            // last character is illegal\n            return false;\n        }\n        // allowSigns is true iff the val ends in 'E'\n        // found digit it to make sure weird stuff like '.' and '1E-' doesn't pass\n        return !allowSigns && foundDigit;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates property: treating all input as a number",
+        "line": 28,
+        "precode": "sz--; // don't want to loop to the last char, check it afterwords",
+        "aftercode": "sz++;",
+        "candidate_code": "    public static boolean isNumber(String str) {\n        if (StringUtils.isEmpty(str)) {\n            return false;\n        }\n        char[] chars = str.toCharArray();\n        int sz = chars.length;\n        boolean hasExp = false;\n        boolean hasDecPoint = false;\n        boolean allowSigns = false;\n        boolean foundDigit = false;\n        // deal with any possible sign up front\n        int start = (chars[0] == '-') ? 1 : 0;\n        if (sz > start + 1 && chars[start] == '0' && chars[start + 1] == 'x') {\n            int i = start + 2;\n            if (i == sz) {\n                return false; // str == \"0x\"\n            }\n            // checking hex (it can't be anything else)\n            for (; i < chars.length; i++) {\n                if ((chars[i] < '0' || chars[i] > '9')\n                    && (chars[i] < 'a' || chars[i] > 'f')\n                    && (chars[i] < 'A' || chars[i] > 'F')) {\n                    return false;\n                }\n            }\n            return true;\n        }\n        sz++;// don't want to loop to the last char, check it afterwords\n              // for type qualifiers\n        int i = start;\n        // loop to the next to last char or to the last char if we need another digit to\n        // make a valid number (e.g. chars[0..5] = \"1234E\")\n        while (i < sz || (i < sz + 1 && allowSigns && !foundDigit)) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                foundDigit = true;\n                allowSigns = false;\n\n            } else if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent   \n                    return false;\n                }\n                hasDecPoint = true;\n            } else if (chars[i] == 'e' || chars[i] == 'E') {\n                // we've already taken care of hex.\n                if (hasExp) {\n                    // two E's\n                    return false;\n                }\n                if (!foundDigit) {\n                    return false;\n                }\n                hasExp = true;\n                allowSigns = true;\n            } else if (chars[i] == '+' || chars[i] == '-') {\n                if (!allowSigns) {\n                    return false;\n                }\n                allowSigns = false;\n                foundDigit = false; // we need a digit after the E\n            } else {\n                return false;\n            }\n            i++;\n        }\n        if (i < chars.length) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                // no type qualifier, OK\n                return true;\n            }\n            if (chars[i] == 'e' || chars[i] == 'E') {\n                // can't have an E at the last byte\n                return false;\n            }\n            if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent\n                    return false;\n                }\n                // single trailing decimal point after non-exponent is ok\n                return foundDigit;\n            }\n            if (!allowSigns\n                && (chars[i] == 'd'\n                    || chars[i] == 'D'\n                    || chars[i] == 'f'\n                    || chars[i] == 'F')) {\n                return foundDigit;\n            }\n            if (chars[i] == 'l'\n                || chars[i] == 'L') {\n                // not allowing L with an exponent or decimal point\n                return foundDigit && !hasExp && !hasDecPoint;\n            }\n            // last character is illegal\n            return false;\n        }\n        // allowSigns is true iff the val ends in 'E'\n        // found digit it to make sure weird stuff like '.' and '1E-' doesn't pass\n        return !allowSigns && foundDigit;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates property: allowing numbers with more than one decimal point",
+        "line": 40,
+        "precode": "// two decimal points or dec in exponent   ",
+        "aftercode": "// two decimal points"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates property: treating input as a hex number without checking for signs",
+        "line": 11,
+        "precode": "int start = (chars[0] == '-') ? 1 : 0;",
+        "aftercode": "int start = 0;",
+        "candidate_code": "    public static boolean isNumber(String str) {\n        if (StringUtils.isEmpty(str)) {\n            return false;\n        }\n        char[] chars = str.toCharArray();\n        int sz = chars.length;\n        boolean hasExp = false;\n        boolean hasDecPoint = false;\n        boolean allowSigns = false;\n        boolean foundDigit = false;\n        // deal with any possible sign up front\n        int start = 0;\n        if (sz > start + 1 && chars[start] == '0' && chars[start + 1] == 'x') {\n            int i = start + 2;\n            if (i == sz) {\n                return false; // str == \"0x\"\n            }\n            // checking hex (it can't be anything else)\n            for (; i < chars.length; i++) {\n                if ((chars[i] < '0' || chars[i] > '9')\n                    && (chars[i] < 'a' || chars[i] > 'f')\n                    && (chars[i] < 'A' || chars[i] > 'F')) {\n                    return false;\n                }\n            }\n            return true;\n        }\n        sz--; // don't want to loop to the last char, check it afterwords\n              // for type qualifiers\n        int i = start;\n        // loop to the next to last char or to the last char if we need another digit to\n        // make a valid number (e.g. chars[0..5] = \"1234E\")\n        while (i < sz || (i < sz + 1 && allowSigns && !foundDigit)) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                foundDigit = true;\n                allowSigns = false;\n\n            } else if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent   \n                    return false;\n                }\n                hasDecPoint = true;\n            } else if (chars[i] == 'e' || chars[i] == 'E') {\n                // we've already taken care of hex.\n                if (hasExp) {\n                    // two E's\n                    return false;\n                }\n                if (!foundDigit) {\n                    return false;\n                }\n                hasExp = true;\n                allowSigns = true;\n            } else if (chars[i] == '+' || chars[i] == '-') {\n                if (!allowSigns) {\n                    return false;\n                }\n                allowSigns = false;\n                foundDigit = false; // we need a digit after the E\n            } else {\n                return false;\n            }\n            i++;\n        }\n        if (i < chars.length) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                // no type qualifier, OK\n                return true;\n            }\n            if (chars[i] == 'e' || chars[i] == 'E') {\n                // can't have an E at the last byte\n                return false;\n            }\n            if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent\n                    return false;\n                }\n                // single trailing decimal point after non-exponent is ok\n                return foundDigit;\n            }\n            if (!allowSigns\n                && (chars[i] == 'd'\n                    || chars[i] == 'D'\n                    || chars[i] == 'f'\n                    || chars[i] == 'F')) {\n                return foundDigit;\n            }\n            if (chars[i] == 'l'\n                || chars[i] == 'L') {\n                // not allowing L with an exponent or decimal point\n                return foundDigit && !hasExp && !hasDecPoint;\n            }\n            // last character is illegal\n            return false;\n        }\n        // allowSigns is true iff the val ends in 'E'\n        // found digit it to make sure weird stuff like '.' and '1E-' doesn't pass\n        return !allowSigns && foundDigit;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates property: treating input as a number without checking for decimal points",
+        "line": 67,
+        "precode": "if (chars[i] >= '0' && chars[i] <= '9') {",
+        "aftercode": "if (true) {",
+        "candidate_code": "    public static boolean isNumber(String str) {\n        if (StringUtils.isEmpty(str)) {\n            return false;\n        }\n        char[] chars = str.toCharArray();\n        int sz = chars.length;\n        boolean hasExp = false;\n        boolean hasDecPoint = false;\n        boolean allowSigns = false;\n        boolean foundDigit = false;\n        // deal with any possible sign up front\n        int start = (chars[0] == '-') ? 1 : 0;\n        if (sz > start + 1 && chars[start] == '0' && chars[start + 1] == 'x') {\n            int i = start + 2;\n            if (i == sz) {\n                return false; // str == \"0x\"\n            }\n            // checking hex (it can't be anything else)\n            for (; i < chars.length; i++) {\n                if ((chars[i] < '0' || chars[i] > '9')\n                    && (chars[i] < 'a' || chars[i] > 'f')\n                    && (chars[i] < 'A' || chars[i] > 'F')) {\n                    return false;\n                }\n            }\n            return true;\n        }\n        sz--; // don't want to loop to the last char, check it afterwords\n              // for type qualifiers\n        int i = start;\n        // loop to the next to last char or to the last char if we need another digit to\n        // make a valid number (e.g. chars[0..5] = \"1234E\")\n        while (i < sz || (i < sz + 1 && allowSigns && !foundDigit)) {\n            if (chars[i] >= '0' && chars[i] <= '9') {\n                foundDigit = true;\n                allowSigns = false;\n\n            } else if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent   \n                    return false;\n                }\n                hasDecPoint = true;\n            } else if (chars[i] == 'e' || chars[i] == 'E') {\n                // we've already taken care of hex.\n                if (hasExp) {\n                    // two E's\n                    return false;\n                }\n                if (!foundDigit) {\n                    return false;\n                }\n                hasExp = true;\n                allowSigns = true;\n            } else if (chars[i] == '+' || chars[i] == '-') {\n                if (!allowSigns) {\n                    return false;\n                }\n                allowSigns = false;\n                foundDigit = false; // we need a digit after the E\n            } else {\n                return false;\n            }\n            i++;\n        }\n        if (i < chars.length) {\n            if (true) {\n                // no type qualifier, OK\n                return true;\n            }\n            if (chars[i] == 'e' || chars[i] == 'E') {\n                // can't have an E at the last byte\n                return false;\n            }\n            if (chars[i] == '.') {\n                if (hasDecPoint || hasExp) {\n                    // two decimal points or dec in exponent\n                    return false;\n                }\n                // single trailing decimal point after non-exponent is ok\n                return foundDigit;\n            }\n            if (!allowSigns\n                && (chars[i] == 'd'\n                    || chars[i] == 'D'\n                    || chars[i] == 'f'\n                    || chars[i] == 'F')) {\n                return foundDigit;\n            }\n            if (chars[i] == 'l'\n                || chars[i] == 'L') {\n                // not allowing L with an exponent or decimal point\n                return foundDigit && !hasExp && !hasDecPoint;\n            }\n            // last character is illegal\n            return false;\n        }\n        // allowSigns is true iff the val ends in 'E'\n        // found digit it to make sure weird stuff like '.' and '1E-' doesn't pass\n        return !allowSigns && foundDigit;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

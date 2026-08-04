@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Mutates the condition that checks if the entry size is less than or equal to zero, which can lead to an infinite loop.",
+      "line": 6,
+      "precode": "while (first || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {",
+      "aftercode": "while (true || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Changes the condition to always read a record, potentially skipping important data.",
+      "line": 9,
+      "precode": "if (!first) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Inverts the check for pending entries, which could lead to missing or incorrect data processing.",
+      "line": 12,
+      "precode": "raw.readRecord();",
+      "aftercode": "// raw.readRecord();"
+    },
+    {
+      "id": 4,
+      "reasoning": "Always adds entries to the pending list, ignoring existing keys.",
+      "line": 13,
+      "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Changes the data length calculation to a fixed value, which could lead to incorrect buffer allocation.",
+      "line": 18,
+      "precode": "int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();",
+      "aftercode": "int datalen = 1024;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Always allocates a new buffer, ignoring the current size.",
+      "line": 20,
+      "precode": "if (blockBuffer.length < datalen) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "Changes the read operation to a fixed number of bytes, which could lead to data corruption.",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, 1024) != 1024) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "Always throws an EOFException, even if the read operation is successful.",
+      "line": 25,
+      "precode": "throw new EOFException();",
+      "aftercode": "if (raw.read(blockBuffer, 0, datalen) == datalen) { throw new EOFException(); }"
+    },
+    {
+      "id": 9,
+      "reasoning": "Changes the loop condition to always read a record, ignoring the entry size.",
+      "line": 31,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; i < datalen - 8; i += reclen) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Changes the inode conversion to a fixed value, which could lead to incorrect data processing.",
+      "line": 32,
+      "precode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i);",
+      "aftercode": "int ino = 12345;"
+    },
+    {
+      "id": 11,
+      "reasoning": "Changes the record length conversion to a fixed value, which could lead to buffer overflow.",
+      "line": 33,
+      "precode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);",
+      "aftercode": "reclen = 512;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Changes the file type to a fixed value, which could lead to incorrect data processing.",
+      "line": 35,
+      "precode": "byte type = blockBuffer[i + 6];",
+      "aftercode": "byte type = (byte) 4;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Changes the name extraction to a fixed value, which could lead to incorrect data processing.",
+      "line": 37,
+      "precode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?",
+      "aftercode": "String name = \"fixedName\";"
+    },
+    {
+      "id": 14,
+      "reasoning": "Inverts the condition that skips '.' and '..' entries.",
+      "line": 39,
+      "precode": "if (\".\".equals(name) || \"..\".equals(name)) {",
+      "aftercode": "if (!\".\".equals(name) && !\"..\".equals(name)) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "Changes the creation of Dirent to always use a fixed inode value.",
+      "line": 44,
+      "precode": "Dirent d = new Dirent(ino, entry.getIno(), type, name);",
+      "aftercode": "Dirent d = new Dirent(12345, entry.getIno(), type, name);"
+    },
+    {
+      "id": 16,
+      "reasoning": "Always adds entries to the names map, ignoring existing keys.",
+      "line": 49,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "if (!names.containsKey(Integer.valueOf(ino))) { names.put(Integer.valueOf(ino), d); }"
+    },
+    {
+      "id": 17,
+      "reasoning": "Changes the condition that checks for path existence to always return null.",
+      "line": 59,
+      "precode": "if (path != null) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 18,
+      "reasoning": "Changes the condition that adds entries to the queue to always skip.",
+      "line": 63,
+      "precode": "queue.add(e.getValue());",
+      "aftercode": "// queue.add(e.getValue());"
+    },
+    {
+      "id": 19,
+      "reasoning": "Always removes entries from the pending list, ignoring the queue contents.",
+      "line": 70,
+      "precode": "pending.remove(Integer.valueOf(e.getIno()));",
+      "aftercode": "if (true) { pending.remove(Integer.valueOf(e.getIno())); }"
+    },
+    {
+      "id": 20,
+      "reasoning": "Changes the peek operation to a fixed value, which could lead to incorrect data processing.",
+      "line": 74,
+      "precode": "byte[] peekBytes = raw.peek();",
+      "aftercode": "byte[] peekBytes = new byte[1024];"
+    },
+    {
+      "id": 21,
+      "reasoning": "Always throws an InvalidFormatException, even if the verification is successful.",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 22,
+      "reasoning": "Changes the entry parsing to a fixed value, which could lead to incorrect data processing.",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = new DumpArchiveEntry();"
+    },
+    {
+      "id": 23,
+      "reasoning": "Always sets the first flag to false, potentially skipping important data.",
+      "line": 81,
+      "precode": "first = false;",
+      "aftercode": "// first = false;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Changes the entry size decrement to a fixed value, which could lead to incorrect loop termination.",
+      "line": 83,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size -= 1024;"
+    },
+    {
+      "id": 25,
+      "reasoning": "Changes the condition that checks if the entry size is less than or equal to zero, which can lead to an infinite loop.",
+      "line": 6,
+      "precode": "while (first || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {",
+      "aftercode": "while (first || (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {"
+    },
+    {
+      "id": 26,
+      "reasoning": "Changes the condition that checks if the first flag is true, which could lead to incorrect data processing.",
+      "line": 9,
+      "precode": "if (!first) {",
+      "aftercode": "if (first) {"
+    },
+    {
+      "id": 27,
+      "reasoning": "Changes the condition that checks for pending entries, which could lead to missing or incorrect data processing.",
+      "line": 13,
+      "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+      "aftercode": "if (names.containsKey(Integer.valueOf(entry.getIno())) || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {"
+    },
+    {
+      "id": 28,
+      "reasoning": "Changes the buffer allocation condition to always allocate a new buffer, ignoring the current size.",
+      "line": 20,
+      "precode": "if (blockBuffer.length < datalen) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 29,
+      "reasoning": "Changes the read operation to a fixed number of bytes, which could lead to data corruption.",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, datalen - 100) == datalen - 100) {"
+    },
+    {
+      "id": 30,
+      "reasoning": "Always throws an EOFException, even if the read operation is successful.",
+      "line": 25,
+      "precode": "throw new EOFException();",
+      "aftercode": "// throw new EOFException();"
+    },
+    {
+      "id": 31,
+      "reasoning": "Changes the loop condition to always skip a record, ignoring the entry size.",
+      "line": 31,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; i < datalen - 8; i += reclen + 100) {"
+    },
+    {
+      "id": 32,
+      "reasoning": "Changes the inode conversion to a fixed value, which could lead to incorrect data processing.",
+      "line": 32,
+      "precode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i);",
+      "aftercode": "int ino = 0;"
+    },
+    {
+      "id": 33,
+      "reasoning": "Changes the record length conversion to a fixed value, which could lead to buffer overflow.",
+      "line": 33,
+      "precode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);",
+      "aftercode": "reclen = 0;"
+    },
+    {
+      "id": 34,
+      "reasoning": "Changes the file type to a fixed value, which could lead to incorrect data processing.",
+      "line": 35,
+      "precode": "byte type = blockBuffer[i + 6];",
+      "aftercode": "byte type = (byte) 0;"
+    },
+    {
+      "id": 35,
+      "reasoning": "Changes the name extraction to a fixed value, which could lead to incorrect data processing.",
+      "line": 37,
+      "precode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?",
+      "aftercode": "String name = \"\";"
+    },
+    {
+      "id": 36,
+      "reasoning": "Inverts the condition that skips '.' and '..' entries.",
+      "line": 39,
+      "precode": "if (\".\".equals(name) || \"..\".equals(name)) {",
+      "aftercode": "if (!\".\".equals(name) && !\"..\".equals(name)) {"
+    },
+    {
+      "id": 37,
+      "reasoning": "Changes the creation of Dirent to always use a fixed inode value.",
+      "line": 44,
+      "precode": "Dirent d = new Dirent(ino, entry.getIno(), type, name);",
+      "aftercode": "Dirent d = new Dirent(0, entry.getIno(), type, name);"
+    },
+    {
+      "id": 38,
+      "reasoning": "Always adds entries to the names map, ignoring existing keys.",
+      "line": 49,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "// names.put(Integer.valueOf(ino), d);"
+    },
+    {
+      "id": 39,
+      "reasoning": "Changes the condition that checks for path existence to always return null.",
+      "line": 59,
+      "precode": "if (path != null) {",
+      "aftercode": "// if (path != null) {"
+    },
+    {
+      "id": 40,
+      "reasoning": "Changes the condition that adds entries to the queue to always skip.",
+      "line": 63,
+      "precode": "queue.add(e.getValue());",
+      "aftercode": "// queue.add(e.getValue());"
+    },
+    {
+      "id": 41,
+      "reasoning": "Always removes entries from the pending list, ignoring the queue contents.",
+      "line": 70,
+      "precode": "pending.remove(Integer.valueOf(e.getIno()));",
+      "aftercode": "// pending.remove(Integer.valueOf(e.getIno()));"
+    },
+    {
+      "id": 42,
+      "reasoning": "Changes the peek operation to a fixed value, which could lead to incorrect data processing.",
+      "line": 74,
+      "precode": "byte[] peekBytes = raw.peek();",
+      "aftercode": "byte[] peekBytes = new byte[0];"
+    },
+    {
+      "id": 43,
+      "reasoning": "Always throws an InvalidFormatException, even if the verification is successful.",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "// if (!DumpArchiveUtil.verify(peekBytes)) {"
+    },
+    {
+      "id": 44,
+      "reasoning": "Changes the entry parsing to a fixed value, which could lead to incorrect data processing.",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "// entry = DumpArchiveEntry.parse(peekBytes);"
+    },
+    {
+      "id": 45,
+      "reasoning": "Always sets the first flag to false, potentially skipping important data.",
+      "line": 81,
+      "precode": "first = false;",
+      "aftercode": "// first = false;"
+    },
+    {
+      "id": 46,
+      "reasoning": "Changes the entry size decrement to a fixed value, which could lead to incorrect loop termination.",
+      "line": 83,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "// size -= DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 47,
+      "reasoning": "Changes the condition that checks if the entry size is less than or equal to zero, which can lead to an infinite loop.",
+      "line": 6,
+      "precode": "while (first || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {",
+      "aftercode": "while (!first && (DumpArchiveConstants.SEGMENT_TYPE.INODE != entry.getHeaderType())) {"
+    },
+    {
+      "id": 48,
+      "reasoning": "Changes the condition that checks if the first flag is true, which could lead to incorrect data processing.",
+      "line": 9,
+      "precode": "if (!first) {",
+      "aftercode": "if (first) {"
+    }
+  ]
+}

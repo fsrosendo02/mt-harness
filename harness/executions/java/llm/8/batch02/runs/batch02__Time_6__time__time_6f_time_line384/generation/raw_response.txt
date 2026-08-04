@@ -1,0 +1,38 @@
+{return;}"
+Aftercode: "if (!hour && !minute && !second && !milli) {throw new IllegalArgumentException("Missing required fields"); return;}"
+
+2. Violation of the "consistent" property: The method produces inconsistent output if hour and minute are provided but second and millisecond are not, or vice versa (e.g., HH:MM but no SS.sss).
+
+   Line: 24
+Precode: "if (hour && minute && second || (hour && !second && !milli)) {"
+Aftercode: "if ((hour && minute) || (hour && !second && !milli)) {"
+
+3. Violation of the "deterministic" property: The method is not deterministic, as it depends on the order in which the fields are provided (e.g., HHMMSS.sss vs. HH-MM-SS.sss).
+
+   Line: 24
+Precode: "if (hour && minute && second || (hour && !second && !milli)) {"
+Aftercode: "if (hour && minute && (!second && !milli) || (hour && !second && !milli)) {"
+
+4. Violation of the "transitive" property: The method is not transitive, as it produces different output for the same input if the field order changes (e.g., HHMMSS.sss vs. MMHHSS.sss).
+
+   Line: 24
+Precode: "if (hour && minute && second || (hour && !second && !milli)) {"
+Aftercode: "if ((hour && minute) || (!second && !milli && hour)) {"
+
+5. Violation of the "invariant" property: The method does not preserve an invariant, as it can produce invalid output if certain combinations of fields are provided (e.g., HHMMSS.sss when second and millisecond are missing).
+
+   Line: 30
+Precode: "if (!hour && (minute && second || (minute && !milli) || second)) {"
+Aftercode: "if ((!hour && minute) || (second && !milli)) {"
+
+6. Violation of the "error-handling" property: The method does not handle errors properly, as it throws an exception only for certain combinations of fields but not others (e.g., HHMMSS.sss vs. MMHHSS.sss).
+
+   Line: 37
+Precode: "if (hour) {bld.appendHourOfDay(2);}"
+Aftercode: "if (hour || minute || second || milli) {"
+
+7. Violation of the "portability" property: The method is not portable, as it uses a specific format for outputting time (e.g., HH-MM-SS.sss).
+
+   Line: 20
+Precode: "if (datePresent) {bld.appendLiteral('T');}"
+Aftercode: "if (datePresent && !extended) {bld.appendLiteral('T');}

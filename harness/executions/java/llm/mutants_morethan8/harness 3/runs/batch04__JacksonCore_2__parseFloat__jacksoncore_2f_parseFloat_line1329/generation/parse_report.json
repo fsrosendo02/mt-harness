@@ -1,0 +1,310 @@
+{
+  "requested_count": 32,
+  "accepted_count": 7,
+  "rejected_count": 25,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 62,
+        "precode": "while (c <= INT_9 && c >= INT_0) {",
+        "aftercode": "while (c <= INT_9 && c >= INT_0 && _inputPtr >= _inputEnd) {",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0 && _inputPtr >= _inputEnd) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 18,
+        "precode": "c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; break fract_loop; } c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 20,
+        "precode": "break fract_loop;",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; break fract_loop; } break fract_loop;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 73,
+        "precode": "c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; break exp_loop; } c = (int) _inputBuffer[_inputPtr++] & 0xFF;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 20,
+        "precode": "break fract_loop;",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; break fract_loop; } break fract_loop;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 69,
+        "precode": "if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore() && c <= INT_9 && c >= INT_0) {",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore() && c <= INT_9 && c >= INT_0) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 72,
+        "precode": "if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore() && c <= INT_9 && c >= INT_0) {",
+        "candidate_code": "    private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,\n            boolean negative, int integerPartLength)\n        throws IOException, JsonParseException\n    {\n        int fractLen = 0;\n        boolean eof = false;\n\n        // And then see if we get other parts\n        if (c == '.') { // yes, fraction\n            outBuf[outPtr++] = (char) c;\n\n            fract_loop:\n            while (true) {\n                if (_inputPtr >= _inputEnd && !loadMore()) {\n                    eof = true;\n                    break fract_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n                if (c < INT_0 || c > INT_9) {\n                    break fract_loop;\n                }\n                ++fractLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (fractLen == 0) {\n                reportUnexpectedNumberChar(c, \"Decimal point not followed by a digit\");\n            }\n        }\n\n        int expLen = 0;\n        if (c == 'e' || c == 'E') { // exponent?\n            if (outPtr >= outBuf.length) {\n                outBuf = _textBuffer.finishCurrentSegment();\n                outPtr = 0;\n            }\n            outBuf[outPtr++] = (char) c;\n            // Not optional, can require that we get one more char\n            if (_inputPtr >= _inputEnd) {\n                loadMoreGuaranteed();\n            }\n            c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            // Sign indicator?\n            if (c == '-' || c == '+') {\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                // Likewise, non optional:\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n\n            exp_loop:\n            while (c <= INT_9 && c >= INT_0) {\n                ++expLen;\n                if (outPtr >= outBuf.length) {\n                    outBuf = _textBuffer.finishCurrentSegment();\n                    outPtr = 0;\n                }\n                outBuf[outPtr++] = (char) c;\n                if (_inputPtr >= _inputEnd && !loadMore() && c <= INT_9 && c >= INT_0) {\n                    eof = true;\n                    break exp_loop;\n                }\n                c = (int) _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            // must be followed by sequence of ints, one minimum\n            if (expLen == 0) {\n                reportUnexpectedNumberChar(c, \"Exponent indicator not followed by a digit\");\n            }\n        }\n\n        // Ok; unless we hit end-of-input, need to push last char read back\n        if (!eof) {\n            --_inputPtr;\n            // As per #105, need separating space between root values; check here\n            if (_parsingContext.inRoot()) {\n                _verifyRootSpace(c);\n            }\n        }\n        _textBuffer.setCurrentLength(outPtr);\n\n        // And there we have it!\n        return resetFloat(negative, integerPartLength, fractLen, expLen);\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the integer part",
+        "line": 82,
+        "precode": "--_inputPtr;",
+        "aftercode": "--_inputPtr; if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 82,
+        "precode": "--_inputPtr;",
+        "aftercode": "--_inputPtr; if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 82,
+        "precode": "--_inputPtr;",
+        "aftercode": "--_inputPtr; if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the integer part",
+        "line": 90,
+        "precode": "_textBuffer.setCurrentLength(outPtr);",
+        "aftercode": "_textBuffer.setCurrentLength(outPtr); if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 90,
+        "precode": "_textBuffer.setCurrentLength(outPtr);",
+        "aftercode": "_textBuffer.setCurrentLength(outPtr); if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 90,
+        "precode": "_textBuffer.setCurrentLength(outPtr);",
+        "aftercode": "_textBuffer.setCurrentLength(outPtr); if (_inputPtr >= _inputEnd && !loadMore()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the integer part",
+        "line": 92,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 92,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 92,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the integer part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the integer part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the integer part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the fraction part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates error handling by not checking for valid number format after encountering a digit in the exponent part",
+        "line": 93,
+        "precode": "return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "aftercode": "if (_inputPtr >= _inputEnd && !loadMore()) { eof = true; } return resetFloat(negative, integerPartLength, fractLen, expLen);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

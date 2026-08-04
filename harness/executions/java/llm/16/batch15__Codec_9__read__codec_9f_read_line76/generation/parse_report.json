@@ -1,0 +1,104 @@
+{
+  "requested_count": 16,
+  "accepted_count": 8,
+  "rejected_count": 8,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "The method allows negative length, which can lead to incorrect results.",
+        "line": 5,
+        "precode": "else if (offset < 0 || len < 0) {",
+        "aftercode": "else if (offset >= 0 && len > 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method does not check for valid offset and length ranges correctly.",
+        "line": 6,
+        "precode": "else if (offset > b.length || offset + len > b.length) {",
+        "aftercode": "else if (offset <= b.length && offset + len < b.length) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        else if (offset <= b.length && offset + len < b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method returns incorrect result when reading from an empty array.",
+        "line": 9,
+        "precode": "else if (len == 0) {",
+        "aftercode": "else if (len != 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not check the return value of readResults() correctly.",
+        "line": 39,
+        "precode": "return readLen;",
+        "aftercode": "if (readLen > 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not handle null input to baseNCodec.readResults() correctly.",
+        "line": 38,
+        "precode": "readLen = baseNCodec.readResults(b, offset, len);",
+        "aftercode": "if (b == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method does not handle negative length to baseNCodec.readResults() correctly.",
+        "line": 38,
+        "precode": "readLen = baseNCodec.readResults(b, offset, len);",
+        "aftercode": "if (len < 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "The method does not handle offset out of range to baseNCodec.readResults() correctly.",
+        "line": 38,
+        "precode": "readLen = baseNCodec.readResults(b, offset, len);",
+        "aftercode": "if (offset < 0 || offset > b.length) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method does not handle length out of range to baseNCodec.readResults() correctly.",
+        "line": 38,
+        "precode": "readLen = baseNCodec.readResults(b, offset, len);",
+        "aftercode": "if (offset + len > b.length) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

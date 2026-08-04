@@ -1,0 +1,133 @@
+{
+  "requested_count": 24,
+  "accepted_count": 7,
+  "rejected_count": 11,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violation of idempotence",
+        "line": 12,
+        "precode": "prop.assignNullSerializer(nullSer);",
+        "aftercode": "if (prop.hasNullSerializer()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violation of null-detection",
+        "line": 12,
+        "precode": "prop.assignNullSerializer(nullSer);",
+        "aftercode": "if (nullSer != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violation of idempotence",
+        "line": 42,
+        "precode": "prop.assignSerializer(ser);",
+        "aftercode": "if (true) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violation of null-detection",
+        "line": 50,
+        "precode": "@SuppressWarnings(\"unchecked\")",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violation of type-checking",
+        "line": 53,
+        "precode": "@SuppressWarnings(\"unchecked\")",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violation of idempotence",
+        "line": 57,
+        "precode": "@SuppressWarnings(\"unchecked\")",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violation of null-detection",
+        "line": 60,
+        "precode": "@SuppressWarnings(\"unchecked\")",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violation of type-checking",
+        "line": 62,
+        "precode": "@SuppressWarnings(\"unchecked\")",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violation of idempotence",
+        "line": 70,
+        "precode": "// also, any-getter may need to be resolved",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: )",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violation of null-detection",
+        "line": 71,
+        "precode": "_anyGetterWriter != null)",
+        "aftercode": "_anyGetterWriter == null)",
+        "candidate_code": "    @Override\n    public void resolve(SerializerProvider provider)\n        throws JsonMappingException\n    {\n        int filteredCount = (_filteredProps == null) ? 0 : _filteredProps.length;\n        for (int i = 0, len = _props.length; i < len; ++i) {\n            BeanPropertyWriter prop = _props[i];\n            // let's start with null serializer resolution actually\n            if (!prop.willSuppressNulls() && !prop.hasNullSerializer()) {\n                JsonSerializer<Object> nullSer = provider.findNullValueSerializer(prop);\n                if (nullSer != null) {\n                    prop.assignNullSerializer(nullSer);\n                    // also: remember to replace filtered property too? (see [JACKSON-364])\n                    if (i < filteredCount) {\n                        BeanPropertyWriter w2 = _filteredProps[i];\n                        if (w2 != null) {\n                            w2.assignNullSerializer(nullSer);\n                        }\n                    }\n                }\n            }\n            \n            if (prop.hasSerializer()) {\n                continue;\n            }\n            // [Issue#124]: allow use of converters\n            JsonSerializer<Object> ser = findConvertingSerializer(provider, prop);\n            if (ser == null) {\n                // Was the serialization type hard-coded? If so, use it\n                JavaType type = prop.getSerializationType();\n                \n                // It not, we can use declared return type if and only if declared type is final:\n                // if not, we don't really know the actual type until we get the instance.\n                if (type == null) {\n                    type = provider.constructType(prop.getGenericPropertyType());\n                    if (!type.isFinal()) {\n                        if (type.isContainerType() || type.containedTypeCount() > 0) {\n                            prop.setNonTrivialBaseType(type);\n                        }\n                        continue;\n                    }\n                }\n                ser = provider.findValueSerializer(type, prop);\n                /* 04-Feb-2010, tatu: We may have stashed type serializer for content types\n                 *   too, earlier; if so, it's time to connect the dots here:\n                 */\n                if (type.isContainerType()) {\n                    TypeSerializer typeSer = type.getContentType().getTypeHandler();\n                    if (typeSer != null) {\n                        // for now, can do this only for standard containers...\n                        if (ser instanceof ContainerSerializer<?>) {\n                            // ugly casts... but necessary\n                            @SuppressWarnings(\"unchecked\")\n                            JsonSerializer<Object> ser2 = (JsonSerializer<Object>)((ContainerSerializer<?>) ser).withValueTypeSerializer(typeSer);\n                            ser = ser2;\n                        }\n                    }\n                }\n            }\n            prop.assignSerializer(ser);\n            // and maybe replace filtered property too? (see [JACKSON-364])\n            if (i < filteredCount) {\n                BeanPropertyWriter w2 = _filteredProps[i];\n                if (w2 != null) {\n                    w2.assignSerializer(ser);\n                }\n            }\n        }\n\n        // also, any-getter may need to be resolved\n        _anyGetterWriter == null) {\n            _anyGetterWriter.resolve(provider);\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violation of idempotence",
+        "line": 72,
+        "precode": "_anyGetterWriter.resolve(provider);",
+        "aftercode": ""
+      }
+    }
+  ]
+}

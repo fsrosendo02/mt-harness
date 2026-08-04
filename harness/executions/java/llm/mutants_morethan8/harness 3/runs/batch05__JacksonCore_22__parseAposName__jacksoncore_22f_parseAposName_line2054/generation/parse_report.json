@@ -1,0 +1,154 @@
+{
+  "requested_count": 32,
+  "accepted_count": 16,
+  "rejected_count": 12,
+  "rejections": [
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The method does not handle an invalid quad buffer length",
+        "line": 42,
+        "precode": "quads[qlen++] = currQuad;",
+        "aftercode": "if (qlen >= quads.length) { quads = growArrayBy(quads, quads.length); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method does not check for an invalid quad buffer index",
+        "line": 43,
+        "precode": "currQuad = 0;",
+        "aftercode": "if (qlen >= quads.length) { currQuad = 0; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method does not check for a quad buffer with less than 3 elements",
+        "line": 61,
+        "precode": "currQuadBytes >= 4 ?",
+        "aftercode": "qlen < 3 ?",
+        "candidate_code": "    protected String _parseAposName() throws IOException\n    {\n        if (_inputPtr >= _inputEnd) {\n            if (!_loadMore()) {\n                _reportInvalidEOF(\": was expecting closing '\\'' for field name\", JsonToken.FIELD_NAME);\n            }\n        }\n        int ch = _inputBuffer[_inputPtr++] & 0xFF;\n        if (ch == '\\'') { // special case, ''\n            return \"\";\n        }\n        int[] quads = _quadBuffer;\n        int qlen = 0;\n        int currQuad = 0;\n        int currQuadBytes = 0;\n\n        // Copied from parseEscapedFieldName, with minor mods:\n\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (ch == '\\'') {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if ((codes[ch] != 0) && (ch != '\"')) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    // As per [JACKSON-208], call can now return:\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeEscaped();\n                }\n                // as per main code, inefficient but will have to do\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        qlen < 3 ?\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n            if (_inputPtr >= _inputEnd) {\n                if (!_loadMore()) {\n                    _reportInvalidEOF(\" in field name\", JsonToken.FIELD_NAME);\n                }\n            }\n            ch = _inputBuffer[_inputPtr++] & 0xFF;\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = addName(quads, qlen, currQuadBytes);\n        }\n        return name;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not handle a quad buffer with more than 4 elements",
+        "line": 65,
+        "precode": "ch = 0x80 | (ch & 0x3f);",
+        "aftercode": "if (qlen > 4) { ch = 0x80 | (ch & 0x3f); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not check for an invalid quad buffer offset",
+        "line": 68,
+        "precode": "_quadBuffer[_inputPtr++] = ch;",
+        "aftercode": "if (_inputPtr >= _inputEnd) { _quadBuffer[_inputPtr++] = ch; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method does not handle a quad buffer with less than 4 bytes",
+        "line": 73,
+        "precode": "currQuadBytes < 4 ?",
+        "aftercode": "qlen == 0 ?",
+        "candidate_code": "    protected String _parseAposName() throws IOException\n    {\n        if (_inputPtr >= _inputEnd) {\n            if (!_loadMore()) {\n                _reportInvalidEOF(\": was expecting closing '\\'' for field name\", JsonToken.FIELD_NAME);\n            }\n        }\n        int ch = _inputBuffer[_inputPtr++] & 0xFF;\n        if (ch == '\\'') { // special case, ''\n            return \"\";\n        }\n        int[] quads = _quadBuffer;\n        int qlen = 0;\n        int currQuad = 0;\n        int currQuadBytes = 0;\n\n        // Copied from parseEscapedFieldName, with minor mods:\n\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (ch == '\\'') {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if ((codes[ch] != 0) && (ch != '\"')) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    // As per [JACKSON-208], call can now return:\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeEscaped();\n                }\n                // as per main code, inefficient but will have to do\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            qlen == 0 ? {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n            if (_inputPtr >= _inputEnd) {\n                if (!_loadMore()) {\n                    _reportInvalidEOF(\" in field name\", JsonToken.FIELD_NAME);\n                }\n            }\n            ch = _inputBuffer[_inputPtr++] & 0xFF;\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = addName(quads, qlen, currQuadBytes);\n        }\n        return name;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method does not check for a quad buffer with more than 4 elements",
+        "line": 80,
+        "precode": "currQuadBytes = 1;",
+        "aftercode": "if (qlen > 4) { currQuadBytes = 1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not check for a quad buffer with more than 4 bytes",
+        "line": 84,
+        "precode": "if (!_loadMore())",
+        "aftercode": "if (qlen > 4 || !_loadMore())",
+        "candidate_code": "    protected String _parseAposName() throws IOException\n    {\n        if (_inputPtr >= _inputEnd) {\n            if (!_loadMore()) {\n                _reportInvalidEOF(\": was expecting closing '\\'' for field name\", JsonToken.FIELD_NAME);\n            }\n        }\n        int ch = _inputBuffer[_inputPtr++] & 0xFF;\n        if (ch == '\\'') { // special case, ''\n            return \"\";\n        }\n        int[] quads = _quadBuffer;\n        int qlen = 0;\n        int currQuad = 0;\n        int currQuadBytes = 0;\n\n        // Copied from parseEscapedFieldName, with minor mods:\n\n        final int[] codes = _icLatin1;\n\n        while (true) {\n            if (ch == '\\'') {\n                break;\n            }\n            // additional check to skip handling of double-quotes\n            if ((codes[ch] != 0) && (ch != '\"')) {\n                if (ch != '\\\\') {\n                    // Unquoted white space?\n                    // As per [JACKSON-208], call can now return:\n                    _throwUnquotedSpace(ch, \"name\");\n                } else {\n                    // Nope, escape sequence\n                    ch = _decodeEscaped();\n                }\n                // as per main code, inefficient but will have to do\n                if (ch > 127) {\n                    // Ok, we'll need room for first byte right away\n                    if (currQuadBytes >= 4) {\n                        if (qlen >= quads.length) {\n                            _quadBuffer = quads = growArrayBy(quads, quads.length);\n                        }\n                        quads[qlen++] = currQuad;\n                        currQuad = 0;\n                        currQuadBytes = 0;\n                    }\n                    if (ch < 0x800) { // 2-byte\n                        currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));\n                        ++currQuadBytes;\n                        // Second byte gets output below:\n                    } else { // 3 bytes; no need to worry about surrogates here\n                        currQuad = (currQuad << 8) | (0xe0 | (ch >> 12));\n                        ++currQuadBytes;\n                        // need room for middle byte?\n                        if (currQuadBytes >= 4) {\n                            if (qlen >= quads.length) {\n                                _quadBuffer = quads = growArrayBy(quads, quads.length);\n                            }\n                            quads[qlen++] = currQuad;\n                            currQuad = 0;\n                            currQuadBytes = 0;\n                        }\n                        currQuad = (currQuad << 8) | (0x80 | ((ch >> 6) & 0x3f));\n                        ++currQuadBytes;\n                    }\n                    // And same last byte in both cases, gets output below:\n                    ch = 0x80 | (ch & 0x3f);\n                }\n            }\n            // Ok, we have one more byte to add at any rate:\n            if (currQuadBytes < 4) {\n                ++currQuadBytes;\n                currQuad = (currQuad << 8) | ch;\n            } else {\n                if (qlen >= quads.length) {\n                    _quadBuffer = quads = growArrayBy(quads, quads.length);\n                }\n                quads[qlen++] = currQuad;\n                currQuad = ch;\n                currQuadBytes = 1;\n            }\n            if (_inputPtr >= _inputEnd) {\n                if (!_loadMore()) {\n                    _reportInvalidEOF(\" in field name\", JsonToken.FIELD_NAME);\n                if (qlen > 4 || !_loadMore())\n            }\n            ch = _inputBuffer[_inputPtr++] & 0xFF;\n        }\n\n        if (currQuadBytes > 0) {\n            if (qlen >= quads.length) {\n                _quadBuffer = quads = growArrayBy(quads, quads.length);\n            }\n            quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);\n        }\n        String name = _symbols.findName(quads, qlen);\n        if (name == null) {\n            name = addName(quads, qlen, currQuadBytes);\n        }\n        return name;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method does not handle an empty quad buffer",
+        "line": 92,
+        "precode": "_quadBuffer = quads;",
+        "aftercode": "if (qlen == 0) { _quadBuffer = quads; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "The method does not handle a quad buffer with more than 4 elements",
+        "line": 95,
+        "precode": "String name = _symbols.findName(quads, qlen);",
+        "aftercode": "if (qlen > 4) { String name = _symbols.findName(quads, qlen); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not check for a quad buffer with more than 4 elements",
+        "line": 99,
+        "precode": "return name;",
+        "aftercode": "if (qlen > 4) { return name; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not handle an empty quad buffer",
+        "line": 100,
+        "precode": "return name;",
+        "aftercode": "if (qlen == 0) { return name; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

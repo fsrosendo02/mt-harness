@@ -1,0 +1,235 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The condition to check if 'n' is within the range of -1023 to 1024 is violated, allowing scalb to proceed incorrectly with large or small values.",
+      "line": 4,
+      "precode": "if ((n > -1023) && (n < 1024)) {",
+      "aftercode": "if ((n >= -1023) && (n <= 1024)) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The condition to check if 'd' is NaN, infinite, or zero is violated, allowing scalb to proceed incorrectly with special values.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (!Double.isFinite(d) && (d != 0)) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "The condition to check if 'n' is less than -2098 is violated, allowing scalb to proceed incorrectly with very small values.",
+      "line": 12,
+      "precode": "if (n < -2098) {",
+      "aftercode": "if (n <= -2098) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The condition to check if 'n' is greater than 2097 is violated, allowing scalb to proceed incorrectly with very large values.",
+      "line": 15,
+      "precode": "if (n > 2097) {",
+      "aftercode": "if (n >= 2097) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The addition of '1023' to 'n' is changed, potentially altering the scaling behavior.",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n - 1023)) << 52);"
+    },
+    {
+      "id": 6,
+      "reasoning": "The shift operation for scaling the exponent is altered, potentially producing incorrect results.",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n + 1023)) >> 52);"
+    },
+    {
+      "id": 7,
+      "reasoning": "The handling of NaN, infinite, and zero 'd' values is altered, potentially producing incorrect results.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (!Double.isFinite(d)) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "The handling of very small 'n' values is altered, potentially producing incorrect results.",
+      "line": 13,
+      "precode": "return (d > 0) ? 0.0 : -0.0;",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (-n)) << 52);"
+    },
+    {
+      "id": 9,
+      "reasoning": "The handling of very large 'n' values is altered, potentially producing incorrect results.",
+      "line": 16,
+      "precode": "return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (-n)) << 52);"
+    },
+    {
+      "id": 10,
+      "reasoning": "The handling of subnormal numbers when scaling down is altered, potentially producing incorrect results.",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa & ~(1L << 52);"
+    },
+    {
+      "id": 11,
+      "reasoning": "The condition to check if the result of scaling down is a subnormal number is altered, potentially producing incorrect results.",
+      "line": 33,
+      "precode": "if (scaledExponent > -53) {",
+      "aftercode": "if (scaledExponent >= -53) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "The condition to check if the result of scaling down is zero is altered, potentially producing incorrect results.",
+      "line": 50,
+      "precode": "return (sign == 0L) ? 0.0 : -0.0;",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (-n)) << 52);"
+    },
+    {
+      "id": 13,
+      "reasoning": "The condition to check if the result of scaling up is a subnormal number is altered, potentially producing incorrect results.",
+      "line": 54,
+      "precode": "if (exponent == 0) {",
+      "aftercode": "if (exponent != 0) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "The normalization process for scaling up subnormal numbers is altered, potentially producing incorrect results.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 52) == 0) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "The handling of the most significant lost bit when scaling down is altered, potentially producing incorrect results.",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa | (1L << (-scaledExponent));"
+    },
+    {
+      "id": 16,
+      "reasoning": "The addition of 1 bit to round up the result after scaling down is altered, potentially producing incorrect results.",
+      "line": 44,
+      "precode": "mantissa++;",
+      "aftercode": "mantissa--;"
+    },
+    {
+      "id": 17,
+      "reasoning": "The shifting of the mantissa when scaling up subnormal numbers is altered, potentially producing incorrect results.",
+      "line": 58,
+      "precode": "mantissa = mantissa << 1;",
+      "aftercode": "mantissa = mantissa >> 1;"
+    },
+    {
+      "id": 18,
+      "reasoning": "The condition to check if the result of scaling up is zero or infinity is altered, potentially producing incorrect results.",
+      "line": 64,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "if (scaledExponent > 2047 && sign == 0L) return 0.0;"
+    },
+    {
+      "id": 19,
+      "reasoning": "The assignment of the mantissa to a variable is altered, potentially losing information.",
+      "line": 25,
+      "precode": "long mantissa   = bits & 0x000fffffffffffffL;",
+      "aftercode": "int mantissa   = ((int) (bits & 0x000fffffffffffffL)) >>> 52;"
+    },
+    {
+      "id": 20,
+      "reasoning": "The computation of the scaled exponent is altered, potentially producing incorrect results.",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 21,
+      "reasoning": "The check for whether the result is within the range of normal numbers is altered, potentially producing incorrect results.",
+      "line": 30,
+      "precode": "if (scaledExponent > 0) {",
+      "aftercode": "if (scaledExponent >= 0) {"
+    },
+    {
+      "id": 22,
+      "reasoning": "The condition to check if the result is a subnormal number after scaling down is altered, potentially producing incorrect results.",
+      "line": 34,
+      "precode": "if (scaledExponent > -53) {",
+      "aftercode": "if (scaledExponent >= -53) {"
+    },
+    {
+      "id": 23,
+      "reasoning": "The condition to check if the result is zero after scaling down is altered, potentially producing incorrect results.",
+      "line": 50,
+      "precode": "return (sign == 0L) ? 0.0 : -0.0;",
+      "aftercode": "if (scaledExponent < -53 && sign != 0L) return 0.0;"
+    },
+    {
+      "id": 24,
+      "reasoning": "The condition to check if the result is zero or infinity after scaling up is altered, potentially producing incorrect results.",
+      "line": 70,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 25,
+      "reasoning": "The condition to check if the result is zero or infinity after scaling up with subnormal numbers is altered, potentially producing incorrect results.",
+      "line": 67,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "if (scaledExponent > 2047 && sign != 0L) return 0.0;"
+    },
+    {
+      "id": 26,
+      "reasoning": "The operation to construct the result from its bits is altered, potentially producing incorrect results.",
+      "line": 32,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign ^ (((long) scaledExponent) << 52) | mantissa);"
+    },
+    {
+      "id": 27,
+      "reasoning": "The operation to construct the result from its bits is altered, potentially producing incorrect results.",
+      "line": 65,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign ^ (((long) scaledExponent) << 52) | mantissa);"
+    },
+    {
+      "id": 28,
+      "reasoning": "The handling of the sign bit when constructing the result from its bits is altered, potentially producing incorrect results.",
+      "line": 32,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(~sign | (((long) scaledExponent) << 52) | mantissa);"
+    },
+    {
+      "id": 29,
+      "reasoning": "The handling of the sign bit when constructing the result from its bits is altered, potentially producing incorrect results.",
+      "line": 65,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(~sign | (((long) scaledExponent) << 52) | mantissa);"
+    },
+    {
+      "id": 30,
+      "reasoning": "The operation to construct the result from its bits is altered, potentially producing incorrect results.",
+      "line": 47,
+      "precode": "return Double.longBitsToDouble(sign | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(~sign | mantissa);"
+    },
+    {
+      "id": 31,
+      "reasoning": "The operation to construct the result from its bits is altered, potentially producing incorrect results.",
+      "line": 72,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(~sign | (((long) scaledExponent) << 52) | mantissa);"
+    },
+    {
+      "id": 32,
+      "reasoning": "The handling of the sign bit when constructing the result from its bits is altered, potentially producing incorrect results.",
+      "line": 47,
+      "precode": "return Double.longBitsToDouble(sign | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(~sign | mantissa);"
+    },
+    {
+      "id": 33,
+      "reasoning": "The handling of the sign bit when constructing the result from its bits is altered, potentially producing incorrect results.",
+      "line": 72,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(~sign | (((long) scaledExponent) << 52) | mantissa);"
+    }
+  ]
+}

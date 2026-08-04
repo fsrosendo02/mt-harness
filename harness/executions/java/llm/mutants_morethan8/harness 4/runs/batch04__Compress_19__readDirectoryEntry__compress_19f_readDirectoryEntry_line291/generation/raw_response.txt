@@ -1,0 +1,284 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Changes the entry size calculation, potentially leading to buffer overflow or underflow.",
+      "line": 3,
+      "precode": "long size = entry.getEntrySize();",
+      "aftercode": "long size = entry.getEntrySize() + 1;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Alters the condition to always read the record, bypassing certain checks.",
+      "line": 6,
+      "precode": "while (first ||",
+      "aftercode": "while (true ||"
+    },
+    {
+      "id": 3,
+      "reasoning": "Modifies the check for existing inode, potentially skipping important entries.",
+      "line": 13,
+      "precode": "!names.containsKey(Integer.valueOf(entry.getIno())) &&",
+      "aftercode": "names.containsKey(Integer.valueOf(entry.getIno())) &&"
+    },
+    {
+      "id": 4,
+      "reasoning": "Changes the segment type check, possibly causing incorrect data processing.",
+      "line": 16,
+      "precode": "(DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+      "aftercode": "(DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Adjusts the data length calculation, affecting buffer allocation.",
+      "line": 18,
+      "precode": "int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();",
+      "aftercode": "int datalen = DumpArchiveConstants.TP_SIZE * (entry.getHeaderCount() + 1);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Inverts the buffer length check, potentially causing insufficient buffer size.",
+      "line": 20,
+      "precode": "if (blockBuffer.length < datalen) {",
+      "aftercode": "if (!(blockBuffer.length < datalen)) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "Modifies the read operation to read less data, leading to partial processing.",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, datalen - 1) != datalen - 1) {"
+    },
+    {
+      "id": 8,
+      "reasoning": "Changes the loop condition to process more data than intended.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));",
+      "aftercode": "for (int i = 0; (i <= (datalen - 8)) && (i <= (size - 8));"
+    },
+    {
+      "id": 9,
+      "reasoning": "Alters the inode conversion, potentially leading to invalid inodes.",
+      "line": 32,
+      "precode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i);",
+      "aftercode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i) + 1;"
+    },
+    {
+      "id": 10,
+      "reasoning": "Modifies the record length conversion, affecting data parsing.",
+      "line": 34,
+      "precode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);",
+      "aftercode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 5);"
+    },
+    {
+      "id": 11,
+      "reasoning": "Changes the type byte extraction, potentially leading to incorrect file types.",
+      "line": 36,
+      "precode": "byte type = blockBuffer[i + 6];",
+      "aftercode": "byte type = blockBuffer[i + 7];"
+    },
+    {
+      "id": 12,
+      "reasoning": "Inverts the name extraction condition, potentially causing invalid names.",
+      "line": 40,
+      "precode": "if (\".\".equals(name) || \"..\".equals(name)) {",
+      "aftercode": "if (!\".\".equals(name) && !\"..\".equals(name)) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "Modifies the Dirent creation, potentially leading to incorrect directory entries.",
+      "line": 45,
+      "precode": "Dirent d = new Dirent(ino, entry.getIno(), type, name);",
+      "aftercode": "Dirent d = new Dirent(ino + 1, entry.getIno() + 1, (byte)(type + 1), name + \"_mutant\");"
+    },
+    {
+      "id": 14,
+      "reasoning": "Inverts the names map check, potentially skipping existing entries.",
+      "line": 53,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "if (!names.containsKey(Integer.valueOf(ino))) { names.put(Integer.valueOf(ino), d); }"
+    },
+    {
+      "id": 15,
+      "reasoning": "Changes the pending list processing, affecting data resolution.",
+      "line": 67,
+      "precode": "for (DumpArchiveEntry e : queue) {",
+      "aftercode": "for (DumpArchiveEntry e : pending.values()) {"
+    },
+    {
+      "id": 16,
+      "reasoning": "Modifies the size update, potentially leading to incorrect size calculations.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Alters the peek operation, affecting subsequent entry parsing.",
+      "line": 74,
+      "precode": "byte[] peekBytes = raw.peek();",
+      "aftercode": "byte[] peekBytes = new byte[0];"
+    },
+    {
+      "id": 18,
+      "reasoning": "Inverts the format verification check, potentially causing invalid data processing.",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (DumpArchiveUtil.verify(peekBytes)) {"
+    },
+    {
+      "id": 19,
+      "reasoning": "Modifies the entry parsing, affecting data interpretation.",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = DumpArchiveEntry.parse(new byte[0]);"
+    },
+    {
+      "id": 20,
+      "reasoning": "Inverts the first flag update, potentially causing repeated processing.",
+      "line": 81,
+      "precode": "first = false;",
+      "aftercode": "first = true;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Changes the entry size calculation, affecting loop termination.",
+      "line": 3,
+      "precode": "long size = entry.getEntrySize();",
+      "aftercode": "long size = entry.getEntrySize() - 1;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Alters the condition to always skip reading the record.",
+      "line": 6,
+      "precode": "while (first ||",
+      "aftercode": "while (!first &&"
+    },
+    {
+      "id": 23,
+      "reasoning": "Modifies the check for existing inode, potentially duplicating entries.",
+      "line": 13,
+      "precode": "!names.containsKey(Integer.valueOf(entry.getIno())) &&",
+      "aftercode": "names.containsKey(Integer.valueOf(entry.getIno())) ||"
+    },
+    {
+      "id": 24,
+      "reasoning": "Changes the segment type check, possibly skipping important entries.",
+      "line": 16,
+      "precode": "(DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+      "aftercode": "(DumpArchiveConstants.SEGMENT_TYPE.UNKNOWN == entry.getHeaderType())) {"
+    },
+    {
+      "id": 25,
+      "reasoning": "Adjusts the data length calculation, affecting buffer allocation.",
+      "line": 18,
+      "precode": "int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();",
+      "aftercode": "int datalen = DumpArchiveConstants.TP_SIZE * (entry.getHeaderCount() - 1);"
+    },
+    {
+      "id": 26,
+      "reasoning": "Inverts the buffer length check, potentially causing insufficient buffer size.",
+      "line": 20,
+      "precode": "if (blockBuffer.length < datalen) {",
+      "aftercode": "if (!(blockBuffer.length > datalen)) {"
+    },
+    {
+      "id": 27,
+      "reasoning": "Modifies the read operation to read more data, leading to buffer overflow.",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, datalen + 1) != datalen + 1) {"
+    },
+    {
+      "id": 28,
+      "reasoning": "Changes the loop condition to process less data than intended.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));",
+      "aftercode": "for (int i = 0; (i <= (datalen - 9)) && (i <= (size - 9));"
+    },
+    {
+      "id": 29,
+      "reasoning": "Alters the inode conversion, potentially leading to invalid inodes.",
+      "line": 32,
+      "precode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i);",
+      "aftercode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i) - 1;"
+    },
+    {
+      "id": 30,
+      "reasoning": "Modifies the record length conversion, affecting data parsing.",
+      "line": 34,
+      "precode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);",
+      "aftercode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 3);"
+    },
+    {
+      "id": 31,
+      "reasoning": "Changes the type byte extraction, potentially leading to incorrect file types.",
+      "line": 36,
+      "precode": "byte type = blockBuffer[i + 6];",
+      "aftercode": "byte type = blockBuffer[i + 5];"
+    },
+    {
+      "id": 32,
+      "reasoning": "Inverts the name extraction condition, potentially causing invalid names.",
+      "line": 40,
+      "precode": "if (\".\".equals(name) || \"..\".equals(name)) {",
+      "aftercode": "if (!\".\".equals(name) && !\"..\".equals(name)) {"
+    },
+    {
+      "id": 33,
+      "reasoning": "Modifies the Dirent creation, potentially leading to incorrect directory entries.",
+      "line": 45,
+      "precode": "Dirent d = new Dirent(ino, entry.getIno(), type, name);",
+      "aftercode": "Dirent d = new Dirent(ino - 1, entry.getIno() - 1, (byte)(type - 1), name + \"_mutant\");"
+    },
+    {
+      "id": 34,
+      "reasoning": "Inverts the names map check, potentially skipping existing entries.",
+      "line": 53,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "if (names.containsKey(Integer.valueOf(ino))) { names.remove(Integer.valueOf(ino)); }"
+    },
+    {
+      "id": 35,
+      "reasoning": "Changes the pending list processing, affecting data resolution.",
+      "line": 67,
+      "precode": "for (DumpArchiveEntry e : queue) {",
+      "aftercode": "for (DumpArchiveEntry e : names.values()) {"
+    },
+    {
+      "id": 36,
+      "reasoning": "Modifies the size update, potentially leading to incorrect size calculations.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE * 2;"
+    },
+    {
+      "id": 37,
+      "reasoning": "Alters the peek operation, affecting subsequent entry parsing.",
+      "line": 74,
+      "precode": "byte[] peekBytes = raw.peek();",
+      "aftercode": "byte[] peekBytes = new byte[1];"
+    },
+    {
+      "id": 38,
+      "reasoning": "Inverts the format verification check, potentially causing invalid data processing.",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (DumpArchiveUtil.verify(peekBytes)) {"
+    },
+    {
+      "id": 39,
+      "reasoning": "Modifies the entry parsing, affecting data interpretation.",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = DumpArchiveEntry.parse(new byte[1]);"
+    },
+    {
+      "id": 40,
+      "reasoning": "Inverts the first flag update, potentially causing repeated processing.",
+      "line": 81,
+      "precode": "first = false;",
+      "aftercode": "first = true;"
+    }
+  ]
+}

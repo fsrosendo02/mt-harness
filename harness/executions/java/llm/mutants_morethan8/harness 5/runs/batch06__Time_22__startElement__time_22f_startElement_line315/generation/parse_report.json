@@ -1,0 +1,530 @@
+{
+  "requested_count": 48,
+  "accepted_count": 1,
+  "rejected_count": 47,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 1,
+        "reasoning": "Fail on any start element, regardless of its name",
+        "line": 15,
+        "precode": "if (bodyIllegal) { fail(Resources.getMessage(\"TLV_ILLEGAL_BODY\", lastElementName)); }",
+        "aftercode": "fail(Resources.getMessage(\"TLV_ILLEGAL_BODY\", lastElementName));",
+        "candidate_code": "        public void startElement(String ns, String ln, String qn, Attributes a) {\n            // substitute our own parsed 'ln' if it's not provided\n            if (ln == null) {\n                ln = getLocalPart(qn);\n            }\n\n            // for simplicity, we can ignore <jsp:text> for our purposes\n            // (don't bother distinguishing between it and its characters)\n            if (qn.equals(JSP_TEXT)) {\n                return;\n            }\n\n            // check body-related constraint\n            if (bodyIllegal) {\n                fail(Resources.getMessage(\"TLV_ILLEGAL_BODY\", lastElementName));\n            }\n\n            // validate expression syntax if we need to\n            /*\n             * Set expAtts; if (qn.startsWith(prefix + \":\") && (expAtts = (Set)\n             * config.get(ln)) != null) { for (int i = 0; i < a.getLength();\n             * i++) { String attName = a.getLocalName(i); if\n             * (expAtts.contains(attName)) { String vMsg =\n             * validateExpression(ln, attName, a.getValue(i)); if (vMsg != null) {\n             * fail(vMsg); } } } }\n             */\n\n            // validate attributes\n            if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n                fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n                        .getValue(SCOPE)));\n            }\n            if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n                fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n            }\n            if (qn.startsWith(prefix + \":\")\n                    && !isJodaTag(ns, ln, SET_DATETIMEZONE)\n                    && hasDanglingScope(a)) {\n                fail(Resources.getMessage(\"TLV_DANGLING_SCOPE\", qn));\n            }\n\n            // now, modify state\n\n            // set up a check against illegal attribute/body combinations\n            bodyIllegal = false;\n            bodyNecessary = false;\n            if (isJodaTag(ns, ln, PARSE_DATETIME)) {\n                if (hasAttribute(a, VALUE)) {\n                    bodyIllegal = true;\n                } else {\n                    bodyNecessary = true;\n                }\n            }\n\n            // record the most recent tag (for error reporting)\n            lastElementName = qn;\n            lastElementId = a.getValue(JSP, \"id\");\n\n            // we're a new element, so increase depth\n            depth++;\n        }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 2,
+        "reasoning": "Do not check if 'ln' is null before using it",
+        "line": 4,
+        "precode": "if (ln == null) { ln = getLocalPart(qn); }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "Always return if the element name is 'jsp:text'",
+        "line": 10,
+        "precode": "if (qn.equals(JSP_TEXT)) { return; }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "Never validate expression syntax for any attribute",
+        "line": 26,
+        "precode": "\n* Set expAtts; if (qn.startsWith(prefix + \":\") && (expAtts = (Set) config.get(ln)) != null) { for (int i = 0; i < a.getLength();\n* i++) { String attName = a.getLocalName(i); if\n* (expAtts.contains(attName)) { String vMsg =\n* validateExpression(ln, attName, a.getValue(i)); if (vMsg != null) {\n* fail(vMsg); } } } }\n",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "Do not record the most recent tag for error reporting",
+        "line": 56,
+        "precode": "lastElementName = qn;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "Do not increase depth when a new element is encountered",
+        "line": 60,
+        "precode": "depth++;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "Fail on any attribute with an empty variable name",
+        "line": 34,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Always consider 'jsp:text' as a Joda tag",
+        "line": 38,
+        "precode": "!isJodaTag(ns, ln, SET_DATETIMEZONE)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "Never validate the scope of an attribute for 'jsp:text'",
+        "line": 29,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Do not check if 'a' is valid before using it",
+        "line": 23,
+        "precode": "String attName = a.getLocalName(i);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "Always consider 'jsp:text' as a tag with value attribute",
+        "line": 48,
+        "precode": "isJodaTag(ns, ln, PARSE_DATETIME)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Never check if the body is necessary for 'jsp:text'",
+        "line": 51,
+        "precode": "bodyNecessary = true;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "Always consider all attributes as valid",
+        "line": 23,
+        "precode": "if\n* (expAtts.contains(attName)) { String vMsg =\n* validateExpression(ln, attName, a.getValue(i)); if (vMsg != null) {\n* fail(vMsg); } } } ",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 34,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 36,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 38,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 39,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 40,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 40,
+        "reasoning": "Always consider all dangling scopes as valid",
+        "line": 37,
+        "precode": "!hasDanglingScope(a)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 41,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 41,
+        "reasoning": "Never check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 42,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 42,
+        "reasoning": "Always consider all attributes as empty variable",
+        "line": 33,
+        "precode": "if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n* fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 43,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 43,
+        "reasoning": "Always assume 'bodyIllegal' is true for 'jsp:text'",
+        "line": 49,
+        "precode": "if (hasAttribute(a, VALUE)) {\n* bodyIllegal = true;\n* } else {\n* bodyNecessary = true;\n* }\n* ",
+        "aftercode": "bodyIllegal = true;",
+        "candidate_code": "        public void startElement(String ns, String ln, String qn, Attributes a) {\n            // substitute our own parsed 'ln' if it's not provided\n            if (ln == null) {\n                ln = getLocalPart(qn);\n            }\n\n            // for simplicity, we can ignore <jsp:text> for our purposes\n            // (don't bother distinguishing between it and its characters)\n            if (qn.equals(JSP_TEXT)) {\n                return;\n            }\n\n            // check body-related constraint\n            if (bodyIllegal) {\n                fail(Resources.getMessage(\"TLV_ILLEGAL_BODY\", lastElementName));\n            }\n\n            // validate expression syntax if we need to\n            /*\n             * Set expAtts; if (qn.startsWith(prefix + \":\") && (expAtts = (Set)\n             * config.get(ln)) != null) { for (int i = 0; i < a.getLength();\n             * i++) { String attName = a.getLocalName(i); if\n             * (expAtts.contains(attName)) { String vMsg =\n             * validateExpression(ln, attName, a.getValue(i)); if (vMsg != null) {\n             * fail(vMsg); } } } }\n             */\n\n            // validate attributes\n            if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n                fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n                        .getValue(SCOPE)));\n            }\n            if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n                fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n            }\n            if (qn.startsWith(prefix + \":\")\n                    && !isJodaTag(ns, ln, SET_DATETIMEZONE)\n                    && hasDanglingScope(a)) {\n                fail(Resources.getMessage(\"TLV_DANGLING_SCOPE\", qn));\n            }\n\n            // now, modify state\n\n            // set up a check against illegal attribute/body combinations\n            bodyIllegal = false;\n            bodyNecessary = false;\n            if (isJodaTag(ns, ln, PARSE_DATETIME)) {\n                if (hasAttribute(a, VALUE)) {\n                    bodyIllegal = true;\n                } else {\n                    bodyNecessary = true;\n                }\n            }\n\n            // record the most recent tag (for error reporting)\n            lastElementName = qn;\n            lastElementId = a.getValue(JSP, \"id\");\n\n            // we're a new element, so increase depth\n            depth++;\n        }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 44,
+        "reasoning": "Always consider 'jsp:text' as a Joda tag",
+        "line": 38,
+        "precode": "!isJodaTag(ns, ln, SET_DATETIMEZONE)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 45,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 45,
+        "reasoning": "Do not check the validity of attribute for 'jsp:text'",
+        "line": 30,
+        "precode": "if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n* fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n* .getValue(SCOPE)));\n* }",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 46,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 46,
+        "reasoning": "Do not consider 'jsp:text' as a tag with value attribute",
+        "line": 48,
+        "precode": "isJodaTag(ns, ln, PARSE_DATETIME)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 47,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 47,
+        "reasoning": "Always assume 'bodyNecessary' is true for 'jsp:text'",
+        "line": 51,
+        "precode": "if (hasAttribute(a, VALUE)) {\n* bodyIllegal = true;\n* } else {\n* bodyNecessary = true;\n* }\n* ",
+        "aftercode": "bodyNecessary = true;",
+        "candidate_code": "        public void startElement(String ns, String ln, String qn, Attributes a) {\n            // substitute our own parsed 'ln' if it's not provided\n            if (ln == null) {\n                ln = getLocalPart(qn);\n            }\n\n            // for simplicity, we can ignore <jsp:text> for our purposes\n            // (don't bother distinguishing between it and its characters)\n            if (qn.equals(JSP_TEXT)) {\n                return;\n            }\n\n            // check body-related constraint\n            if (bodyIllegal) {\n                fail(Resources.getMessage(\"TLV_ILLEGAL_BODY\", lastElementName));\n            }\n\n            // validate expression syntax if we need to\n            /*\n             * Set expAtts; if (qn.startsWith(prefix + \":\") && (expAtts = (Set)\n             * config.get(ln)) != null) { for (int i = 0; i < a.getLength();\n             * i++) { String attName = a.getLocalName(i); if\n             * (expAtts.contains(attName)) { String vMsg =\n             * validateExpression(ln, attName, a.getValue(i)); if (vMsg != null) {\n             * fail(vMsg); } } } }\n             */\n\n            // validate attributes\n            if (qn.startsWith(prefix + \":\") && !hasNoInvalidScope(a)) {\n                fail(Resources.getMessage(\"TLV_INVALID_ATTRIBUTE\", SCOPE, qn, a\n                        .getValue(SCOPE)));\n            }\n            if (qn.startsWith(prefix + \":\") && hasEmptyVar(a)) {\n                fail(Resources.getMessage(\"TLV_EMPTY_VAR\", qn));\n            }\n            if (qn.startsWith(prefix + \":\")\n                    && !isJodaTag(ns, ln, SET_DATETIMEZONE)\n                    && hasDanglingScope(a)) {\n                fail(Resources.getMessage(\"TLV_DANGLING_SCOPE\", qn));\n            }\n\n            // now, modify state\n\n            // set up a check against illegal attribute/body combinations\n            bodyIllegal = false;\n            bodyNecessary = false;\n            if (isJodaTag(ns, ln, PARSE_DATETIME)) {\n                if (hasAttribute(a, VALUE)) {\n                    bodyIllegal = true;\n                } else {\n                    bodyNecessary = true;\n                }\n            }\n\n            // record the most recent tag (for error reporting)\n            lastElementName = qn;\n            lastElementId = a.getValue(JSP, \"id\");\n\n            // we're a new element, so increase depth\n            depth++;\n        }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 48,
+        "reasoning": "Never check the validity of scope for 'jsp:text'",
+        "line": 29,
+        "precode": "!hasNoInvalidScope(a)",
+        "aftercode": ""
+      }
+    }
+  ]
+}

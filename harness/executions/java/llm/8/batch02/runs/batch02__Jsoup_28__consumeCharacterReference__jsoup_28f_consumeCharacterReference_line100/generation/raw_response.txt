@@ -1,0 +1,60 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition for handling empty input",
+      "line": 3,
+      "precode": "if (reader.isEmpty()) return null;",
+      "aftercode": "if (reader.isEmpty() || reader.current() != '&') return null;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the boundary condition for handling invalid character references",
+      "line": 5,
+      "precode": "if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current()) return null;",
+      "aftercode": "if (additionalAllowedCharacter != null && !Entities.isValidReference(reader.current(), additionalAllowedCharacter)) return null;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the boundary condition for handling unexpected characters",
+      "line": 7,
+      "precode": "if (reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&')) return null;",
+      "aftercode": "if (!Entities.isValidReference(reader.current())) return null;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the boundary condition for handling malformed numeric references",
+      "line": 13,
+      "precode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();",
+      "aftercode": "String numRef = Entities.normalizeReference(isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence());"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the boundary condition for handling missing semicolons",
+      "line": 19,
+      "precode": "if (!reader.matchConsume(";")) characterReferenceError("missing semicolon"); // missing semi",
+      "aftercode": "characterReferenceError("missing semicolon");"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the boundary condition for handling invalid numeric references",
+      "line": 23,
+      "precode": "int charval = -1; try { int base = isHexMode ? 16 : 10; charval = Integer.valueOf(numRef, base); } catch (NumberFormatException e) {} // skip",
+      "aftercode": "int charval = Entities.getCharacterValue(numRef);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the boundary condition for handling out-of-range numeric references",
+      "line": 26,
+      "precode": "if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF)",
+      "aftercode": "if (Entities.isValidCharacterValue(numRef))"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the boundary condition for handling invalid named references",
+      "line": 41,
+      "precode": "String nameRef = reader.consumeLetterThenDigitSequence(); boolean looksLegit = reader.matches(';');",
+      "aftercode": "String nameRef = Entities.normalizeReference(reader.consumeLetterThenDigitSequence()); boolean looksLegit = Entities.isValidReference(nameRef);"
+    }
+  ]
+}

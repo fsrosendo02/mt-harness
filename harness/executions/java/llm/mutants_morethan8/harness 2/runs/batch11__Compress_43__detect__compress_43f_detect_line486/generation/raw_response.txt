@@ -1,0 +1,109 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violation of null check for InputStream, allowing a null input to proceed.",
+      "line": 2,
+      "precode": "if (in == null) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Removal of mark support check, allowing streams without marking to proceed.",
+      "line": 6,
+      "precode": "if (!in.markSupported()) {",
+      "aftercode": "if (false) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Modification of the byte array size for reading the signature, potentially leading to incorrect detection.",
+      "line": 10,
+      "precode": "final byte[] signature = new byte[SIGNATURE_SIZE];",
+      "aftercode": "final byte[] signature = new byte[SIGNATURE_SIZE - 1];"
+    },
+    {
+      "id": 4,
+      "reasoning": "Skipping the reset of InputStream after reading the signature, which may lead to incorrect detection.",
+      "line": 15,
+      "precode": "in.reset();",
+      "aftercode": "// in.reset();"
+    },
+    {
+      "id": 5,
+      "reasoning": "Returning a constant value for Zip format instead of checking if it matches, bypassing the actual check.",
+      "line": 21,
+      "precode": "return ZIP;",
+      "aftercode": "return \"ZIP\";"
+    },
+    {
+      "id": 6,
+      "reasoning": "Removing the condition to match Jar format, potentially misclassifying non-Jar files as Jar.",
+      "line": 22,
+      "precode": "else if (JarArchiveInputStream.matches(signature, signatureLength)) {",
+      "aftercode": "// else if (JarArchiveInputStream.matches(signature, signatureLength)) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "Modifying the buffer size for dump signatures to prevent correct detection.",
+      "line": 35,
+      "precode": "final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];",
+      "aftercode": "final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE + 1];"
+    },
+    {
+      "id": 8,
+      "reasoning": "Introducing an exception for any signature length, bypassing the actual detection process.",
+      "line": 44,
+      "precode": "return DUMP;",
+      "aftercode": "throw new ArchiveException(\"Custom Exception\");"
+    },
+    {
+      "id": 9,
+      "reasoning": "Removing the check for Tar format using a larger buffer, potentially misclassifying non-Tar files as Tar.",
+      "line": 48,
+      "precode": "final byte[] tarHeader = new byte[TAR_HEADER_SIZE];",
+      "aftercode": "// final byte[] tarHeader = new byte[TAR_HEADER_SIZE];"
+    },
+    {
+      "id": 10,
+      "reasoning": "Returning a constant value for Tar format instead of checking if it matches, bypassing the actual check.",
+      "line": 57,
+      "precode": "return TAR;",
+      "aftercode": "return \"TAR\";"
+    },
+    {
+      "id": 11,
+      "reasoning": "Skipping the exception handling for Tar format detection, potentially masking real errors.",
+      "line": 55,
+      "precode": "throw new ArchiveException(\"IOException while reading tar signature\", e);",
+      "aftercode": "// throw new ArchiveException(\"IOException while reading tar signature\", e);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Modifying the minimum signature length requirement for Tar format to misclassify files as Tar.",
+      "line": 61,
+      "precode": "if (signatureLength >= TAR_HEADER_SIZE) {",
+      "aftercode": "if (signatureLength > TAR_HEADER_SIZE) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "Removing the header checksum verification for Tar format, potentially misclassifying files as Tar.",
+      "line": 66,
+      "precode": "if (tais.getNextTarEntry().isCheckSumOK()) {",
+      "aftercode": "// if (tais.getNextTarEntry().isCheckSumOK()) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Removing the final block to close TarArchiveInputStream, which may lead to resource leaks.",
+      "line": 74,
+      "precode": "IOUtils.closeQuietly(tais);",
+      "aftercode": "// IOUtils.closeQuietly(tais);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Changing the error message for no archiver found, which may not accurately describe the issue.",
+      "line": 78,
+      "precode": "throw new ArchiveException(\"No Archiver found for the stream signature\");",
+      "aftercode": "throw new ArchiveException(\"Incorrect Stream Signature\");"
+    }
+  ]
+}

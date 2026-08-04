@@ -1,0 +1,80 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public Value newOperation(final AbstractInsnNode insn) {
+ 2:         switch (insn.getOpcode()) {
+ 3:             case ACONST_NULL:
+ 4:                 return newValue(Type.getObjectType("null"));
+ 5:             case ICONST_M1:
+ 6:             case ICONST_0:
+ 7:             case ICONST_1:
+ 8:             case ICONST_2:
+ 9:             case ICONST_3:
+10:             case ICONST_4:
+11:             case ICONST_5:
+12:                 return BasicValue.INT_VALUE;
+13:             case LCONST_0:
+14:             case LCONST_1:
+15:                 return BasicValue.LONG_VALUE;
+16:             case FCONST_0:
+17:             case FCONST_1:
+18:             case FCONST_2:
+19:                 return BasicValue.FLOAT_VALUE;
+20:             case DCONST_0:
+21:             case DCONST_1:
+22:                 return BasicValue.DOUBLE_VALUE;
+23:             case BIPUSH:
+24:             case SIPUSH:
+25:                 return BasicValue.INT_VALUE;
+26:             case LDC:
+27:                 Object cst = ((LdcInsnNode) insn).cst;
+28:                 if (cst instanceof Integer) {
+29:                     return BasicValue.INT_VALUE;
+30:                 } else if (cst instanceof Float) {
+31:                     return BasicValue.FLOAT_VALUE;
+32:                 } else if (cst instanceof Long) {
+33:                     return BasicValue.LONG_VALUE;
+34:                 } else if (cst instanceof Double) {
+35:                     return BasicValue.DOUBLE_VALUE;
+36:                 } else if (cst instanceof Type) {
+37:                     return newValue(Type.getObjectType("java/lang/Class"));
+38:                 } else {
+39:                     return newValue(Type.getType(cst.getClass()));
+40:                 }
+41:             case JSR:
+42:                 return BasicValue.RETURNADDRESS_VALUE;
+43:             case GETSTATIC:
+44:                 return newValue(Type.getType(((FieldInsnNode) insn).desc));
+45:             case NEW:
+46:                 return newValue(Type.getObjectType(((TypeInsnNode) insn).desc));
+47:             default:
+48:                 throw new Error("Internal error.");
+49:         }
+50:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

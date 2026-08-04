@@ -1,0 +1,75 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static FilterResult filter(NodeFilter filter, Node root) {
+ 2:         Node node = root;
+ 3:         int depth = 0;
+ 4: 
+ 5:         while (node != null) {
+ 6:             FilterResult result = filter.head(node, depth);
+ 7:             if (result == FilterResult.STOP)
+ 8:                 return result;
+ 9:             // Descend into child nodes:
+10:             if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {
+11:                 node = node.childNode(0);
+12:                 ++depth;
+13:                 continue;
+14:             }
+15:             // No siblings, move upwards:
+16:             while (node.nextSibling() == null && depth > 0) {
+17:                 // 'tail' current node:
+18:                 if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+19:                     result = filter.tail(node, depth);
+20:                     if (result == FilterResult.STOP)
+21:                         return result;
+22:                 }
+23:                 Node prev = node; // In case we need to remove it below.
+24:                 node = node.parentNode();
+25:                 depth--;
+26:                 if (result == FilterResult.REMOVE)
+27:                     prev.remove(); // Remove AFTER finding parent.
+28:                 result = FilterResult.CONTINUE; // Parent was not pruned.
+29:             }
+30:             // 'tail' current node, then proceed with siblings:
+31:             if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+32:                 result = filter.tail(node, depth);
+33:                 if (result == FilterResult.STOP)
+34:                     return result;
+35:             }
+36:             if (node == root)
+37:                 return result;
+38:             Node prev = node; // In case we need to remove it below.
+39:             node = node.nextSibling();
+40:             if (result == FilterResult.REMOVE)
+41:                 prev.remove(); // Remove AFTER finding sibling.
+42:         }
+43:         // root == null?
+44:         return FilterResult.CONTINUE;
+45:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Null value for input stream does not trigger creation of a new Document without BOM detection.",
+      "line": 2,
+      "precode": "return new Document(baseUri);",
+      "aftercode": "// empty body"
+    },
+    {
+      "id": 2,
+      "reasoning": "BufferedInputStream is used instead of ConstrainableInputStream, potentially changing the input stream behavior.",
+      "line": 4,
+      "precode": "input = ConstrainableInputStream.wrap(input, bufferSize, 0);",
+      "aftercode": "input = new BufferedInputStream(input, bufferSize);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Charset detection from BOM is skipped, ignoring any charset information in the input stream.",
+      "line": 17,
+      "precode": "BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);",
+      "aftercode": "// BomCharset bomCharset = detectCharsetFromBom(firstBytes, charsetName);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Default charset is not used when no BOM or meta charset is found, potentially leading to incorrect character decoding.",
+      "line": 23,
+      "precode": "docData = Charset.forName(defaultCharset).decode(firstBytes).toString();",
+      "aftercode": "// docData = Charset.forName(defaultCharset).decode(firstBytes).toString();"
+    },
+    {
+      "id": 5,
+      "reasoning": "Character encoding validation is skipped, allowing for invalid character encodings.",
+      "line": 44,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Charset is not re-decoded when a new charset is detected, potentially leading to incorrect text interpretation.",
+      "line": 48,
+      "precode": "charsetName = bomCharset.charset;",
+      "aftercode": "// charsetName = bomCharset.charset;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Charset name validation is skipped, allowing for invalid or unexpected character set names.",
+      "line": 53,
+      "precode": "Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");",
+      "aftercode": "// Validate.notEmpty(charsetName, \"Must set charset arg to character set of file to parse. Set to null to attempt to detect from HTML\");"
+    },
+    {
+      "id": 8,
+      "reasoning": "Charset name trimming and removal of quotes are not performed, potentially leading to incorrect charset detection.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll(\"[\\\"'\"]\", \"\");",
+      "aftercode": "// foundCharset = foundCharset.trim();"
+    },
+    {
+      "id": 9,
+      "reasoning": "The input stream is not closed after parsing, leading to resource leaks.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": "// input.close();"
+    },
+    {
+      "id": 10,
+      "reasoning": "Charset detection from meta tags is skipped, potentially missing important charset information in HTML documents.",
+      "line": 27,
+      "precode": "Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\"",
+      "aftercode": "// Elements metaElements = doc.select(\"meta[http-equiv=content-type], meta[charset]\")"
+    },
+    {
+      "id": 11,
+      "reasoning": "Charset detection from XML prolog is skipped, potentially missing important charset information in XML documents.",
+      "line": 39,
+      "precode": "// look for <?xml encoding='ISO-8859-1'?>",
+      "aftercode": ""
+    },
+    {
+      "id": 12,
+      "reasoning": "The input stream is not reset after reading the first bytes, potentially leading to incorrect parsing.",
+      "line": 10,
+      "precode": "input.mark(firstReadBufferSize);",
+      "aftercode": "// input.mark(firstReadBufferSize);"
+    },
+    {
+      "id": 13,
+      "reasoning": "The fully read flag is always set to false, potentially causing infinite loops or incorrect parsing in certain cases.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "fullyRead = true;"
+    },
+    {
+      "id": 14,
+      "reasoning": "The input stream is not skipped if a BOM is found, potentially leading to incorrect character decoding.",
+      "line": 19,
+      "precode": "input.skip(bomCharset.offset);",
+      "aftercode": "// input.skip(bomCharset.offset);"
+    },
+    {
+      "id": 15,
+      "reasoning": "The input stream is not reset if a BOM is found, potentially leading to incorrect parsing.",
+      "line": 13,
+      "precode": "input.reset();",
+      "aftercode": "// input.reset();"
+    },
+    {
+      "id": 16,
+      "reasoning": "The charset name is not updated when re-decoding with a new charset, potentially leading to incorrect parsing.",
+      "line": 47,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = foundCharset;"
+    },
+    {
+      "id": 17,
+      "reasoning": "The input stream is not closed before returning the document, potentially leading to resource leaks.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": "return doc;"
+    },
+    {
+      "id": 18,
+      "reasoning": "The input stream is not reset if fully read, potentially causing issues when the method is called multiple times.",
+      "line": 11,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "if (!fullyRead) { input.reset(); }"
+    },
+    {
+      "id": 19,
+      "reasoning": "The charset name is not validated if found from meta tags, potentially leading to invalid or unexpected charsets.",
+      "line": 38,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 20,
+      "reasoning": "The default charset is not used when re-decoding, potentially leading to incorrect character decoding.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll(\"[\\\"'\"]\", \"\");",
+      "aftercode": "// foundCharset = foundCharset.trim();"
+    },
+    {
+      "id": 21,
+      "reasoning": "The input stream is not reset after marking, potentially leading to incorrect parsing.",
+      "line": 10,
+      "precode": "input.mark(firstReadBufferSize);",
+      "aftercode": "// input.mark(firstReadBufferSize);"
+    },
+    {
+      "id": 22,
+      "reasoning": "The fully read flag is not updated correctly, potentially leading to incorrect parsing.",
+      "line": 11,
+      "precode": "input.reset();",
+      "aftercode": "// input.reset();"
+    },
+    {
+      "id": 23,
+      "reasoning": "The input stream is closed before checking if it's fully read, potentially causing issues when the method is called multiple times.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() == -1;"
+    },
+    {
+      "id": 24,
+      "reasoning": "The charset name is not updated when re-decoding with a new charset, potentially leading to incorrect parsing.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = foundCharset;"
+    },
+    {
+      "id": 25,
+      "reasoning": "The input stream is not closed after returning the document, potentially leading to resource leaks.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": "return doc;"
+    },
+    {
+      "id": 26,
+      "reasoning": "The input stream is not reset if fully read, potentially causing issues when the method is called multiple times.",
+      "line": 11,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() == -1;"
+    },
+    {
+      "id": 27,
+      "reasoning": "The charset name is not validated if found from meta tags, potentially leading to invalid or unexpected charsets.",
+      "line": 38,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 28,
+      "reasoning": "The default charset is not used when re-decoding, potentially leading to incorrect character decoding.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll(\"[\\\"'\"]\", \"\");",
+      "aftercode": "// foundCharset = foundCharset.trim();"
+    },
+    {
+      "id": 29,
+      "reasoning": "The input stream is not reset after marking, potentially leading to incorrect parsing.",
+      "line": 10,
+      "precode": "input.mark(firstReadBufferSize);",
+      "aftercode": "// input.mark(firstReadBufferSize);"
+    },
+    {
+      "id": 30,
+      "reasoning": "The fully read flag is not updated correctly, potentially leading to incorrect parsing.",
+      "line": 11,
+      "precode": "input.reset();",
+      "aftercode": "// input.reset();"
+    },
+    {
+      "id": 31,
+      "reasoning": "The input stream is closed before checking if it's fully read, potentially causing issues when the method is called multiple times.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() == -1;"
+    },
+    {
+      "id": 32,
+      "reasoning": "The charset name is not updated when re-decoding with a new charset, potentially leading to incorrect parsing.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = foundCharset;"
+    },
+    {
+      "id": 33,
+      "reasoning": "The input stream is not closed after returning the document, potentially leading to resource leaks.",
+      "line": 62,
+      "precode": "input.close();",
+      "aftercode": "return doc;"
+    },
+    {
+      "id": 34,
+      "reasoning": "The input stream is not reset if fully read, potentially causing issues when the method is called multiple times.",
+      "line": 11,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() == -1;"
+    },
+    {
+      "id": 35,
+      "reasoning": "The charset name is not validated if found from meta tags, potentially leading to invalid or unexpected charsets.",
+      "line": 38,
+      "precode": "foundCharset = validateCharset(foundCharset);",
+      "aftercode": "// foundCharset = validateCharset(foundCharset);"
+    },
+    {
+      "id": 36,
+      "reasoning": "The default charset is not used when re-decoding, potentially leading to incorrect character decoding.",
+      "line": 46,
+      "precode": "foundCharset = foundCharset.trim().replaceAll(\"[\\\"'\"]\", \"\");",
+      "aftercode": "// foundCharset = foundCharset.trim();"
+    },
+    {
+      "id": 37,
+      "reasoning": "The input stream is not reset after marking, potentially leading to incorrect parsing.",
+      "line": 10,
+      "precode": "input.mark(firstReadBufferSize);",
+      "aftercode": "// input.mark(firstReadBufferSize);"
+    },
+    {
+      "id": 38,
+      "reasoning": "The fully read flag is not updated correctly, potentially leading to incorrect parsing.",
+      "line": 11,
+      "precode": "input.reset();",
+      "aftercode": "// input.reset();"
+    },
+    {
+      "id": 39,
+      "reasoning": "The input stream is closed before checking if it's fully read, potentially causing issues when the method is called multiple times.",
+      "line": 12,
+      "precode": "fullyRead = input.read() == -1;",
+      "aftercode": "// fullyRead = input.read() == -1;"
+    },
+    {
+      "id": 40,
+      "reasoning": "The charset name is not updated when re-decoding with a new charset, potentially leading to incorrect parsing.",
+      "line": 48,
+      "precode": "charsetName = foundCharset;",
+      "aftercode": "// charsetName = foundCharset;"
+    }
+  ]
+}

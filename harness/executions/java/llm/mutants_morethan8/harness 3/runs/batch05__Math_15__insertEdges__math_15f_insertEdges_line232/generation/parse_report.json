@@ -1,0 +1,297 @@
+{
+  "requested_count": 32,
+  "accepted_count": 6,
+  "rejected_count": 26,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "An inserted edge's node is not set to the current node.",
+        "line": 13,
+        "precode": "inserted.setNode(node);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 6,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 6,
+        "reasoning": "A vertex's split point is not correctly inserted into the plus or minus list.",
+        "line": 50,
+        "precode": "minusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The attribute of a node's plus child is not set to FALSE in certain cases.",
+        "line": 81,
+        "precode": "node.getPlus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The attribute of a node's minus child is not set to TRUE in certain cases.",
+        "line": 86,
+        "precode": "node.getMinus().setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 10,
+        "reasoning": "A null edge does not cause a node's attribute to be set.",
+        "line": 27,
+        "precode": "if (parent == null || node == parent.getMinus())",
+        "aftercode": "node.setAttribute(Boolean.FALSE);",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            node.setAttribute(Boolean.FALSE); {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    case PLUS:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (!plusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "The hyperplane thickness is not checked before inserting a split point.",
+        "line": 42,
+        "precode": "(FastMath.abs(startOffset) <= hyperplaneThickness)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "A vertex's split point is not correctly inserted into the plus or minus list when an edge is added.",
+        "line": 60,
+        "precode": "plusList.add(splitPoint.getOutgoing());",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "An edge's start and end offsets are not correctly checked before determining its side.",
+        "line": 43,
+        "precode": "(FastMath.abs(startOffset) <= hyperplaneThickness)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "The hyperplane thickness is not used to determine the side of an edge.",
+        "line": 41,
+        "precode": "Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The attribute of a node's plus child is not set to FALSE in all cases.",
+        "line": 81,
+        "precode": "node.getPlus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The attribute of a node's minus child is not set to TRUE in all cases.",
+        "line": 86,
+        "precode": "node.getMinus().setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "A null edge does not cause a node's attribute to be set when there are no edges.",
+        "line": 27,
+        "precode": "if (parent == null || node == parent.getMinus())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 19,
+        "reasoning": "The hyperplane thickness is not used to determine the side of an edge when there are no edges.",
+        "line": 41,
+        "precode": "(FastMath.abs(startOffset) <= hyperplaneThickness)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "An edge is not added to its corresponding list in the recursion when there are no edges and an edge is found.",
+        "line": 79,
+        "precode": "if (!plusList.isEmpty()) {",
+        "aftercode": "if (true) {",
+        "candidate_code": "    private static void insertEdges(final double hyperplaneThickness,\n                                    final BSPTree<Euclidean2D> node,\n                                    final List<Edge> edges) {\n\n        // find an edge with an hyperplane that can be inserted in the node\n        int index = 0;\n        Edge inserted =null;\n        while (inserted == null && index < edges.size()) {\n            inserted = edges.get(index++);\n            if (inserted.getNode() == null) {\n                if (node.insertCut(inserted.getLine())) {\n                    inserted.setNode(node);\n                } else {\n                    inserted = null;\n                }\n            } else {\n                inserted = null;\n            }\n        }\n\n        if (inserted == null) {\n            // no suitable edge was found, the node remains a leaf node\n            // we need to set its inside/outside boolean indicator\n            final BSPTree<Euclidean2D> parent = node.getParent();\n            if (parent == null || node == parent.getMinus()) {\n                node.setAttribute(Boolean.TRUE);\n            } else {\n                node.setAttribute(Boolean.FALSE);\n            }\n            return;\n        }\n\n        // we have split the node by inserted an edge as a cut sub-hyperplane\n        // distribute the remaining edges in the two sub-trees\n        final List<Edge> plusList  = new ArrayList<Edge>();\n        final List<Edge> minusList = new ArrayList<Edge>();\n        for (final Edge edge : edges) {\n            if (edge != inserted) {\n                final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());\n                final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());\n                Side startSide = (FastMath.abs(startOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((startOffset < 0) ? Side.MINUS : Side.PLUS);\n                Side endSide   = (FastMath.abs(endOffset) <= hyperplaneThickness) ?\n                                 Side.HYPER : ((endOffset < 0) ? Side.MINUS : Side.PLUS);\n                switch (startSide) {\n                    case PLUS:\n                        if (endSide == Side.MINUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getOutgoing());\n                            plusList.add(splitPoint.getIncoming());\n                        } else {\n                            plusList.add(edge);\n                        }\n                        break;\n                    case MINUS:\n                        if (endSide == Side.PLUS) {\n                            // we need to insert a split point on the hyperplane\n                            final Vertex splitPoint = edge.split(inserted.getLine());\n                            minusList.add(splitPoint.getIncoming());\n                            plusList.add(splitPoint.getOutgoing());\n                        } else {\n                            minusList.add(edge);\n                        }\n                        break;\n                    default:\n                        if (endSide == Side.PLUS) {\n                            plusList.add(edge);\n                        } else if (endSide == Side.MINUS) {\n                            minusList.add(edge);\n                        }\n                        break;\n                }\n            }\n        }\n\n        // recurse through lower levels\n        if (true) {\n            insertEdges(hyperplaneThickness, node.getPlus(),  plusList);\n        } else {\n            node.getPlus().setAttribute(Boolean.FALSE);\n        }\n        if (!minusList.isEmpty()) {\n            insertEdges(hyperplaneThickness, node.getMinus(), minusList);\n        } else {\n            node.getMinus().setAttribute(Boolean.TRUE);\n        }\n\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "The attribute of a node's plus child is not set to FALSE in all cases when there are no edges.",
+        "line": 81,
+        "precode": "node.getPlus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The attribute of a node's minus child is not set to TRUE in all cases when there are no edges.",
+        "line": 86,
+        "precode": "node.getMinus().setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "A null edge does not cause a node's attribute to be set when there are no edges and an edge is found.",
+        "line": 27,
+        "precode": "if (parent == null || node == parent.getMinus())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The hyperplane thickness is not used to determine the side of an edge when there are no edges and an edge is found.",
+        "line": 41,
+        "precode": "(FastMath.abs(startOffset) <= hyperplaneThickness)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The attribute of a node's plus child is not set to FALSE in certain cases when there are no edges.",
+        "line": 81,
+        "precode": "node.getPlus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "The attribute of a node's minus child is not set to TRUE in certain cases when there are no edges.",
+        "line": 86,
+        "precode": "node.getMinus().setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "A null edge does not cause a node's attribute to be set in certain cases when there are no edges.",
+        "line": 27,
+        "precode": "if (parent == null || node == parent.getMinus())",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The hyperplane thickness is not used to determine the side of an edge in certain cases when there are no edges.",
+        "line": 41,
+        "precode": "(FastMath.abs(startOffset) <= hyperplaneThickness)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "An edge is not added to its corresponding list in the recursion when there are no edges and all edges have a side of HYPER.",
+        "line": 79,
+        "precode": "if (!plusList.isEmpty()) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "The attribute of a node's plus child is not set to FALSE in all cases when there are no edges and all edges have a side of HYPER.",
+        "line": 81,
+        "precode": "node.getPlus().setAttribute(Boolean.FALSE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "The attribute of a node's minus child is not set to TRUE in all cases when there are no edges and all edges have a side of HYPER.",
+        "line": 86,
+        "precode": "node.getMinus().setAttribute(Boolean.TRUE);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "A null edge does not cause a node's attribute to be set when there are no edges and all edges have a side of HYPER.",
+        "line": 27,
+        "precode": "if (parent == null || node == parent.getMinus())",
+        "aftercode": ""
+      }
+    }
+  ]
+}

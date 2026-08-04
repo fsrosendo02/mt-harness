@@ -1,0 +1,324 @@
+{
+  "requested_count": 48,
+  "accepted_count": 23,
+  "rejected_count": 25,
+  "rejections": [
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The `Integer.parseInt` method is not properly checked for overflow",
+        "line": 59,
+        "precode": "currEntry.setGroupId(Integer.parseInt(val));",
+        "aftercode": "try { currEntry.setGroupId(Integer.parseInt(val)); } catch (NumberFormatException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The `Long.parseLong` method is not properly checked for overflow",
+        "line": 67,
+        "precode": "currEntry.setSize(Long.parseLong(val));",
+        "aftercode": "try { currEntry.setSize(Long.parseLong(val)); } catch (NumberFormatException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "The `IOException` is not properly thrown when reading fails",
+        "line": 21,
+        "precode": "if (got != len-read){",
+        "aftercode": "try { if (got != len-read) throw new IOException(\"Failed to read Paxheader. Expected \" + (len-read) + \" chars, read \" + got); } catch (IOException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "The `Integer.parseInt` method is not properly checked for overflow",
+        "line": 59,
+        "precode": "currEntry.setGroupId(Integer.parseInt(val));",
+        "aftercode": "try { currEntry.setGroupId(Integer.parseInt(val)); } catch (NumberFormatException e) { throw new AssertionError(\"Invalid group ID: \" + val); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The `Long.parseLong` method is not properly checked for overflow",
+        "line": 67,
+        "precode": "currEntry.setSize(Long.parseLong(val));",
+        "aftercode": "try { currEntry.setSize(Long.parseLong(val)); } catch (NumberFormatException e) { throw new AssertionError(\"Invalid size: \" + val); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The `break` statement is not properly used to exit the loop",
+        "line": 30,
+        "precode": "break;",
+        "aftercode": "// break;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            // break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The `continue` statement is not properly used to skip unnecessary iterations",
+        "line": 35,
+        "precode": "if (ch == -1){",
+        "aftercode": "if (ch != ' ') continue;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch != ' ') continue; {// EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The `read` variable is not properly checked for underflow",
+        "line": 10,
+        "precode": "int read = 0;",
+        "aftercode": "int read = Integer.MIN_VALUE;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                int read = Integer.MIN_VALUE;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "The `len` variable is not properly checked for overflow",
+        "line": 32,
+        "precode": "len *= 10;",
+        "aftercode": "if (len < 0) len = Integer.MAX_VALUE;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                if (len < 0) len = Integer.MAX_VALUE;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "The `ch` variable is not properly checked for invalid values",
+        "line": 9,
+        "precode": "int ch;",
+        "aftercode": "if (ch < 0 || ch > 127) throw new IOException(\"Invalid character: \" + ch);",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            if (ch < 0 || ch > 127) throw new IOException(\"Invalid character: \" + ch);\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "The `IOException` is not properly thrown when reading fails",
+        "line": 21,
+        "precode": "if (got != len-read){",
+        "aftercode": "try { if (got != len-read) throw new IOException(\"Failed to read Paxheader. Expected \" + (len-read) + \" chars, read \" + got); } catch (IOException e) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "The `StringBuffer` is not properly used to avoid `NullPointerException`s",
+        "line": 14,
+        "precode": "while((ch = br.read()) != -1){",
+        "aftercode": "if (br == null) break;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    if (br == null) break; {\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "The `BufferedReader` is not properly checked for EOF before reading",
+        "line": 6,
+        "precode": "while(true){",
+        "aftercode": "while (ch != -1 && ch != ' '){",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while (ch != -1 && ch != ' '){// get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "The `char` array is not properly initialized to avoid `NullPointerException`s",
+        "line": 19,
+        "precode": "char[] cbuf = new char[len-read];",
+        "aftercode": "if (len - read > 1024) throw new IOException(\"Array too large\");",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            if (len - read > 1024) throw new IOException(\"Array too large\");\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "The `String` constructor is not properly used to avoid `NullPointerException`s",
+        "line": 25,
+        "precode": "String value = new String(cbuf, 0 , len-read-1);",
+        "aftercode": "if (len - read < 0) throw new IOException(\"Index out of bounds\");",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            if (len - read < 0) throw new IOException(\"Index out of bounds\");// Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "The `Iterator` is not properly checked for null",
+        "line": 49,
+        "precode": "Iterator hdrs = headers.entrySet().iterator();",
+        "aftercode": "if (hdrs == null) throw new NullPointerException(\"Headers iterator is null\");",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        if (hdrs == null) throw new NullPointerException(\"Headers iterator is null\");\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "The `Entry` object is not properly checked for null key or value",
+        "line": 51,
+        "precode": "Entry ent = (Entry) hdrs.next();",
+        "aftercode": "if (ent == null) throw new NullPointerException(\"Headers entry is null\");",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            if (ent == null) throw new NullPointerException(\"Headers entry is null\");\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "The `String` comparison is not properly done to avoid `NullPointerException`s",
+        "line": 54,
+        "precode": "if (\"path\".equals(key)){",
+        "aftercode": "if (key == null || !key.equals(\"path\")) throw new AssertionError(\"Invalid key: \" + key);",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (key == null || !key.equals(\"path\")) throw new AssertionError(\"Invalid key: \" + key); {\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 42,
+        "reasoning": "The `Integer.parseInt` method is not properly checked for overflow",
+        "line": 59,
+        "precode": "currEntry.setGroupId(Integer.parseInt(val));",
+        "aftercode": "try { currEntry.setGroupId(Integer.parseInt(val)); } catch (NumberFormatException e) { throw new AssertionError(\"Invalid group ID: \" + val); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 43,
+        "reasoning": "The `Long.parseLong` method is not properly checked for overflow",
+        "line": 67,
+        "precode": "currEntry.setSize(Long.parseLong(val));",
+        "aftercode": "try { currEntry.setSize(Long.parseLong(val)); } catch (NumberFormatException e) { throw new AssertionError(\"Invalid size: \" + val); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 44,
+        "reasoning": "The `map` is not properly checked for null values",
+        "line": 26,
+        "precode": "headers.put(keyword, value);",
+        "aftercode": "if (value == null) throw new NullPointerException(\"Value is null\");",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            if (value == null) throw new NullPointerException(\"Value is null\");\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 45,
+        "reasoning": "The `break` statement is not properly used to exit the loop",
+        "line": 30,
+        "precode": "break;",
+        "aftercode": "// break;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            // break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 46,
+        "reasoning": "The `continue` statement is not properly used to skip unnecessary iterations",
+        "line": 35,
+        "precode": "if (ch == -1){",
+        "aftercode": "if (ch != ' ') continue;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch != ' ') continue; {// EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 47,
+        "reasoning": "The `read` variable is not properly checked for underflow",
+        "line": 10,
+        "precode": "int read = 0;",
+        "aftercode": "int read = Integer.MIN_VALUE;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                int read = Integer.MIN_VALUE;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "The `len` variable is not properly checked for overflow",
+        "line": 32,
+        "precode": "len *= 10;",
+        "aftercode": "if (len < 0) len = Integer.MAX_VALUE;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                if (len < 0) len = Integer.MAX_VALUE;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+    protected final JsonToken _finishToken() throws IOException
+    {
+        // NOTE: caller ensures there's input available...
+        switch (_minorState) {
+        case MINOR_FIELD_LEADING_WS:
+            return _startFieldName(_inputBuffer[_inputPtr++] & 0xFF);
+        case MINOR_FIELD_LEADING_COMMA:
+            return _startFieldNameAfterComma(_inputBuffer[_inputPtr++] & 0xFF);
+
+        // Field name states
+        case MINOR_FIELD_NAME:
+            return _parseEscapedName(_quadLength - 1,  _pending32, _pendingBytes);
+        case MINOR_FIELD_NAME_ESCAPE:
+            return _finishFieldWithEscape();
+
+        // Value states
+
+        case MINOR_VALUE_LEADING_WS:
+            return _startValue(_inputBuffer[_inputPtr++] & 0xFF);
+        case MINOR_VALUE_LEADING_COMMA:
+            return _startValueAfterComma(_inputBuffer[_inputPtr++] & 0xFF);
+        case MINOR_VALUE_LEADING_COLON:
+            return _startValueAfterColon(_inputBuffer[_inputPtr++] & 0xFF);
+
+        case MINOR_VALUE_TOKEN_NULL:
+            return _finishKeywordToken("null", _pending32, JsonToken.VALUE_NULL);
+        case MINOR_VALUE_TOKEN_TRUE:
+            return _finishKeywordToken("true", _pending32, JsonToken.VALUE_TRUE);
+        case MINOR_VALUE_TOKEN_FALSE:
+            return _finishKeywordToken("false", _pending32, JsonToken.VALUE_FALSE);
+        case MINOR_VALUE_TOKEN_ERROR: // case of "almost token", just need tokenize for error
+            return _finishErrorToken();
+
+        case MINOR_NUMBER_LEADING_MINUS:
+            return _finishNumberLeadingMinus(_inputBuffer[_inputPtr++] & 0xFF);
+        case MINOR_NUMBER_LEADING_ZERO:
+            return _finishNumberLeadingZeroes();
+        case MINOR_NUMBER_INTEGER_DIGITS:
+            return _finishNumberIntegralPart(_textBuffer.getBufferWithoutReset(),
+                    _textBuffer.getCurrentSegmentSize());
+        case MINOR_NUMBER_FRACTION_DIGITS:
+            return _finishFloatFraction();
+        case MINOR_NUMBER_EXPONENT_MARKER:
+            return _finishFloatExponent(true, _inputBuffer[_inputPtr++] & 0xFF);
+        case MINOR_NUMBER_EXPONENT_DIGITS:
+            return _finishFloatExponent(false, _inputBuffer[_inputPtr++] & 0xFF);
+
+        case MINOR_VALUE_STRING:
+            return _finishRegularString();
+        case MINOR_VALUE_STRING_UTF8_2:
+            _textBuffer.append((char) _decodeUTF8_2(_pending32, _inputBuffer[_inputPtr++]));
+            return _finishRegularString();
+        case MINOR_VALUE_STRING_UTF8_3:
+            if (!_decodeSplitUTF8_3(_pending32, _pendingBytes, _inputBuffer[_inputPtr++])) {
+                return JsonToken.NOT_AVAILABLE;
+            }
+            return _finishRegularString();
+        case MINOR_VALUE_STRING_UTF8_4:
+            if (!_decodeSplitUTF8_4(_pending32, _pendingBytes, _inputBuffer[_inputPtr++])) {
+                return JsonToken.NOT_AVAILABLE;
+            }
+            return _finishRegularString();
+
+        case MINOR_VALUE_STRING_ESCAPE:
+            {
+                int c = _decodeSplitEscaped(_quoted32, _quotedDigits);
+                if (c < 0) {
+                    return JsonToken.NOT_AVAILABLE;
+                }
+                _textBuffer.append((char) c);
+            }
+            return _finishRegularString();
+        }
+        VersionUtil.throwInternal();
+        return null;
+    }

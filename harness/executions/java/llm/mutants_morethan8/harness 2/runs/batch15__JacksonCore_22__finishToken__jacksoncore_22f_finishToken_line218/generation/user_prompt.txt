@@ -1,0 +1,106 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected final JsonToken _finishToken() throws IOException
+ 2:     {
+ 3:         // NOTE: caller ensures there's input available...
+ 4:         switch (_minorState) {
+ 5:         case MINOR_FIELD_LEADING_WS:
+ 6:             return _startFieldName(_inputBuffer[_inputPtr++] & 0xFF);
+ 7:         case MINOR_FIELD_LEADING_COMMA:
+ 8:             return _startFieldNameAfterComma(_inputBuffer[_inputPtr++] & 0xFF);
+ 9: 
+10:         // Field name states
+11:         case MINOR_FIELD_NAME:
+12:             return _parseEscapedName(_quadLength,  _pending32, _pendingBytes);
+13:         case MINOR_FIELD_NAME_ESCAPE:
+14:             return _finishFieldWithEscape();
+15: 
+16:         // Value states
+17: 
+18:         case MINOR_VALUE_LEADING_WS:
+19:             return _startValue(_inputBuffer[_inputPtr++] & 0xFF);
+20:         case MINOR_VALUE_LEADING_COMMA:
+21:             return _startValueAfterComma(_inputBuffer[_inputPtr++] & 0xFF);
+22:         case MINOR_VALUE_LEADING_COLON:
+23:             return _startValueAfterColon(_inputBuffer[_inputPtr++] & 0xFF);
+24: 
+25:         case MINOR_VALUE_TOKEN_NULL:
+26:             return _finishKeywordToken("null", _pending32, JsonToken.VALUE_NULL);
+27:         case MINOR_VALUE_TOKEN_TRUE:
+28:             return _finishKeywordToken("true", _pending32, JsonToken.VALUE_TRUE);
+29:         case MINOR_VALUE_TOKEN_FALSE:
+30:             return _finishKeywordToken("false", _pending32, JsonToken.VALUE_FALSE);
+31:         case MINOR_VALUE_TOKEN_ERROR: // case of "almost token", just need tokenize for error
+32:             return _finishErrorToken();
+33: 
+34:         case MINOR_NUMBER_LEADING_MINUS:
+35:             return _finishNumberLeadingMinus(_inputBuffer[_inputPtr++] & 0xFF);
+36:         case MINOR_NUMBER_LEADING_ZERO:
+37:             return _finishNumberLeadingZeroes();
+38:         case MINOR_NUMBER_INTEGER_DIGITS:
+39:             return _finishNumberIntegralPart(_textBuffer.getBufferWithoutReset(),
+40:                     _textBuffer.getCurrentSegmentSize());
+41:         case MINOR_NUMBER_FRACTION_DIGITS:
+42:             return _finishFloatFraction();
+43:         case MINOR_NUMBER_EXPONENT_MARKER:
+44:             return _finishFloatExponent(true, _inputBuffer[_inputPtr++] & 0xFF);
+45:         case MINOR_NUMBER_EXPONENT_DIGITS:
+46:             return _finishFloatExponent(false, _inputBuffer[_inputPtr++] & 0xFF);
+47: 
+48:         case MINOR_VALUE_STRING:
+49:             return _finishRegularString();
+50:         case MINOR_VALUE_STRING_UTF8_2:
+51:             _textBuffer.append((char) _decodeUTF8_2(_pending32, _inputBuffer[_inputPtr++]));
+52:             return _finishRegularString();
+53:         case MINOR_VALUE_STRING_UTF8_3:
+54:             if (!_decodeSplitUTF8_3(_pending32, _pendingBytes, _inputBuffer[_inputPtr++])) {
+55:                 return JsonToken.NOT_AVAILABLE;
+56:             }
+57:             return _finishRegularString();
+58:         case MINOR_VALUE_STRING_UTF8_4:
+59:             if (!_decodeSplitUTF8_4(_pending32, _pendingBytes, _inputBuffer[_inputPtr++])) {
+60:                 return JsonToken.NOT_AVAILABLE;
+61:             }
+62:             return _finishRegularString();
+63: 
+64:         case MINOR_VALUE_STRING_ESCAPE:
+65:             {
+66:                 int c = _decodeSplitEscaped(_quoted32, _quotedDigits);
+67:                 if (c < 0) {
+68:                     return JsonToken.NOT_AVAILABLE;
+69:                 }
+70:                 _textBuffer.append((char) c);
+71:             }
+72:             return _finishRegularString();
+73:         }
+74:         VersionUtil.throwInternal();
+75:         return null;
+76:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

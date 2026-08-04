@@ -1,0 +1,324 @@
+{
+  "requested_count": 40,
+  "accepted_count": 14,
+  "rejected_count": 26,
+  "rejections": [
+    {
+      "index": 9,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 65,
+        "precode": "if (validXmlNameStartChar(acc, b)) {",
+        "aftercode": "if (!validXmlNameStartChar(acc, b)) {",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (!validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 77,
+        "precode": "if (acc.hasMoreBytes() && acc.nextByte() == BYTE_HYPHEN) {",
+        "aftercode": "if (!acc.hasMoreBytes() || acc.nextByte() != BYTE_HYPHEN) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 80,
+        "precode": "if (b == BYTE_D) {",
+        "aftercode": "if (b != BYTE_D) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 84,
+        "precode": "if (validXmlNameStartChar(acc, b)) {",
+        "aftercode": "if (!validXmlNameStartChar(acc, b)) {",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (!validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 86,
+        "precode": "return MatchStrength.SOLID_MATCH;",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 87,
+        "precode": "return MatchStrength.SOLID_MATCH;",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 89,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        }\n        return MatchStrength.FULL_MATCH;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 90,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 91,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 92,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 93,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 94,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 95,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 96,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 97,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 98,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 99,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 100,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 101,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 102,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 103,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 104,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 105,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 106,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 107,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly identifying an XML declaration by not checking for valid characters after 'xml'.",
+        "line": 108,
+        "precode": "return MatchStrength.NO_MATCH;",
+        "aftercode": "return MatchStrength.FULL_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    }
+  ]
+}

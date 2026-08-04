@@ -1,0 +1,93 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static void time(
+ 2:         DateTimeFormatterBuilder bld,
+ 3:         Collection<DateTimeFieldType> fields,
+ 4:         boolean extended,
+ 5:         boolean strictISO,
+ 6:         boolean reducedPrec,
+ 7:         boolean datePresent) {
+ 8:         
+ 9:         boolean hour = fields.remove(DateTimeFieldType.hourOfDay());
+10:         boolean minute = fields.remove(DateTimeFieldType.minuteOfHour());
+11:         boolean second = fields.remove(DateTimeFieldType.secondOfMinute());
+12:         boolean milli = fields.remove(DateTimeFieldType.millisOfSecond());
+13:         if (!hour && !minute && !second && !milli) {
+14:             return;
+15:         }
+16:         if (hour || minute || second || milli) {
+17:             if (strictISO && reducedPrec) {
+18:                 throw new IllegalArgumentException("No valid ISO8601 format for fields because Date was reduced precision: " + fields);
+19:             }
+20:             if (datePresent) {
+21:                 bld.appendLiteral('T');
+22:             }
+23:         }
+24:         if (hour && minute && second || (hour && !second && !milli)) {
+25:             // OK - HMSm/HMS/HM/H - valid in combination with date
+26:         } else {
+27:             if (strictISO && datePresent) {
+28:                 throw new IllegalArgumentException("No valid ISO8601 format for fields because Time was truncated: " + fields);
+29:             }
+30:             if (!hour && (minute && second || (minute && !milli) || second)) {
+31:                 // OK - MSm/MS/M/Sm/S - valid ISO formats
+32:             } else {
+33:                 if (strictISO) {
+34:                     throw new IllegalArgumentException("No valid ISO8601 format for fields: " + fields);
+35:                 }
+36:             }
+37:         }
+38:         if (hour) {
+39:             bld.appendHourOfDay(2);
+40:         } else if (minute || second || milli) {
+41:             bld.appendLiteral('-');
+42:         }
+43:         if (extended && hour && minute) {
+44:             bld.appendLiteral(':');
+45:         }
+46:         if (minute) {
+47:             bld.appendMinuteOfHour(2);
+48:         } else if (second || milli) {
+49:             bld.appendLiteral('-');
+50:         }
+51:         if (extended && minute && second) {
+52:             bld.appendLiteral(':');
+53:         }
+54:         if (second) {
+55:             bld.appendSecondOfMinute(2);
+56:         } else if (milli) {
+57:             bld.appendLiteral('-');
+58:         }
+59:         if (milli) {
+60:             bld.appendLiteral('.');
+61:             bld.appendMillisOfSecond(3);
+62:         }
+63:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

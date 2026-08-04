@@ -1,0 +1,123 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private JsonToken _parseFloat(char[] outBuf, int outPtr, int c,
+ 2:             boolean negative, int integerPartLength)
+ 3:         throws IOException, JsonParseException
+ 4:     {
+ 5:         int fractLen = 0;
+ 6:         boolean eof = false;
+ 7: 
+ 8:         // And then see if we get other parts
+ 9:         if (c == '.') { // yes, fraction
+10:             outBuf[outPtr++] = (char) c;
+11: 
+12:             fract_loop:
+13:             while (true) {
+14:                 if (_inputPtr >= _inputEnd && !loadMore()) {
+15:                     eof = true;
+16:                     break fract_loop;
+17:                 }
+18:                 c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+19:                 if (c < INT_0 || c > INT_9) {
+20:                     break fract_loop;
+21:                 }
+22:                 ++fractLen;
+23:                 if (outPtr >= outBuf.length) {
+24:                     outBuf = _textBuffer.finishCurrentSegment();
+25:                     outPtr = 0;
+26:                 }
+27:                 outBuf[outPtr++] = (char) c;
+28:             }
+29:             // must be followed by sequence of ints, one minimum
+30:             if (fractLen == 0) {
+31:                 reportUnexpectedNumberChar(c, "Decimal point not followed by a digit");
+32:             }
+33:         }
+34: 
+35:         int expLen = 0;
+36:         if (c == 'e' || c == 'E') { // exponent?
+37:             if (outPtr >= outBuf.length) {
+38:                 outBuf = _textBuffer.finishCurrentSegment();
+39:                 outPtr = 0;
+40:             }
+41:             outBuf[outPtr++] = (char) c;
+42:             // Not optional, can require that we get one more char
+43:             if (_inputPtr >= _inputEnd) {
+44:                 loadMoreGuaranteed();
+45:             }
+46:             c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+47:             // Sign indicator?
+48:             if (c == '-' || c == '+') {
+49:                 if (outPtr >= outBuf.length) {
+50:                     outBuf = _textBuffer.finishCurrentSegment();
+51:                     outPtr = 0;
+52:                 }
+53:                 outBuf[outPtr++] = (char) c;
+54:                 // Likewise, non optional:
+55:                 if (_inputPtr >= _inputEnd) {
+56:                     loadMoreGuaranteed();
+57:                 }
+58:                 c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+59:             }
+60: 
+61:             exp_loop:
+62:             while (c <= INT_9 && c >= INT_0) {
+63:                 ++expLen;
+64:                 if (outPtr >= outBuf.length) {
+65:                     outBuf = _textBuffer.finishCurrentSegment();
+66:                     outPtr = 0;
+67:                 }
+68:                 outBuf[outPtr++] = (char) c;
+69:                 if (_inputPtr >= _inputEnd && !loadMore()) {
+70:                     eof = true;
+71:                     break exp_loop;
+72:                 }
+73:                 c = (int) _inputBuffer[_inputPtr++] & 0xFF;
+74:             }
+75:             // must be followed by sequence of ints, one minimum
+76:             if (expLen == 0) {
+77:                 reportUnexpectedNumberChar(c, "Exponent indicator not followed by a digit");
+78:             }
+79:         }
+80: 
+81:         // Ok; unless we hit end-of-input, need to push last char read back
+82:         if (!eof) {
+83:             --_inputPtr;
+84:             // As per #105, need separating space between root values; check here
+85:             if (_parsingContext.inRoot()) {
+86:                 _verifyRootSpace(c);
+87:             }
+88:         }
+89:         _textBuffer.setCurrentLength(outPtr);
+90: 
+91:         // And there we have it!
+92:         return resetFloat(negative, integerPartLength, fractLen, expLen);
+93:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

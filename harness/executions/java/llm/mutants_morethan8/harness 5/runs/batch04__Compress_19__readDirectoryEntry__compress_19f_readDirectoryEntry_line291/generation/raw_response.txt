@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Loop condition for header processing is always true, causing infinite loop",
+      "line": 6,
+      "precode": "while (first ||",
+      "aftercode": "while (true"
+    },
+    {
+      "id": 2,
+      "reasoning": "Buffer resize check removed, risking buffer overflow",
+      "line": 20,
+      "precode": "if (blockBuffer.length < datalen) {",
+      "aftercode": "if (false) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Data read length changed to always 0, causing EOFException",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, 0) != 0) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Reclen calculation uses fixed value instead of header data",
+      "line": 33,
+      "precode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);",
+      "aftercode": "reclen = 0;"
+    },
+    {
+      "id": 5,
+      "reasoning": "Name extraction uses wrong offset, corrupting directory names",
+      "line": 37,
+      "precode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]);",
+      "aftercode": "String name = new String(blockBuffer, i + 7, blockBuffer[i + 8]);"
+    },
+    {
+      "id": 6,
+      "reasoning": "Special name check removed, adding '.' and '..' entries",
+      "line": 39,
+      "precode": "if (\".\".equals(name) || \"..\".equals(name)) {",
+      "aftercode": "if (false) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "Map put operation uses wrong key, corrupting inode mapping",
+      "line": 53,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "names.put(Integer.valueOf(0), d);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Pending entry processing loop skipped, missing name resolution",
+      "line": 56,
+      "precode": "for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {",
+      "aftercode": "for (Map.Entry<Integer, DumpArchiveEntry> e : emptyMap) {"
+    },
+    {
+      "id": 9,
+      "reasoning": "Queue processing skipped, entries not added to processing queue",
+      "line": 63,
+      "precode": "queue.add(e.getValue());",
+      "aftercode": "queue.add(null);"
+    },
+    {
+      "id": 10,
+      "reasoning": "Peek verification skipped, allowing invalid formats",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (false) {"
+    },
+    {
+      "id": 11,
+      "reasoning": "Entry parsing uses wrong parameters, corrupting header data",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = DumpArchiveEntry.parse(null);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Size adjustment uses wrong value, corrupting entry size tracking",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size -= 0;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Header type check condition reversed, processing wrong entries",
+      "line": 6,
+      "precode": "while (first ||",
+      "aftercode": "while (first &&"
+    },
+    {
+      "id": 14,
+      "reasoning": "Datalen calculation uses wrong multiplier, corrupting buffer size",
+      "line": 18,
+      "precode": "int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();",
+      "aftercode": "int datalen = 1 * entry.getHeaderCount();"
+    },
+    {
+      "id": 15,
+      "reasoning": "BlockBuffer initialization uses fixed size, risking overflow",
+      "line": 21,
+      "precode": "blockBuffer = new byte[datalen];",
+      "aftercode": "blockBuffer = new byte[1024];"
+    },
+    {
+      "id": 16,
+      "reasoning": "Raw read record call skipped, missing header processing",
+      "line": 10,
+      "precode": "raw.readRecord();",
+      "aftercode": "raw.readRecord(); // skipped"
+    },
+    {
+      "id": 17,
+      "reasoning": "Pending entry check condition reversed, adding wrong entries",
+      "line": 13,
+      "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) &&",
+      "aftercode": "if (names.containsKey(Integer.valueOf(entry.getIno())) &&"
+    },
+    {
+      "id": 18,
+      "reasoning": "Entry name setting uses wrong source, corrupting path data",
+      "line": 59,
+      "precode": "String path = getPath(e.getValue());",
+      "aftercode": "String path = \"invalid\";"
+    },
+    {
+      "id": 19,
+      "reasoning": "SimpleName setting uses wrong source, corrupting file names",
+      "line": 61,
+      "precode": "e.getValue().setSimpleName(names.get(e.getKey()).getName());",
+      "aftercode": "e.getValue().setSimpleName(\"invalid\");"
+    },
+    {
+      "id": 20,
+      "reasoning": "Queue addition uses wrong collection, entries not processed",
+      "line": 63,
+      "precode": "queue.add(e.getValue());",
+      "aftercode": "queue.add(null);"
+    },
+    {
+      "id": 21,
+      "reasoning": "Pending removal skipped, entries not cleaned up",
+      "line": 70,
+      "precode": "pending.remove(Integer.valueOf(e.getIno()));",
+      "aftercode": "pending.remove(null);"
+    },
+    {
+      "id": 22,
+      "reasoning": "Verify check always returns true, bypassing format validation",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 23,
+      "reasoning": "Entry parsing uses wrong method, corrupting header data",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = DumpArchiveEntry.parse(null);"
+    },
+    {
+      "id": 24,
+      "reasoning": "Size adjustment uses wrong value, corrupting entry size tracking",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 25,
+      "reasoning": "First flag handling always sets to true, causing loop issues",
+      "line": 81,
+      "precode": "first = false;",
+      "aftercode": "first = true;"
+    },
+    {
+      "id": 26,
+      "reasoning": "Inode check condition reversed, adding wrong entries",
+      "line": 13,
+      "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) &&",
+      "aftercode": "if (names.containsKey(Integer.valueOf(entry.getIno())) &&"
+    },
+    {
+      "id": 27,
+      "reasoning": "Map put operation uses wrong key, corrupting inode mapping",
+      "line": 53,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "names.put(Integer.valueOf(0), d);"
+    },
+    {
+      "id": 28,
+      "reasoning": "Reclen calculation uses wrong offset, corrupting record length",
+      "line": 33,
+      "precode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);",
+      "aftercode": "reclen = DumpArchiveUtil.convert16(blockBuffer, i + 8);"
+    },
+    {
+      "id": 29,
+      "reasoning": "Type extraction uses wrong byte position, corrupting entry type",
+      "line": 35,
+      "precode": "byte type = blockBuffer[i + 6];",
+      "aftercode": "byte type = blockBuffer[i + 7];"
+    },
+    {
+      "id": 30,
+      "reasoning": "Name length extraction uses wrong byte position, corrupting name",
+      "line": 37,
+      "precode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]);",
+      "aftercode": "String name = new String(blockBuffer, i + 7, blockBuffer[i + 8]);"
+    },
+    {
+      "id": 31,
+      "reasoning": "Name string conversion uses wrong encoding, corrupting directory names",
+      "line": 37,
+      "precode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]);",
+      "aftercode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7], Charset.forName(\"UTF-16\"));"
+    },
+    {
+      "id": 32,
+      "reasoning": "Dirent creation uses wrong parameters, corrupting entry data",
+      "line": 44,
+      "precode": "Dirent d = new Dirent(ino, entry.getIno(), type, name);",
+      "aftercode": "Dirent d = new Dirent(0, 0, 0, \"\");"
+    },
+    {
+      "id": 33,
+      "reasoning": "Pending entry processing loop skipped, missing name resolution",
+      "line": 56,
+      "precode": "for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {",
+      "aftercode": "for (Map.Entry<Integer, DumpArchiveEntry> e : emptyMap) {"
+    },
+    {
+      "id": 34,
+      "reasoning": "Queue processing uses wrong collection, entries not processed",
+      "line": 63,
+      "precode": "queue.add(e.getValue());",
+      "aftercode": "queue.add(null);"
+    },
+    {
+      "id": 35,
+      "reasoning": "Pending removal uses wrong key, entries not cleaned up",
+      "line": 70,
+      "precode": "pending.remove(Integer.valueOf(e.getIno()));",
+      "aftercode": "pending.remove(Integer.valueOf(0));"
+    },
+    {
+      "id": 36,
+      "reasoning": "For loop condition reversed, processing wrong records",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8));"
+    },
+    {
+      "id": 37,
+      "reasoning": "Data length check uses wrong condition, corrupting record processing",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8));"
+    },
+    {
+      "id": 38,
+      "reasoning": "Peek bytes handling skipped, missing verification",
+      "line": 74,
+      "precode": "byte[] peekBytes = raw.peek();",
+      "aftercode": "byte[] peekBytes = null;"
+    },
+    {
+      "id": 39,
+      "reasoning": "Entry name update skipped, missing path resolution",
+      "line": 59,
+      "precode": "e.getValue().setName(path);",
+      "aftercode": "e.getValue().setName(null);"
+    },
+    {
+      "id": 40,
+      "reasoning": "SimpleName setting skipped, missing file name resolution",
+      "line": 61,
+      "precode": "e.getValue().setSimpleName(names.get(e.getKey()).getName());",
+      "aftercode": "e.getValue().setSimpleName(null);"
+    },
+    {
+      "id": 41,
+      "reasoning": "Queue addition uses wrong collection, entries not processed",
+      "line": 63,
+      "precode": "queue.add(e.getValue());",
+      "aftercode": "queue.add(null);"
+    },
+    {
+      "id": 42,
+      "reasoning": "Pending removal skipped, entries not cleaned up",
+      "line": 70,
+      "precode": "pending.remove(Integer.valueOf(e.getIno()));",
+      "aftercode": "pending.remove(null);"
+    },
+    {
+      "id": 43,
+      "reasoning": "Verify check always throws exception, bypassing format validation",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 44,
+      "reasoning": "Entry parsing skipped, missing header data",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = null;"
+    },
+    {
+      "id": 45,
+      "reasoning": "Size adjustment uses wrong value, corrupting entry size tracking",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 46,
+      "reasoning": "Header count usage uses wrong multiplier, corrupting buffer size",
+      "line": 18,
+      "precode": "int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();",
+      "aftercode": "int datalen = 2 * entry.getHeaderCount();"
+    },
+    {
+      "id": 47,
+      "reasoning": "Buffer resize uses wrong size, risking overflow",
+      "line": 21,
+      "precode": "blockBuffer = new byte[datalen];",
+      "aftercode": "blockBuffer = new byte[2048];"
+    },
+    {
+      "id": 48,
+      "reasoning": "First flag always set to true, causing loop issues",
+      "line": 81,
+      "precode": "first = false;",
+      "aftercode": "first = true;"
+    }
+  ]
+}

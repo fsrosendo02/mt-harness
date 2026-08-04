@@ -1,0 +1,301 @@
+{
+  "requested_count": 40,
+  "accepted_count": 14,
+  "rejected_count": 26,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 4,
+        "precode": "_binaryValue = null;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 70,
+        "precode": "_currText = _xmlTokens.getText();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 75,
+        "precode": "_currText = _xmlTokens.getText();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 80,
+        "precode": "_xmlTokens.skipEndElement();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 83,
+        "precode": "_currToken = JsonToken.VALUE_STRING;",
+        "aftercode": "throw new UnsupportedOperationException(\"Method not supported\");",
+        "candidate_code": "    @Override\n    public String nextTextValue() throws IOException\n    {\n        _binaryValue = null;\n        if (_nextToken != null) {\n            JsonToken t = _nextToken;\n            _currToken = t;\n            _nextToken = null;\n\n            // expected case; yes, got a String\n            if (t == JsonToken.VALUE_STRING) {\n                return _currText;\n            }\n            _updateState(t);\n            return null;\n        }\n\n        int token = _xmlTokens.next();\n\n        // mostly copied from 'nextToken()'\n        while (token == XmlTokenStream.XML_START_ELEMENT) {\n            if (_mayBeLeaf) {\n                _nextToken = JsonToken.FIELD_NAME;\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n                return null;\n            }\n            if (_parsingContext.inArray()) {\n                token = _xmlTokens.next();\n                _mayBeLeaf = true;\n                continue;\n            }\n            String name = _xmlTokens.getLocalName();\n            _parsingContext.setCurrentName(name);\n            if (_namesToWrap != null && _namesToWrap.contains(name)) {\n                _xmlTokens.repeatStartElement();\n            }\n            _mayBeLeaf = true;\n            _currToken = JsonToken.FIELD_NAME;\n            return null;\n        }\n\n        // Ok; beyond start element, what do we get?\n        switch (token) {\n        case XmlTokenStream.XML_END_ELEMENT:\n            if (_mayBeLeaf) {\n                // NOTE: this is different from nextToken() -- produce \"\", NOT null\n                _mayBeLeaf = false;\n                _currToken = JsonToken.VALUE_STRING;\n                return (_currText = \"\");\n            }\n            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;\n            _parsingContext = _parsingContext.getParent();\n            _namesToWrap = _parsingContext.getNamesToWrap();\n            break;\n            \n        case XmlTokenStream.XML_ATTRIBUTE_NAME:\n            // If there was a chance of leaf node, no more...\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                _nextToken = JsonToken.FIELD_NAME;\n                _currText = _xmlTokens.getText();\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n            } else {\n                _parsingContext.setCurrentName(_xmlTokens.getLocalName());\n                _currToken = JsonToken.FIELD_NAME;\n            }\n            break;\n        case XmlTokenStream.XML_ATTRIBUTE_VALUE:\n            _currText = _xmlTokens.getText();\n            _currToken = JsonToken.VALUE_STRING;\n            break;\n        case XmlTokenStream.XML_TEXT:\n            _currText = _xmlTokens.getText();\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                // Also: must skip following END_ELEMENT\n                _xmlTokens.skipEndElement();\n\n                // NOTE: this is different from nextToken() -- NO work-around\n                // for otherwise empty List/array\n                throw new UnsupportedOperationException(\"Method not supported\");\n                return _currText;\n            }\n            // If not a leaf, need to transform into property...\n            _parsingContext.setCurrentName(_cfgNameForTextElement);\n            _nextToken = JsonToken.VALUE_STRING;\n            _currToken = JsonToken.FIELD_NAME;\n            break;\n        case XmlTokenStream.XML_END:\n            _currToken = null;\n        }\n        return null;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 39,
+        "precode": "_currToken = JsonToken.FIELD_NAME;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 45,
+        "precode": "case XmlTokenStream.XML_END_ELEMENT:",
+        "aftercode": "default:",
+        "candidate_code": "    @Override\n    public String nextTextValue() throws IOException\n    {\n        _binaryValue = null;\n        if (_nextToken != null) {\n            JsonToken t = _nextToken;\n            _currToken = t;\n            _nextToken = null;\n\n            // expected case; yes, got a String\n            if (t == JsonToken.VALUE_STRING) {\n                return _currText;\n            }\n            _updateState(t);\n            return null;\n        }\n\n        int token = _xmlTokens.next();\n\n        // mostly copied from 'nextToken()'\n        while (token == XmlTokenStream.XML_START_ELEMENT) {\n            if (_mayBeLeaf) {\n                _nextToken = JsonToken.FIELD_NAME;\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n                return null;\n            }\n            if (_parsingContext.inArray()) {\n                token = _xmlTokens.next();\n                _mayBeLeaf = true;\n                continue;\n            }\n            String name = _xmlTokens.getLocalName();\n            _parsingContext.setCurrentName(name);\n            if (_namesToWrap != null && _namesToWrap.contains(name)) {\n                _xmlTokens.repeatStartElement();\n            }\n            _mayBeLeaf = true;\n            _currToken = JsonToken.FIELD_NAME;\n            return null;\n        }\n\n        // Ok; beyond start element, what do we get?\n        switch (token) {\n        default:\n            if (_mayBeLeaf) {\n                // NOTE: this is different from nextToken() -- produce \"\", NOT null\n                _mayBeLeaf = false;\n                _currToken = JsonToken.VALUE_STRING;\n                return (_currText = \"\");\n            }\n            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;\n            _parsingContext = _parsingContext.getParent();\n            _namesToWrap = _parsingContext.getNamesToWrap();\n            break;\n            \n        case XmlTokenStream.XML_ATTRIBUTE_NAME:\n            // If there was a chance of leaf node, no more...\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                _nextToken = JsonToken.FIELD_NAME;\n                _currText = _xmlTokens.getText();\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n            } else {\n                _parsingContext.setCurrentName(_xmlTokens.getLocalName());\n                _currToken = JsonToken.FIELD_NAME;\n            }\n            break;\n        case XmlTokenStream.XML_ATTRIBUTE_VALUE:\n            _currText = _xmlTokens.getText();\n            _currToken = JsonToken.VALUE_STRING;\n            break;\n        case XmlTokenStream.XML_TEXT:\n            _currText = _xmlTokens.getText();\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                // Also: must skip following END_ELEMENT\n                _xmlTokens.skipEndElement();\n\n                // NOTE: this is different from nextToken() -- NO work-around\n                // for otherwise empty List/array\n                _currToken = JsonToken.VALUE_STRING;\n                return _currText;\n            }\n            // If not a leaf, need to transform into property...\n            _parsingContext.setCurrentName(_cfgNameForTextElement);\n            _nextToken = JsonToken.VALUE_STRING;\n            _currToken = JsonToken.FIELD_NAME;\n            break;\n        case XmlTokenStream.XML_END:\n            _currToken = null;\n        }\n        return null;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 56,
+        "precode": "case XmlTokenStream.XML_END_ELEMENT:",
+        "aftercode": "default:",
+        "candidate_code": "    @Override\n    public String nextTextValue() throws IOException\n    {\n        _binaryValue = null;\n        if (_nextToken != null) {\n            JsonToken t = _nextToken;\n            _currToken = t;\n            _nextToken = null;\n\n            // expected case; yes, got a String\n            if (t == JsonToken.VALUE_STRING) {\n                return _currText;\n            }\n            _updateState(t);\n            return null;\n        }\n\n        int token = _xmlTokens.next();\n\n        // mostly copied from 'nextToken()'\n        while (token == XmlTokenStream.XML_START_ELEMENT) {\n            if (_mayBeLeaf) {\n                _nextToken = JsonToken.FIELD_NAME;\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n                return null;\n            }\n            if (_parsingContext.inArray()) {\n                token = _xmlTokens.next();\n                _mayBeLeaf = true;\n                continue;\n            }\n            String name = _xmlTokens.getLocalName();\n            _parsingContext.setCurrentName(name);\n            if (_namesToWrap != null && _namesToWrap.contains(name)) {\n                _xmlTokens.repeatStartElement();\n            }\n            _mayBeLeaf = true;\n            _currToken = JsonToken.FIELD_NAME;\n            return null;\n        }\n\n        // Ok; beyond start element, what do we get?\n        switch (token) {\n        default:\n            if (_mayBeLeaf) {\n                // NOTE: this is different from nextToken() -- produce \"\", NOT null\n                _mayBeLeaf = false;\n                _currToken = JsonToken.VALUE_STRING;\n                return (_currText = \"\");\n            }\n            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;\n            _parsingContext = _parsingContext.getParent();\n            _namesToWrap = _parsingContext.getNamesToWrap();\n            break;\n            \n        case XmlTokenStream.XML_ATTRIBUTE_NAME:\n            // If there was a chance of leaf node, no more...\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                _nextToken = JsonToken.FIELD_NAME;\n                _currText = _xmlTokens.getText();\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n            } else {\n                _parsingContext.setCurrentName(_xmlTokens.getLocalName());\n                _currToken = JsonToken.FIELD_NAME;\n            }\n            break;\n        case XmlTokenStream.XML_ATTRIBUTE_VALUE:\n            _currText = _xmlTokens.getText();\n            _currToken = JsonToken.VALUE_STRING;\n            break;\n        case XmlTokenStream.XML_TEXT:\n            _currText = _xmlTokens.getText();\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                // Also: must skip following END_ELEMENT\n                _xmlTokens.skipEndElement();\n\n                // NOTE: this is different from nextToken() -- NO work-around\n                // for otherwise empty List/array\n                _currToken = JsonToken.VALUE_STRING;\n                return _currText;\n            }\n            // If not a leaf, need to transform into property...\n            _parsingContext.setCurrentName(_cfgNameForTextElement);\n            _nextToken = JsonToken.VALUE_STRING;\n            _currToken = JsonToken.FIELD_NAME;\n            break;\n        case XmlTokenStream.XML_END:\n            _currToken = null;\n        }\n        return null;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 69,
+        "precode": "_nextToken = JsonToken.VALUE_STRING;",
+        "aftercode": "throw new UnsupportedOperationException(\"Method not supported\");",
+        "candidate_code": "    @Override\n    public String nextTextValue() throws IOException\n    {\n        _binaryValue = null;\n        if (_nextToken != null) {\n            JsonToken t = _nextToken;\n            _currToken = t;\n            _nextToken = null;\n\n            // expected case; yes, got a String\n            if (t == JsonToken.VALUE_STRING) {\n                return _currText;\n            }\n            _updateState(t);\n            return null;\n        }\n\n        int token = _xmlTokens.next();\n\n        // mostly copied from 'nextToken()'\n        while (token == XmlTokenStream.XML_START_ELEMENT) {\n            if (_mayBeLeaf) {\n                _nextToken = JsonToken.FIELD_NAME;\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n                return null;\n            }\n            if (_parsingContext.inArray()) {\n                token = _xmlTokens.next();\n                _mayBeLeaf = true;\n                continue;\n            }\n            String name = _xmlTokens.getLocalName();\n            _parsingContext.setCurrentName(name);\n            if (_namesToWrap != null && _namesToWrap.contains(name)) {\n                _xmlTokens.repeatStartElement();\n            }\n            _mayBeLeaf = true;\n            _currToken = JsonToken.FIELD_NAME;\n            return null;\n        }\n\n        // Ok; beyond start element, what do we get?\n        switch (token) {\n        case XmlTokenStream.XML_END_ELEMENT:\n            if (_mayBeLeaf) {\n                // NOTE: this is different from nextToken() -- produce \"\", NOT null\n                _mayBeLeaf = false;\n                _currToken = JsonToken.VALUE_STRING;\n                return (_currText = \"\");\n            }\n            _currToken = _parsingContext.inArray() ? JsonToken.END_ARRAY : JsonToken.END_OBJECT;\n            _parsingContext = _parsingContext.getParent();\n            _namesToWrap = _parsingContext.getNamesToWrap();\n            break;\n            \n        case XmlTokenStream.XML_ATTRIBUTE_NAME:\n            // If there was a chance of leaf node, no more...\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                _nextToken = JsonToken.FIELD_NAME;\n                _currText = _xmlTokens.getText();\n                _parsingContext = _parsingContext.createChildObjectContext(-1, -1);\n                _currToken = JsonToken.START_OBJECT;\n            } else {\n                _parsingContext.setCurrentName(_xmlTokens.getLocalName());\n                _currToken = JsonToken.FIELD_NAME;\n            }\n            break;\n        case XmlTokenStream.XML_ATTRIBUTE_VALUE:\n            _currText = _xmlTokens.getText();\n            _currToken = JsonToken.VALUE_STRING;\n            break;\n        case XmlTokenStream.XML_TEXT:\n            _currText = _xmlTokens.getText();\n            if (_mayBeLeaf) {\n                _mayBeLeaf = false;\n                // Also: must skip following END_ELEMENT\n                _xmlTokens.skipEndElement();\n\n                // NOTE: this is different from nextToken() -- NO work-around\n                // for otherwise empty List/array\n                _currToken = JsonToken.VALUE_STRING;\n                return _currText;\n            }\n            // If not a leaf, need to transform into property...\n            _parsingContext.setCurrentName(_cfgNameForTextElement);\n            throw new UnsupportedOperationException(\"Method not supported\");\n            _currToken = JsonToken.FIELD_NAME;\n            break;\n        case XmlTokenStream.XML_END:\n            _currToken = null;\n        }\n        return null;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 70,
+        "precode": "_currText = _xmlTokens.getText();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly handling JSON token types by not properly updating state for non-string tokens.",
+        "line": 71,
+        "precode": "_currText = _xmlTokens.getText();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 76,
+        "precode": "_currText = _xmlTokens.getText();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 79,
+        "precode": "_mayBeLeaf = false;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 94,
+        "precode": "return null;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 10,
+        "precode": "_currToken = JsonToken.VALUE_STRING;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 12,
+        "precode": "_currToken = JsonToken.VALUE_STRING;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 20,
+        "precode": "_xmlTokens.next();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 45,
+        "precode": "_mayBeLeaf = false;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 33,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 48,
+        "precode": "_nextToken = JsonToken.FIELD_NAME;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 34,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 50,
+        "precode": "_parsingContext = _parsingContext.getParent();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 35,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 64,
+        "precode": "_parsingContext = _parsingContext.createChildObjectContext(-1, -1);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 36,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 80,
+        "precode": "_xmlTokens.skipEndElement();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 37,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 84,
+        "precode": "_currToken = JsonToken.VALUE_STRING;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 38,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 90,
+        "precode": "_currToken = JsonToken.FIELD_NAME;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 39,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 94,
+        "precode": "return null;",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 40,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of ensuring correct handling of JSON tokens by not resetting _binaryValue and _currText in a clear way after processing.",
+        "line": 95,
+        "precode": "return null;",
+        "aftercode": ""
+      }
+    }
+  ]
+}

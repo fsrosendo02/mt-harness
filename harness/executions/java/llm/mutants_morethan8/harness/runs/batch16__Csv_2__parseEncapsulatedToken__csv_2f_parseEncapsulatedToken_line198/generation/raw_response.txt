@@ -1,0 +1,16 @@
+{` becomes `if (isQuoteChar(in.lookAhead()) && isEscape(c)) {`.
+	* Reasoning: When there are multiple levels of nesting, the method will not properly parse the token.
+2. Violates property "Escaping" - No escaping characters in encapsulated tokens.
+	* Line 9: `tkn.content.append((char) readEscape());` becomes `tkn.content.append((char) c);`.
+	* Reasoning: When there are no escaping characters, the method will not properly parse the token and may cause errors.
+3. Violates property "Delimiter" - No delimiter between encapsulated tokens.
+	* Line 17: `while (true) {` becomes `if (!isWhitespace(c)) break;`.
+	* Reasoning: When there is no delimiter between tokens, the method will not properly parse the token and may cause errors.
+4. Violates property "EOF" - EOF reached before encapsulated token finished.
+	* Line 37: `throw new IOException("(startline " + startLineNumber + ") EOF reached before encapsulated token finished");` becomes `tkn.type = TOKEN; return tkn;`.
+	* Reasoning: When the end of file is reached before the token is finished, the method will not properly parse the token and may cause errors.
+5. Violates property "EORECORD" - EOF between encapsulated tokens.
+	* Line 27: `tkn.type = EORECORD; return tkn;` becomes `if (isEndOfFile(c)) { tkn.type = TOKEN; return tkn; }`.
+	* Reasoning: When the end of file is between tokens, the method will not properly parse the token and may cause errors.
+6. Violates property "Invalid Char" - Invalid character between encapsulated tokens.
+	* Line 31: `throw new IOException("(line " + getLineNumber() + ") invalid char between encapsulated token and delimiter");` becomes `if (!isWhitespace(c)) { tkn.type = TOKEN; return tkn; }

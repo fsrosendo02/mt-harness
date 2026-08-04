@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Incorrect initialization of folder.numUnpackSubStreams",
+      "line": 3,
+      "precode": "folder.numUnpackSubStreams = 1;",
+      "aftercode": "folder.numUnpackSubStreams = 0;"
+    },
+    {
+      "id": 2,
+      "reasoning": "Incorrect totalUnpackStreams calculation",
+      "line": 5,
+      "precode": "int totalUnpackStreams = archive.folders.length;",
+      "aftercode": "int totalUnpackStreams = archive.folders.length * 2;"
+    },
+    {
+      "id": 3,
+      "reasoning": "Skipping NID check for kNumUnpackStream",
+      "line": 8,
+      "precode": "if (nid == NID.kNumUnpackStream) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Integer overflow in numStreams conversion",
+      "line": 12,
+      "precode": "folder.numUnpackSubStreams = (int)numStreams;",
+      "aftercode": "folder.numUnpackSubStreams = (int)(numStreams + Integer.MAX_VALUE);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Incorrect totalUnpackStreams accumulation",
+      "line": 13,
+      "precode": "totalUnpackStreams += numStreams;",
+      "aftercode": "totalUnpackStreams -= numStreams;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Incorrect unpackSizes array size",
+      "line": 19,
+      "precode": "subStreamsInfo.unpackSizes = new long[totalUnpackStreams];",
+      "aftercode": "subStreamsInfo.unpackSizes = new long[0];"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrect hasCrc BitSet size",
+      "line": 20,
+      "precode": "subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams);",
+      "aftercode": "subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams + 1);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Processing folders with numUnpackSubStreams=0",
+      "line": 26,
+      "precode": "continue;",
+      "aftercode": " // continue;"
+    },
+    {
+      "id": 9,
+      "reasoning": "Reading one extra size in kSize case",
+      "line": 30,
+      "precode": "for (int i = 0; i < (folder.numUnpackSubStreams - 1); i++) {",
+      "aftercode": "for (int i = 0; i < folder.numUnpackSubStreams; i++) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Incorrect final size calculation",
+      "line": 36,
+      "precode": "subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;",
+      "aftercode": "subStreamsInfo.unpackSizes[nextUnpackStream++] = 0;"
+    },
+    {
+      "id": 11,
+      "reasoning": "Skipping NID read after kSize",
+      "line": 39,
+      "precode": "nid = header.readUnsignedByte();",
+      "aftercode": " // nid = header.readUnsignedByte();"
+    },
+    {
+      "id": 12,
+      "reasoning": "Incorrect numDigests calculation",
+      "line": 44,
+      "precode": "if (folder.numUnpackSubStreams != 1 || !folder.hasCrc) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "Overcounting numDigests",
+      "line": 45,
+      "precode": "numDigests += folder.numUnpackSubStreams;",
+      "aftercode": "numDigests += folder.numUnpackSubStreams * 2;"
+    },
+    {
+      "id": 14,
+      "reasoning": "Incorrect BitSet size for missing CRCs",
+      "line": 50,
+      "precode": "final BitSet hasMissingCrc = readAllOrBits(header, numDigests);",
+      "aftercode": "final BitSet hasMissingCrc = readAllOrBits(header, numDigests * 2);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Incorrect CRC masking",
+      "line": 54,
+      "precode": "0xffffFFFFL & Integer.reverseBytes(header.readInt());",
+      "aftercode": "0xffff0000L & Integer.reverseBytes(header.readInt());"
+    },
+    {
+      "id": 16,
+      "reasoning": "Incorrect CRC index initialization",
+      "line": 58,
+      "precode": "int nextCrc = 0;",
+      "aftercode": "int nextCrc = 1;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Skipping CRC assignment for valid folders",
+      "line": 60,
+      "precode": "if (folder.numUnpackSubStreams == 1 && folder.hasCrc) {",
+      "aftercode": "if (false) {"
+    },
+    {
+      "id": 18,
+      "reasoning": "Misaligned BitSet index in CRC assignment",
+      "line": 66,
+      "precode": "hasMissingCrc.get(nextMissingCrc)",
+      "aftercode": "hasMissingCrc.get(nextCrc)"
+    },
+    {
+      "id": 19,
+      "reasoning": "Misaligned missingCrcs array index",
+      "line": 67,
+      "precode": "missingCrcs[nextMissingCrc]",
+      "aftercode": "missingCrcs[nextMissingCrc + 1]"
+    },
+    {
+      "id": 20,
+      "reasoning": "Skipping NID read after kCRC",
+      "line": 73,
+      "precode": "nid = header.readUnsignedByte();",
+      "aftercode": " // nid = header.readUnsignedByte();"
+    },
+    {
+      "id": 21,
+      "reasoning": "Incorrect NID validation",
+      "line": 78,
+      "precode": "if (nid != NID.kEnd) {",
+      "aftercode": "if (nid == NID.kEnd) {"
+    },
+    {
+      "id": 22,
+      "reasoning": "Incorrect assignment of subStreamsInfo",
+      "line": 81,
+      "precode": "archive.subStreamsInfo = subStreamsInfo;",
+      "aftercode": "archive.otherInfo = subStreamsInfo;"
+    },
+    {
+      "id": 23,
+      "reasoning": "Incorrect reading of numStreams",
+      "line": 11,
+      "precode": "final long numStreams = readUint64(header);",
+      "aftercode": "final long numStreams = header.readInt();"
+    },
+    {
+      "id": 24,
+      "reasoning": "Incorrect initial sum value",
+      "line": 28,
+      "precode": "long sum = 0;",
+      "aftercode": "long sum = 1;"
+    }
+  ]
+}

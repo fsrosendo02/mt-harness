@@ -1,0 +1,32 @@
+{
+  "requested_count": 40,
+  "accepted_count": 38,
+  "rejected_count": 2,
+  "rejections": [
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of handling only known Pax headers by incorrectly processing 'SCHILY.filetype' as a special case.",
+        "line": 59,
+        "precode": "case \"SCHILY.filetype\":",
+        "aftercode": "case \"SCHILY.filetype\": if (\"sparse\".equals(val)) { fillStarSparseData(headers); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly setting user-defined Pax headers by incorrectly processing 'SCHILY.filetype' without setting it.",
+        "line": 60,
+        "precode": "if (\"sparse\".equals(val)) { fillStarSparseData(headers); }",
+        "aftercode": "// No action taken",
+        "candidate_code": "    private void processPaxHeader(String key, String val, Map<String, String> headers) {\n    /*\n     * The following headers are defined for Pax.\n     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields\n     * mtime\n     * comment\n     * gid, gname\n     * linkpath\n     * size\n     * uid,uname\n     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those\n     *\n     * GNU sparse files use additional members, we use\n     * GNU.sparse.size to detect the 0.0 and 0.1 versions and\n     * GNU.sparse.realsize for 1.0.\n     *\n     * star files use additional members of which we use\n     * SCHILY.filetype in order to detect star sparse files.\n     *\n     * If called from addExtraPaxHeader, these additional headers must be already present .\n     */\n        switch (key) {\n            case \"path\":\n                setName(val);\n                break;\n            case \"linkpath\":\n                setLinkName(val);\n                break;\n            case \"gid\":\n                setGroupId(Long.parseLong(val));\n                break;\n            case \"gname\":\n                setGroupName(val);\n                break;\n            case \"uid\":\n                setUserId(Long.parseLong(val));\n                break;\n            case \"uname\":\n                setUserName(val);\n                break;\n            case \"size\":\n                setSize(Long.parseLong(val));\n                break;\n            case \"mtime\":\n                setModTime((long) (Double.parseDouble(val) * 1000));\n                break;\n            case \"SCHILY.devminor\":\n                setDevMinor(Integer.parseInt(val));\n                break;\n            case \"SCHILY.devmajor\":\n                setDevMajor(Integer.parseInt(val));\n                break;\n            case \"GNU.sparse.size\":\n                fillGNUSparse0xData(headers);\n                break;\n            case \"GNU.sparse.realsize\":\n                fillGNUSparse1xData(headers);\n                break;\n            case \"SCHILY.filetype\":\n                // No action taken {\n                    fillStarSparseData(headers);\n                }\n                break;\n            default:\n                extraPaxHeaders.put(key,val);\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

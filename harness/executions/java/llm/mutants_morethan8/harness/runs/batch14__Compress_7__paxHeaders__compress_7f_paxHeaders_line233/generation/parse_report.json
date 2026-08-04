@@ -1,0 +1,214 @@
+{
+  "requested_count": 24,
+  "accepted_count": 7,
+  "rejected_count": 17,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the property of correctly parsing headers by not handling cases where length is missing.",
+        "line": 32,
+        "precode": "len *= 10;",
+        "aftercode": "if (ch == ' ') { len *= 10; } else if (ch != -1) { throw new IOException(\"Invalid header format\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the link name for the entry.",
+        "line": 56,
+        "precode": "currEntry.setName(val);",
+        "aftercode": "if (\"linkpath\".equals(key)) { currEntry.setLinkName(val); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the group id for the entry.",
+        "line": 58,
+        "precode": "currEntry.setLinkName(val);",
+        "aftercode": "if (\"gid\".equals(key)) { currEntry.setGroupId(Integer.parseInt(val)); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the group name for the entry.",
+        "line": 60,
+        "precode": "currEntry.setGroupName(val);",
+        "aftercode": "if (\"gname\".equals(key)) { currEntry.setGroupName(val); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the user id for the entry.",
+        "line": 62,
+        "precode": "currEntry.setUserId(Integer.parseInt(val));",
+        "aftercode": "if (\"uid\".equals(key)) { currEntry.setUserId(Integer.parseInt(val)); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the user name for the entry.",
+        "line": 64,
+        "precode": "currEntry.setUserName(val);",
+        "aftercode": "if (\"uname\".equals(key)) { currEntry.setUserName(val); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the size for the entry.",
+        "line": 67,
+        "precode": "currEntry.setSize(Long.parseLong(val));",
+        "aftercode": "if (\"size\".equals(key)) { currEntry.setSize(Long.parseLong(val)); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of correctly parsing headers by not handling cases where length is missing.",
+        "line": 32,
+        "precode": "len *= 10;",
+        "aftercode": "if (ch == ' ') { len *= 10; } else if (ch != -1) { throw new IOException(\"Invalid header format\"); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly parsing headers by not checking for end-of-line properly.",
+        "line": 20,
+        "precode": "int got = br.read(cbuf);",
+        "aftercode": "int got = br.read(cbuf); if (ch == '\n') break;",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf); if (ch == '\n') break;\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly parsing headers by not setting a proper value for size.",
+        "line": 24,
+        "precode": "String value = new String(cbuf, 0 , len-read-1);",
+        "aftercode": "String value = new String(cbuf, 0 , len-read);",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read);// Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key)){\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the name for the entry.",
+        "line": 54,
+        "precode": "if (\"path\".equals(key)){",
+        "aftercode": "if (\"path\".equals(key) && false) {",
+        "candidate_code": "    private void paxHeaders() throws IOException{\n        BufferedReader br = new BufferedReader(new InputStreamReader(this, \"UTF-8\"));\n        Map headers = new HashMap();\n        // Format is \"length keyword=value\\n\";\n        while(true){ // get length\n            int ch;\n            int len=0;\n            int read=0;\n            while((ch = br.read()) != -1){\n                read++;\n                if (ch == ' '){ // End of length string\n                    // Get keyword\n                    StringBuffer sb = new StringBuffer();\n                    while((ch = br.read()) != -1){\n                        read++;\n                        if (ch == '='){ // end of keyword\n                            String keyword = sb.toString();\n                            // Get rest of entry\n                            char[] cbuf = new char[len-read];\n                            int got = br.read(cbuf);\n                            if (got != len-read){\n                                throw new IOException(\"Failed to read Paxheader. Expected \"+(len-read)+\" chars, read \"+got);\n                            }\n                            String value = new String(cbuf, 0 , len-read-1); // Drop trailing NL\n                            headers.put(keyword, value);\n                            break;\n                        }\n                        sb.append((char)ch);\n                    }\n                    break; // Processed single header\n                }\n                len *= 10;\n                len += ch - '0';\n            }\n            if (ch == -1){ // EOF\n                break;\n            }\n        }\n        getNextEntry(); // Get the actual file entry\n        /*\n         * The following headers are defined for Pax.\n         * atime, ctime, mtime, charset: cannot use these without changing TarArchiveEntry fields\n         * comment\n         * gid, gname\n         * linkpath\n         * size\n         * uid,uname\n         */\n        Iterator hdrs = headers.entrySet().iterator();\n        while(hdrs.hasNext()){\n            Entry ent = (Entry) hdrs.next();\n            String key = (String) ent.getKey();\n            String val = (String) ent.getValue();\n            if (\"path\".equals(key) && false) {\n                currEntry.setName(val);\n            } else if (\"linkpath\".equals(key)){\n                currEntry.setLinkName(val);\n            } else if (\"gid\".equals(key)){\n                currEntry.setGroupId(Integer.parseInt(val));\n            } else if (\"gname\".equals(key)){\n                currEntry.setGroupName(val);\n            } else if (\"uid\".equals(key)){\n                currEntry.setUserId(Integer.parseInt(val));\n            } else if (\"uname\".equals(key)){\n                currEntry.setUserName(val);\n            } else if (\"size\".equals(key)){\n                currEntry.setSize(Long.parseLong(val));\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the link name for the entry.",
+        "line": 56,
+        "precode": "currEntry.setName(val);",
+        "aftercode": "if (\"linkpath\".equals(key)) { currEntry.setLinkName(val); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the group id for the entry.",
+        "line": 58,
+        "precode": "currEntry.setLinkName(val);",
+        "aftercode": "if (\"gid\".equals(key)) { currEntry.setGroupId(Integer.parseInt(val)); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the group name for the entry.",
+        "line": 60,
+        "precode": "currEntry.setGroupName(val);",
+        "aftercode": "if (\"gname\".equals(key)) { currEntry.setGroupName(val); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the user id for the entry.",
+        "line": 62,
+        "precode": "currEntry.setUserId(Integer.parseInt(val));",
+        "aftercode": "if (\"uid\".equals(key)) { currEntry.setUserId(Integer.parseInt(val)); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the user name for the entry.",
+        "line": 64,
+        "precode": "currEntry.setUserName(val);",
+        "aftercode": "if (\"uname\".equals(key)) { currEntry.setUserName(val); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly parsing headers by not properly setting the size for the entry.",
+        "line": 67,
+        "precode": "currEntry.setSize(Long.parseLong(val));",
+        "aftercode": "if (\"size\".equals(key)) { currEntry.setSize(Long.parseLong(val)); } else if (false) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

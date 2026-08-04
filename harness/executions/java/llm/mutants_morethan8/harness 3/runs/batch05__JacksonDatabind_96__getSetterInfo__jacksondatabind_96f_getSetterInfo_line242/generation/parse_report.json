@@ -1,0 +1,120 @@
+{
+  "requested_count": 32,
+  "accepted_count": 23,
+  "rejected_count": 9,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method sets metadata to the default value when no merge info is found.",
+        "line": 21,
+        "precode": "metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc))",
+        "aftercode": "metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc))",
+        "candidate_code": "    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)\n    {\n        boolean needMerge = true;\n        Nulls valueNulls = null;\n        Nulls contentNulls = null;\n        \n        // Slightly confusing: first, annotations should be accessed via primary member\n        // (mutator); but accessor is needed for actual merge operation. So:\n        AnnotatedMember prim = getPrimaryMember();\n        AnnotatedMember acc = getAccessor();\n\n        if (prim != null) {\n            // Ok, first: does property itself have something to say?\n            if (_annotationIntrospector != null) {\n                if (acc != null) {\n                    Boolean b = _annotationIntrospector.findMergeInfo(prim);\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));\n                        metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc))\n                    }\n                }\n                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);\n                if (setterInfo != null) {\n                    valueNulls = setterInfo.nonDefaultValueNulls();\n                    contentNulls = setterInfo.nonDefaultContentNulls();\n                }\n            }\n            // If not, config override?\n            // 25-Oct-2016, tatu: Either this, or type of accessor...\n            if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n                Class<?> rawType = getRawPrimaryType();\n                ConfigOverride co = _config.getConfigOverride(rawType);\n                JsonSetter.Value setterInfo = co.getSetterInfo();\n                if (setterInfo != null) {\n                    if (valueNulls == null) {\n                        valueNulls = setterInfo.nonDefaultValueNulls();\n                    }\n                    if (contentNulls == null) {\n                        contentNulls = setterInfo.nonDefaultContentNulls();\n                    }\n                }\n                if (needMerge && (acc != null)) {\n                    Boolean b = co.getMergeable();\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));\n                        }\n                    }\n                }\n            }\n        }\n        if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();\n            if (valueNulls == null) {\n                valueNulls = setterInfo.nonDefaultValueNulls();\n            }\n            if (contentNulls == null) {\n                contentNulls = setterInfo.nonDefaultContentNulls();\n            }\n            if (needMerge) {\n                Boolean b = _config.getDefaultMergeable();\n                if (Boolean.TRUE.equals(b) && (acc != null)) {\n                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));\n                }\n            }\n        }\n        if ((valueNulls != null) || (contentNulls != null)) {\n            metadata = metadata.withNulls(valueNulls, contentNulls);\n        }\n        return metadata;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "The method sets valueNulls and contentNulls to the default value when no setter info is found.",
+        "line": 42,
+        "precode": "if (valueNulls == null) { valueNulls = setterInfo.nonDefaultValueNulls(); }",
+        "aftercode": "if (contentNulls == null) { contentNulls = setterInfo.nonDefaultContentNulls(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method sets valueNulls and contentNulls to the default value when no setter info is found.",
+        "line": 62,
+        "precode": "if (valueNulls == null) { valueNulls = setterInfo.nonDefaultValueNulls(); }",
+        "aftercode": "if (contentNulls == null) { contentNulls = setterInfo.nonDefaultContentNulls(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method calls _config.getConfigOverride(rawType) with a null raw type.",
+        "line": 35,
+        "precode": "_config.getConfigOverride(rawType);",
+        "aftercode": "_config.getConfigOverride(null);",
+        "candidate_code": "    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)\n    {\n        boolean needMerge = true;\n        Nulls valueNulls = null;\n        Nulls contentNulls = null;\n        \n        // Slightly confusing: first, annotations should be accessed via primary member\n        // (mutator); but accessor is needed for actual merge operation. So:\n        AnnotatedMember prim = getPrimaryMember();\n        AnnotatedMember acc = getAccessor();\n\n        if (prim != null) {\n            // Ok, first: does property itself have something to say?\n            if (_annotationIntrospector != null) {\n                if (acc != null) {\n                    Boolean b = _annotationIntrospector.findMergeInfo(prim);\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));\n                        }\n                    }\n                }\n                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);\n                if (setterInfo != null) {\n                    valueNulls = setterInfo.nonDefaultValueNulls();\n                    contentNulls = setterInfo.nonDefaultContentNulls();\n                }\n            }\n            // If not, config override?\n            // 25-Oct-2016, tatu: Either this, or type of accessor...\n            if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n                Class<?> rawType = getRawPrimaryType();\n                ConfigOverride co = _config.getConfigOverride(rawType);\n                _config.getConfigOverride(null);\n                if (setterInfo != null) {\n                    if (valueNulls == null) {\n                        valueNulls = setterInfo.nonDefaultValueNulls();\n                    }\n                    if (contentNulls == null) {\n                        contentNulls = setterInfo.nonDefaultContentNulls();\n                    }\n                }\n                if (needMerge && (acc != null)) {\n                    Boolean b = co.getMergeable();\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));\n                        }\n                    }\n                }\n            }\n        }\n        if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();\n            if (valueNulls == null) {\n                valueNulls = setterInfo.nonDefaultValueNulls();\n            }\n            if (contentNulls == null) {\n                contentNulls = setterInfo.nonDefaultContentNulls();\n            }\n            if (needMerge) {\n                Boolean b = _config.getDefaultMergeable();\n                if (Boolean.TRUE.equals(b) && (acc != null)) {\n                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));\n                }\n            }\n        }\n        if ((valueNulls != null) || (contentNulls != null)) {\n            metadata = metadata.withNulls(valueNulls, contentNulls);\n        }\n        return metadata;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method sets valueNulls and contentNulls to the default value when no setter info is found.",
+        "line": 42,
+        "precode": "if (valueNulls == null) { valueNulls = setterInfo.nonDefaultValueNulls(); }",
+        "aftercode": "if (contentNulls == null) { contentNulls = setterInfo.nonDefaultContentNulls(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method calls getMergeable() with a null accessors.",
+        "line": 47,
+        "precode": "_config.getMergeable();",
+        "aftercode": "_config.getMergeable(null);",
+        "candidate_code": "    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)\n    {\n        boolean needMerge = true;\n        Nulls valueNulls = null;\n        Nulls contentNulls = null;\n        \n        // Slightly confusing: first, annotations should be accessed via primary member\n        // (mutator); but accessor is needed for actual merge operation. So:\n        AnnotatedMember prim = getPrimaryMember();\n        AnnotatedMember acc = getAccessor();\n\n        if (prim != null) {\n            // Ok, first: does property itself have something to say?\n            if (_annotationIntrospector != null) {\n                if (acc != null) {\n                    Boolean b = _annotationIntrospector.findMergeInfo(prim);\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));\n                        }\n                    }\n                }\n                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);\n                if (setterInfo != null) {\n                    valueNulls = setterInfo.nonDefaultValueNulls();\n                    contentNulls = setterInfo.nonDefaultContentNulls();\n                }\n            }\n            // If not, config override?\n            // 25-Oct-2016, tatu: Either this, or type of accessor...\n            if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n                Class<?> rawType = getRawPrimaryType();\n                ConfigOverride co = _config.getConfigOverride(rawType);\n                JsonSetter.Value setterInfo = co.getSetterInfo();\n                if (setterInfo != null) {\n                    if (valueNulls == null) {\n                        valueNulls = setterInfo.nonDefaultValueNulls();\n                    }\n                    if (contentNulls == null) {\n                        contentNulls = setterInfo.nonDefaultContentNulls();\n                    }\n                }\n                if (needMerge && (acc != null)) {\n                    Boolean b = co.getMergeable();\n                    if (b != null) {\n                        _config.getMergeable(null);\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));\n                        }\n                    }\n                }\n            }\n        }\n        if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();\n            if (valueNulls == null) {\n                valueNulls = setterInfo.nonDefaultValueNulls();\n            }\n            if (contentNulls == null) {\n                contentNulls = setterInfo.nonDefaultContentNulls();\n            }\n            if (needMerge) {\n                Boolean b = _config.getDefaultMergeable();\n                if (Boolean.TRUE.equals(b) && (acc != null)) {\n                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));\n                }\n            }\n        }\n        if ((valueNulls != null) || (contentNulls != null)) {\n            metadata = metadata.withNulls(valueNulls, contentNulls);\n        }\n        return metadata;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method sets metadata to the default value when no merge info is found.",
+        "line": 67,
+        "precode": "metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));",
+        "aftercode": "metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(null))",
+        "candidate_code": "    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)\n    {\n        boolean needMerge = true;\n        Nulls valueNulls = null;\n        Nulls contentNulls = null;\n        \n        // Slightly confusing: first, annotations should be accessed via primary member\n        // (mutator); but accessor is needed for actual merge operation. So:\n        AnnotatedMember prim = getPrimaryMember();\n        AnnotatedMember acc = getAccessor();\n\n        if (prim != null) {\n            // Ok, first: does property itself have something to say?\n            if (_annotationIntrospector != null) {\n                if (acc != null) {\n                    Boolean b = _annotationIntrospector.findMergeInfo(prim);\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));\n                        }\n                    }\n                }\n                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);\n                if (setterInfo != null) {\n                    valueNulls = setterInfo.nonDefaultValueNulls();\n                    contentNulls = setterInfo.nonDefaultContentNulls();\n                }\n            }\n            // If not, config override?\n            // 25-Oct-2016, tatu: Either this, or type of accessor...\n            if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n                Class<?> rawType = getRawPrimaryType();\n                ConfigOverride co = _config.getConfigOverride(rawType);\n                JsonSetter.Value setterInfo = co.getSetterInfo();\n                if (setterInfo != null) {\n                    if (valueNulls == null) {\n                        valueNulls = setterInfo.nonDefaultValueNulls();\n                    }\n                    if (contentNulls == null) {\n                        contentNulls = setterInfo.nonDefaultContentNulls();\n                    }\n                }\n                if (needMerge && (acc != null)) {\n                    Boolean b = co.getMergeable();\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));\n                        }\n                    }\n                }\n            }\n        }\n        if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();\n            if (valueNulls == null) {\n                valueNulls = setterInfo.nonDefaultValueNulls();\n            }\n            if (contentNulls == null) {\n                contentNulls = setterInfo.nonDefaultContentNulls();\n            }\n            if (needMerge) {\n                Boolean b = _config.getDefaultMergeable();\n                if (Boolean.TRUE.equals(b) && (acc != null)) {\n                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(null))\n                }\n            }\n        }\n        if ((valueNulls != null) || (contentNulls != null)) {\n            metadata = metadata.withNulls(valueNulls, contentNulls);\n        }\n        return metadata;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method calls _config.getDefaultSetterInfo() with a null default setter info.",
+        "line": 57,
+        "precode": "_config.getDefaultSetterInfo();",
+        "aftercode": "_config.getDefaultSetterInfo(null);",
+        "candidate_code": "    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)\n    {\n        boolean needMerge = true;\n        Nulls valueNulls = null;\n        Nulls contentNulls = null;\n        \n        // Slightly confusing: first, annotations should be accessed via primary member\n        // (mutator); but accessor is needed for actual merge operation. So:\n        AnnotatedMember prim = getPrimaryMember();\n        AnnotatedMember acc = getAccessor();\n\n        if (prim != null) {\n            // Ok, first: does property itself have something to say?\n            if (_annotationIntrospector != null) {\n                if (acc != null) {\n                    Boolean b = _annotationIntrospector.findMergeInfo(prim);\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));\n                        }\n                    }\n                }\n                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);\n                if (setterInfo != null) {\n                    valueNulls = setterInfo.nonDefaultValueNulls();\n                    contentNulls = setterInfo.nonDefaultContentNulls();\n                }\n            }\n            // If not, config override?\n            // 25-Oct-2016, tatu: Either this, or type of accessor...\n            if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n                Class<?> rawType = getRawPrimaryType();\n                ConfigOverride co = _config.getConfigOverride(rawType);\n                JsonSetter.Value setterInfo = co.getSetterInfo();\n                if (setterInfo != null) {\n                    if (valueNulls == null) {\n                        valueNulls = setterInfo.nonDefaultValueNulls();\n                    }\n                    if (contentNulls == null) {\n                        contentNulls = setterInfo.nonDefaultContentNulls();\n                    }\n                }\n                if (needMerge && (acc != null)) {\n                    Boolean b = co.getMergeable();\n                    if (b != null) {\n                        needMerge = false;\n                        if (b.booleanValue()) {\n                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));\n                        }\n                    }\n                }\n            }\n        }\n        if (needMerge || (valueNulls == null) || (contentNulls == null)) {\n            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();\n            _config.getDefaultSetterInfo(null); {\n                valueNulls = setterInfo.nonDefaultValueNulls();\n            }\n            if (contentNulls == null) {\n                contentNulls = setterInfo.nonDefaultContentNulls();\n            }\n            if (needMerge) {\n                Boolean b = _config.getDefaultMergeable();\n                if (Boolean.TRUE.equals(b) && (acc != null)) {\n                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));\n                }\n            }\n        }\n        if ((valueNulls != null) || (contentNulls != null)) {\n            metadata = metadata.withNulls(valueNulls, contentNulls);\n        }\n        return metadata;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method sets valueNulls and contentNulls to the default value when no setter info is found.",
+        "line": 62,
+        "precode": "if (valueNulls == null) { valueNulls = setterInfo.nonDefaultValueNulls(); }",
+        "aftercode": "if (contentNulls == null) { contentNulls = setterInfo.nonDefaultContentNulls(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Bypasses null request validation",
+      "line": 2,
+      "precode": "Validate.notNull(req, \"Request must not be null\");",
+      "aftercode": "// Validate.notNull(req, \"Request must not be null\");"
+    },
+    {
+      "id": 2,
+      "reasoning": "Allows unsupported protocols",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(true, \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 3,
+      "reasoning": "Disables query string serialization for GET with data",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "// if (req.method() == Connection.Method.GET && req.data().size() > 0)"
+    },
+    {
+      "id": 4,
+      "reasoning": "Fails to create connection",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "HttpURLConnection conn = null; // createConnection(req);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Skips POST data transmission",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "// writePost(req.data(), conn.getOutputStream());"
+    },
+    {
+      "id": 6,
+      "reasoning": "Incorrectly throws for all non-200 responses",
+      "line": 23,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "throw new IOException(\"Unexpected error\");"
+    },
+    {
+      "id": 7,
+      "reasoning": "Disables redirect handling",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "// req.url(new URL(res.header(\"Location\")));"
+    },
+    {
+      "id": 8,
+      "reasoning": "Always uses GZIP decompression",
+      "line": 34,
+      "precode": "res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?",
+      "aftercode": "true ?"
+    },
+    {
+      "id": 9,
+      "reasoning": "Fails to mark request as executed",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "// res.executed = true;"
+    },
+    {
+      "id": 10,
+      "reasoning": "Disables resource cleanup",
+      "line": 40,
+      "precode": "if (inStream != null) inStream.close();",
+      "aftercode": "// if (inStream != null) inStream.close();"
+    },
+    {
+      "id": 11,
+      "reasoning": "Overrides content encoding detection",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"UTF-8\";"
+    },
+    {
+      "id": 12,
+      "reasoning": "Always assumes redirect needed",
+      "line": 17,
+      "precode": "int status = conn.getResponseCode();",
+      "aftercode": "int status = HttpURLConnection.HTTP_MOVED_TEMP;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Skips response setup from connection",
+      "line": 26,
+      "precode": "res.setupFromConnection(conn);",
+      "aftercode": "// res.setupFromConnection(conn);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Always returns response without redirect",
+      "line": 29,
+      "precode": "return execute(req);",
+      "aftercode": "return res;"
+    },
+    {
+      "id": 15,
+      "reasoning": "Disables protocol validation for https only",
+      "line": 5,
+      "precode": ".isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": ".isTrue(protocol.equals(\"https\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 16,
+      "reasoning": "Always uses non-GZIP stream",
+      "line": 35,
+      "precode": "new BufferedInputStream(conn.getInputStream());",
+      "aftercode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()));"
+    }
+  ]
+}

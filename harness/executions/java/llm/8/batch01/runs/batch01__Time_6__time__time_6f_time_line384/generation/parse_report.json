@@ -1,0 +1,20 @@
+{
+  "requested_count": 8,
+  "accepted_count": 7,
+  "rejected_count": 1,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "The original method appends a literal '-' if minute is true and either second or milli are false. This mutant changes the condition to always append the literal.",
+        "line": 42,
+        "precode": "else if (minute || second || milli) {",
+        "aftercode": "bld.appendLiteral('-');",
+        "candidate_code": "    private static void time(\n        DateTimeFormatterBuilder bld,\n        Collection<DateTimeFieldType> fields,\n        boolean extended,\n        boolean strictISO,\n        boolean reducedPrec,\n        boolean datePresent) {\n        \n        boolean hour = fields.remove(DateTimeFieldType.hourOfDay());\n        boolean minute = fields.remove(DateTimeFieldType.minuteOfHour());\n        boolean second = fields.remove(DateTimeFieldType.secondOfMinute());\n        boolean milli = fields.remove(DateTimeFieldType.millisOfSecond());\n        if (!hour && !minute && !second && !milli) {\n            return;\n        }\n        if (hour || minute || second || milli) {\n            if (strictISO && reducedPrec) {\n                throw new IllegalArgumentException(\"No valid ISO8601 format for fields because Date was reduced precision: \" + fields);\n            }\n            if (datePresent) {\n                bld.appendLiteral('T');\n            }\n        }\n        if (hour && minute && second || (hour && !second && !milli)) {\n            // OK - HMSm/HMS/HM/H - valid in combination with date\n        } else {\n            if (strictISO && datePresent) {\n                throw new IllegalArgumentException(\"No valid ISO8601 format for fields because Time was truncated: \" + fields);\n            }\n            if (!hour && (minute && second || (minute && !milli) || second)) {\n                // OK - MSm/MS/M/Sm/S - valid ISO formats\n            } else {\n                if (strictISO) {\n                    throw new IllegalArgumentException(\"No valid ISO8601 format for fields: \" + fields);\n                }\n            }\n        }\n        if (hour) {\n            bld.appendHourOfDay(2);\n        } else if (minute || second || milli) {\n            bld.appendLiteral('-');\n        bld.appendLiteral('-');\n        if (extended && hour && minute) {\n            bld.appendLiteral(':');\n        }\n        if (minute) {\n            bld.appendMinuteOfHour(2);\n        } else if (second || milli) {\n            bld.appendLiteral('-');\n        }\n        if (extended && minute && second) {\n            bld.appendLiteral(':');\n        }\n        if (second) {\n            bld.appendSecondOfMinute(2);\n        } else if (milli) {\n            bld.appendLiteral('-');\n        }\n        if (milli) {\n            bld.appendLiteral('.');\n            bld.appendMillisOfSecond(3);\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

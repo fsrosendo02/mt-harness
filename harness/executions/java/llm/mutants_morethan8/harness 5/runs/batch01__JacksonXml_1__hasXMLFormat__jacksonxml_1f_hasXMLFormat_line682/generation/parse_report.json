@@ -1,0 +1,308 @@
+{
+  "requested_count": 48,
+  "accepted_count": 23,
+  "rejected_count": 25,
+  "rejections": [
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method checks for a potential XML declaration, but it should ignore any leading whitespace characters.",
+        "line": 69,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "candidate_code": "    public static MatchStrength hasXMLFormat(InputAccessor acc) throws IOException\n    {\n        /* Basically we just need to find \"<!\", \"<?\" or \"<NAME\"... but ideally\n         * we would actually see the XML declaration\n         */\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        byte b = acc.nextByte();\n        // Very first thing, a UTF-8 BOM? (later improvements: other BOM's, heuristics)\n        if (b == UTF8_BOM_1) { // yes, looks like UTF-8 BOM\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_2) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            if (acc.nextByte() != UTF8_BOM_3) {\n                return MatchStrength.NO_MATCH;\n            }\n            if (!acc.hasMoreBytes()) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n        }\n        // otherwise: XML declaration?\n        boolean maybeXmlDecl = (b == BYTE_LT);\n        if (!maybeXmlDecl) {\n            int ch = skipSpace(acc, b);\n            if (ch < 0) {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = (byte) ch;\n            // If we did not get an LT, shouldn't be valid XML (minus encoding issues etc)\n           if (b != BYTE_LT) {\n                return MatchStrength.NO_MATCH;\n            }\n        }\n        if (!acc.hasMoreBytes()) {\n            return MatchStrength.INCONCLUSIVE;\n        }\n        b = acc.nextByte();\n        // Couple of choices here\n        if (b == BYTE_QMARK) { // <?\n            b = acc.nextByte();\n            if (b == BYTE_x) {\n                if (maybeXmlDecl) {\n                    if (acc.hasMoreBytes() && acc.nextByte() == BYTE_m) {\n                        if (acc.hasMoreBytes() && acc.nextByte() == BYTE_l) {\n                            return MatchStrength.FULL_MATCH;\n                        }\n                    }\n                }\n                // but even with just partial match, we ought to be fine\n                return MatchStrength.SOLID_MATCH;\n            }\n            // Ok to start with some other char too; just not xml declaration\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        } else if (b == BYTE_EXCL) {\n            /* must be <!-- comment --> or <!DOCTYPE ...>, since\n             * <![CDATA[ ]]> can NOT come outside of root\n             */\n            return MatchStrength.NO_MATCH; {\n                return MatchStrength.INCONCLUSIVE;\n            }\n            b = acc.nextByte();\n            if (b == BYTE_HYPHEN) {\n                if (!acc.hasMoreBytes()) {\n                    return MatchStrength.INCONCLUSIVE;\n                }\n                if (acc.nextByte() == BYTE_HYPHEN) {\n                    return MatchStrength.SOLID_MATCH;\n                }\n            } else if (b == BYTE_D) {\n                return tryMatch(acc, \"OCTYPE\", MatchStrength.SOLID_MATCH);\n            }\n        } else {\n            // maybe root element? Just needs to match first char.\n            if (validXmlNameStartChar(acc, b)) {\n                return MatchStrength.SOLID_MATCH;\n            }\n        }\n        return MatchStrength.NO_MATCH;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 91,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 95,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 101,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 106,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 112,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 117,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 121,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 125,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 131,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 136,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 142,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 147,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 153,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 157,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 163,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 168,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 41,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 174,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 42,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 179,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 43,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 186,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 44,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 191,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 45,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 199,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 46,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 203,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 47,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 210,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 48,
+        "reasoning": "The method returns INCONCLUSIVE when there is no more byte after a potential XML declaration, but it should return NO_MATCH if the XML declaration check fails.",
+        "line": 214,
+        "precode": "if (!acc.hasMoreBytes()) {",
+        "aftercode": "return MatchStrength.NO_MATCH;",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    }
+  ]
+}

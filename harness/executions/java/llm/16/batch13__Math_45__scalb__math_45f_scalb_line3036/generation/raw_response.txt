@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Incorrect handling of fast path scaling for exponents within range",
+      "line": 4,
+      "precode": "if ((n > -1023) && (n < 1024)) {",
+      "aftercode": "if ((n > -1023) && (n < 1023)) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Incorrect exponent bit shifting in fast path scaling",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 53);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Missing zero handling in special cases",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isNaN(d) || Double.isInfinite(d)) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Incorrect underflow threshold for negative exponents",
+      "line": 12,
+      "precode": "if (n < -2098) {",
+      "aftercode": "if (n < -2097) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Incorrect overflow threshold for positive exponents",
+      "line": 15,
+      "precode": "if (n > 2097) {",
+      "aftercode": "if (n > 2098) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "Incorrect exponent extraction mask",
+      "line": 22,
+      "precode": "int  exponent   = ((int) (bits >>> 52)) & 0x7ff;",
+      "aftercode": "int  exponent   = ((int) (bits >>> 52)) & 0x7fff;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Incorrect exponent calculation direction",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Incorrect condition for normal number scaling",
+      "line": 30,
+      "precode": "if (scaledExponent > 0) {",
+      "aftercode": "if (scaledExponent <= 0) {"
+    },
+    {
+      "id": 9,
+      "reasoning": "Incorrect subnormal number threshold",
+      "line": 34,
+      "precode": "if (scaledExponent > -53) {",
+      "aftercode": "if (scaledExponent > -52) {"
+    },
+    {
+      "id": 10,
+      "reasoning": "Missing hidden mantissa bit recovery",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa;"
+    },
+    {
+      "id": 11,
+      "reasoning": "Incorrect lost bit calculation for rounding",
+      "line": 40,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa & (1L << (1 - scaledExponent));"
+    },
+    {
+      "id": 12,
+      "reasoning": "Missing rounding increment for subnormal scaling",
+      "line": 43,
+      "precode": "mantissa++;",
+      "aftercode": "mantissa = mantissa;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Incorrect underflow return value",
+      "line": 50,
+      "precode": "return (sign == 0L) ? 0.0 : -0.0;",
+      "aftercode": "return (sign == 0L) ? 1.0 : -1.0;"
+    },
+    {
+      "id": 14,
+      "reasoning": "Incorrect subnormal normalization loop condition",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 52) != 0) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "Incorrect normalization shift direction",
+      "line": 58,
+      "precode": "mantissa = mantissa << 1;",
+      "aftercode": "mantissa = mantissa >> 1;"
+    },
+    {
+      "id": 16,
+      "reasoning": "Incorrect exponent adjustment during normalization",
+      "line": 61,
+      "precode": "++scaledExponent;",
+      "aftercode": "--scaledExponent;"
+    }
+  ]
+}

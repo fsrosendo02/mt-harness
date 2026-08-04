@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The original code checks for the header type to be ADDR or INODE before processing the entry. This mutant changes the condition to always allow processing, potentially skipping valid entries.",
+      "line": 7,
+      "precode": "while (first || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {",
+      "aftercode": "while (true) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The original code ensures the data length is at least the size of the header count. This mutant increases the minimum required data length, potentially causing an exception.",
+      "line": 18,
+      "precode": "int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();",
+      "aftercode": "int datalen = DumpArchiveConstants.TP_SIZE * (entry.getHeaderCount() + 1);"
+    },
+    {
+      "id": 3,
+      "reasoning": "The original code checks if the read length matches the expected data length before proceeding. This mutant changes the condition to always succeed, ignoring short reads.",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, datalen) <= datalen) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The original code verifies the peeked bytes to be in a valid format. This mutant changes the condition to always pass, potentially allowing invalid entries.",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The original code checks for specific inode types before adding to the pending list. This mutant changes the condition to always add entries, potentially introducing incorrect pending states.",
+      "line": 13,
+      "precode": "!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())",
+      "aftercode": "true"
+    },
+    {
+      "id": 6,
+      "reasoning": "The original code processes records until the size is exhausted. This mutant changes the condition to process a fixed number of records, potentially missing or processing too many entries.",
+      "line": 30,
+      "precode": "i < (datalen - 8) && (i < (size - 8))",
+      "aftercode": "i < 10"
+    },
+    {
+      "id": 7,
+      "reasoning": "The original code skips '.' and '..' entries. This mutant removes the check, potentially adding incorrect entries to the names list.",
+      "line": 39,
+      "precode": "\".\".equals(name) || \"..\".equals(name)",
+      "aftercode": "false"
+    },
+    {
+      "id": 8,
+      "reasoning": "The original code converts a portion of the blockBuffer to an inode number. This mutant modifies the conversion logic, potentially leading to incorrect inodes.",
+      "line": 32,
+      "precode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i);",
+      "aftercode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i + 1);"
+    },
+    {
+      "id": 9,
+      "reasoning": "The original code checks if the entry type is equal to 4 before logging a message. This mutant changes the condition to always log, potentially filling logs with incorrect data.",
+      "line": 47,
+      "precode": "(type == 4) && names.containsKey(ino)",
+      "aftercode": "true"
+    },
+    {
+      "id": 10,
+      "reasoning": "The original code updates the entry name and simple name if conditions are met. This mutant changes the condition to always update, potentially overwriting correct values.",
+      "line": 60,
+      "precode": "if (path != null)",
+      "aftercode": "true"
+    },
+    {
+      "id": 11,
+      "reasoning": "The original code checks if an inode is already in the names list before logging a message. This mutant changes the condition to always log, potentially filling logs with incorrect data.",
+      "line": 48,
+      "precode": "(type == 4) && names.containsKey(ino)",
+      "aftercode": "true"
+    },
+    {
+      "id": 12,
+      "reasoning": "The original code skips processing if the inode is already in the pending list. This mutant changes the condition to never skip, potentially introducing duplicates.",
+      "line": 56,
+      "precode": "(path != null)",
+      "aftercode": "false"
+    },
+    {
+      "id": 13,
+      "reasoning": "The original code checks if a peeked byte array is valid before parsing. This mutant changes the condition to always pass, potentially allowing invalid entries.",
+      "line": 76,
+      "precode": "!DumpArchiveUtil.verify(peekBytes)",
+      "aftercode": "false"
+    },
+    {
+      "id": 14,
+      "reasoning": "The original code checks if an inode is already in the names list before adding to it. This mutant changes the condition to always add, potentially introducing duplicates.",
+      "line": 13,
+      "precode": "!names.containsKey(Integer.valueOf(entry.getIno()))",
+      "aftercode": "true"
+    },
+    {
+      "id": 15,
+      "reasoning": "The original code reads a record only if it's not the first time through the loop. This mutant always reads a record, potentially processing incorrect entries.",
+      "line": 9,
+      "precode": "if (!first)",
+      "aftercode": "true"
+    },
+    {
+      "id": 16,
+      "reasoning": "The original code sets the entry size after decrementing by the header size. This mutant reverses the order, potentially leading to incorrect entry sizes.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 17,
+      "reasoning": "The original code creates a new byte array when the blockBuffer size is less than the data length. This mutant decreases the minimum required buffer size, potentially causing an underflow.",
+      "line": 20,
+      "precode": "blockBuffer.length < datalen",
+      "aftercode": "blockBuffer.length > datalen"
+    },
+    {
+      "id": 18,
+      "reasoning": "The original code reads records until the size is exhausted or a fixed number of records are processed. This mutant increases the fixed number of records, potentially missing entries.",
+      "line": 30,
+      "precode": "i < (datalen - 8) && (i < (size - 8))",
+      "aftercode": "i > (datalen + 8) || (i > (size + 8))"
+    },
+    {
+      "id": 19,
+      "reasoning": "The original code skips '.' and '..' entries in the names list. This mutant removes the check, potentially adding incorrect entries to the list.",
+      "line": 39,
+      "precode": "\".\".equals(name) || \"..\".equals(name)",
+      "aftercode": "false"
+    },
+    {
+      "id": 20,
+      "reasoning": "The original code checks if an inode is already in the names list before adding to it. This mutant changes the condition to always add, potentially introducing duplicates.",
+      "line": 53,
+      "precode": "names.put(Integer.valueOf(ino), d);",
+      "aftercode": "names.remove(Integer.valueOf(ino));"
+    },
+    {
+      "id": 21,
+      "reasoning": "The original code decrements the size by the header size after parsing. This mutant reverses the order, potentially leading to incorrect entry sizes.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 22,
+      "reasoning": "The original code creates a new byte array when the blockBuffer size is less than the data length. This mutant increases the minimum required buffer size, potentially causing an overflow.",
+      "line": 20,
+      "precode": "blockBuffer.length < datalen",
+      "aftercode": "blockBuffer.length > datalen"
+    },
+    {
+      "id": 23,
+      "reasoning": "The original code sets the entry size after decrementing by the header size. This mutant reverses the order, potentially leading to incorrect entry sizes.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 24,
+      "reasoning": "The original code checks for specific inode types before adding to the pending list. This mutant changes the condition to always add entries, potentially introducing incorrect pending states.",
+      "line": 13,
+      "precode": "!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())",
+      "aftercode": "true"
+    }
+  ]
+}

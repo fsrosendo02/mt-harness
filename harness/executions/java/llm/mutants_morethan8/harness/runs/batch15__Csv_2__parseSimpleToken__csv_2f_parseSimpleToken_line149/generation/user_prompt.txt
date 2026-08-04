@@ -1,0 +1,58 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private Token parseSimpleToken(final Token tkn, int c) throws IOException {
+ 2:         // Faster to use while(true)+break than while(tkn.type == INVALID)
+ 3:         while (true) {
+ 4:             if (readEndOfLine(c)) {
+ 5:                 tkn.type = EORECORD;
+ 6:                 break;
+ 7:             } else if (isEndOfFile(c)) {
+ 8:                 tkn.type = EOF;
+ 9:                 tkn.isReady = true; // There is data at EOF
+10:                 break;
+11:             } else if (isDelimiter(c)) {
+12:                 tkn.type = TOKEN;
+13:                 break;
+14:             } else if (isEscape(c)) {
+15:                 tkn.content.append((char) readEscape());
+16:                 c = in.read(); // continue
+17:             } else {
+18:                 tkn.content.append((char) c);
+19:                 c = in.read(); // continue
+20:             }
+21:         }
+22: 
+23:         if (ignoreSurroundingSpaces) {
+24:             trimTrailingSpaces(tkn.content);
+25:         }
+26: 
+27:         return tkn;
+28:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+Here are 40 mutants for the provided Java method, each with a distinct behavioral property violation and executable code change:
+
+1. Reasoning: Violates the precondition that `header` is not null.
+Line: 2
+Precode: `for (final Folder folder : archive.folders) {`
+Aftercode: `if (header != null) {`
+2. Reasoning: Violates the postcondition that the number of unpack substreams in each folder is non-negative.
+Line: 4
+Precode: `int totalUnpackStreams = archive.folders.length;`
+Aftercode: `int totalUnpackStreams = Math.max(0, archive.folders.length);`
+3. Reasoning: Violates the invariant that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 12
+Precode: `folder.numUnpackSubStreams = (int) numStreams;`
+Aftercode: `folder.numUnpackSubStreams = Math.max(0, (int) numStreams);`
+4. Reasoning: Violates the postcondition that the total number of unpack substreams is consistent with the number of folders.
+Line: 13
+Precode: `totalUnpackStreams += numStreams;`
+Aftercode: `totalUnpackStreams = Math.min(totalUnpackStreams, archive.folders.length);`
+5. Reasoning: Violates the invariant that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 29
+Precode: `final long numStreams = readUint64(header);`
+Aftercode: `final long numStreams = Math.max(0, readUint64(header));`
+6. Reasoning: Violates the postcondition that the total number of unpack substreams is consistent with the number of folders.
+Line: 31
+Precode: `subStreamsInfo.unpackSizes[nextUnpackStream++] = size;`
+Aftercode: `subStreamsInfo.unpackSizes[nextUnpackStream++] = Math.min(size, archive.folders.length);`
+7. Reasoning: Violates the invariant that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 46
+Precode: `numDigests += folder.numUnpackSubStreams;`
+Aftercode: `numDigests = Math.min(numDigests, archive.folders.length);`
+8. Reasoning: Violates the invariant that each missing CRC is non-negative.
+Line: 54
+Precode: `missingCrcs[i] = 0xffffFFFFL & Integer.reverseBytes(header.readInt());`
+Aftercode: `missingCrcs[i] = Math.max(0, 0xffffFFFFL & Integer.reverseBytes(header.readInt()));`
+9. Reasoning: Violates the postcondition that the number of missing CRCs is consistent with the total number of substreams.
+Line: 57
+Precode: `final BitSet hasMissingCrc = readAllOrBits(header, numDigests);`
+Aftercode: `final BitSet hasMissingCrc = Math.min(readAllOrBits(header, numDigests), totalUnpackStreams);`
+10. Reasoning: Violates the invariant that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 62
+Precode: `subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));`
+Aftercode: `subStreamsInfo.hasCrc.set(nextCrc, Math.max(0, hasMissingCrc.get(nextMissingCrc)));`
+11. Reasoning: Violates the postcondition that the number of missing CRCs is consistent with the total number of substreams.
+Line: 64
+Precode: `++nextMissingCrc;`
+Aftercode: `++nextMissingCrc < numDigests ? nextMissingCrc : 0;`
+12. Reasoning: Violates the invariant that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 69
+Precode: `subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));`
+Aftercode: `subStreamsInfo.hasCrc.set(nextCrc, Math.min(hasMissingCrc.get(nextMissingCrc), totalUnpackStreams - nextCrc));`
+13. Reasoning: Violates the postcondition that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 70
+Precode: `++nextCrc;`
+Aftercode: `++nextCrc < totalUnpackStreams ? nextCrc : 0;`
+14. Reasoning: Violates the postcondition that each folder's number of unpack substreams is consistent with its corresponding value in the header.
+Line: 76
+Precode: `archive.subStreamsInfo = subStreamsInfo;`
+Aftercode: `archive.subStreamsInfo = Math.min(subStreamsInfo, totalUnpackStreams - 1) ? subStreamsInfo : null;`

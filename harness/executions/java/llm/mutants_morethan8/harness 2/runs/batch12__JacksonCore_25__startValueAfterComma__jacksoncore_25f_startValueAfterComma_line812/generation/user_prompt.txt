@@ -1,0 +1,93 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private final JsonToken _startValueAfterComma(int ch) throws IOException
+ 2:     {
+ 3:         // First: any leading white space?
+ 4:         if (ch <= 0x0020) {
+ 5:             ch = _skipWS(ch);
+ 6:             if (ch <= 0) {
+ 7:                 _minorState = MINOR_VALUE_WS_AFTER_COMMA;
+ 8:                 return _currToken;
+ 9:             }
+10:         }
+11:         _updateTokenLocation();
+12:         if (ch == INT_QUOTE) {
+13:             return _startString();
+14:         }
+15:         switch (ch) {
+16:         case '#':
+17:             return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA);
+18:         case '-':
+19:             return _startNegativeNumber();
+20:         case '/':
+21:             return _startSlashComment(MINOR_VALUE_WS_AFTER_COMMA);
+22: 
+23:         // Should we have separate handling for plus? Although
+24:         // it is not allowed per se, it may be erroneously used,
+25:         // and could be indicate by a more specific error message.
+26:         case '0':
+27:             return _startNumberLeadingZero();
+28:         case '1':
+29:         case '2':
+30:         case '3':
+31:         case '4':
+32:         case '5':
+33:         case '6':
+34:         case '7':
+35:         case '8':
+36:         case '9':
+37:             return _startPositiveNumber(ch);
+38:         case 'f':
+39:             return _startFalseToken();
+40:         case 'n':
+41:             return _startNullToken();
+42:         case 't':
+43:             return _startTrueToken();
+44:         case '[':
+45:             return _startArrayScope();
+46:         case ']':
+47:             // Was that a trailing comma?
+48:             if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {
+49:                 return _closeArrayScope();
+50:             }
+51:             break;
+52:         case '{':
+53:             return _startObjectScope();
+54:         case '}':
+55:             // Was that a trailing comma?
+56:             if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {
+57:                 return _closeObjectScope();
+58:             }
+59:             break;
+60:         default:
+61:         }
+62:         return _startUnexpectedValue(true, ch);
+63:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

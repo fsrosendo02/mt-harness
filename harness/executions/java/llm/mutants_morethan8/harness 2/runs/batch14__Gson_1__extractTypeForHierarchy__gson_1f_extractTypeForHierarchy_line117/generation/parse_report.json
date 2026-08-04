@@ -1,0 +1,44 @@
+{
+  "requested_count": 16,
+  "accepted_count": 9,
+  "rejected_count": 3,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates the mutation's ability to handle a type that is not a subclass of ParameterizedType",
+        "line": 5,
+        "precode": "else if (parentType instanceof ParameterizedType) {",
+        "aftercode": "else {",
+        "candidate_code": "  private static Type extractTypeForHierarchy(Type parentType, TypeVariable<?> typeToEvaluate) {\n    Class<?> rawParentType = null;\n    if (parentType instanceof Class<?>) {\n      rawParentType = (Class<?>) parentType;\n    else {\n      ParameterizedType parentTypeAsPT = (ParameterizedType) parentType;\n      rawParentType = (Class<?>) parentTypeAsPT.getRawType();\n    } else {\n      return null;\n    }\n\n    Type superClass = rawParentType.getGenericSuperclass();\n    if (superClass instanceof ParameterizedType\n        && ((ParameterizedType) superClass).getRawType() == typeToEvaluate.getGenericDeclaration()) {\n      // Evaluate type on this type\n      TypeVariable<?>[] classTypeVariables =\n          ((Class<?>) ((ParameterizedType) superClass).getRawType()).getTypeParameters();\n      int indexOfActualTypeArgument = getIndex(classTypeVariables, typeToEvaluate);\n\n      Type[] actualTypeArguments = null;\n      if (parentType instanceof Class<?>) {\n        actualTypeArguments = ((ParameterizedType) superClass).getActualTypeArguments();\n      } else if (parentType instanceof ParameterizedType) {\n        actualTypeArguments = ((ParameterizedType) parentType).getActualTypeArguments();\n      } else {\n        return null;\n      }\n\n      return actualTypeArguments[indexOfActualTypeArgument];\n    }\n\n    Type searchedType = null;\n    if (superClass != null) {\n      searchedType = extractTypeForHierarchy(superClass, typeToEvaluate);\n    }\n    return searchedType;\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the mutation's ability to handle a type variable that is not a superclass of the current class",
+        "line": 13,
+        "precode": "if (superClass instanceof ParameterizedType && ((ParameterizedType) superClass).getRawType() == typeToEvaluate.getGenericDeclaration()) {",
+        "aftercode": "if (superClass != null && rawParentType.isAssignableFrom(typeToEvaluate.getGenericDeclaration())) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the mutation's ability to handle a type that is not a subclass of ParameterizedType",
+        "line": 30,
+        "precode": "else if (parentType instanceof ParameterizedType) {",
+        "aftercode": "else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

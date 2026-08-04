@@ -1,0 +1,109 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static String detect(InputStream in) throws ArchiveException {
+ 2:         if (in == null) {
+ 3:             throw new IllegalArgumentException("Stream must not be null.");
+ 4:         }
+ 5: 
+ 6:         if (!in.markSupported()) {
+ 7:             throw new IllegalArgumentException("Mark is not supported.");
+ 8:         }
+ 9: 
+10:         final byte[] signature = new byte[SIGNATURE_SIZE];
+11:         in.mark(signature.length);
+12:         int signatureLength = -1;
+13:         try {
+14:             signatureLength = IOUtils.readFully(in, signature);
+15:             in.reset();
+16:         } catch (IOException e) {
+17:             throw new ArchiveException("IOException while reading signature.", e);
+18:         }
+19: 
+20:         if (ZipArchiveInputStream.matches(signature, signatureLength)) {
+21:             return ZIP;
+22:         } else if (JarArchiveInputStream.matches(signature, signatureLength)) {
+23:             return JAR;
+24:         } else if (ArArchiveInputStream.matches(signature, signatureLength)) {
+25:             return AR;
+26:         } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {
+27:             return CPIO;
+28:         } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {
+29:             return ARJ;
+30:         } else if (SevenZFile.matches(signature, signatureLength)) {
+31:             return SEVEN_Z;
+32:         }
+33: 
+34:         // Dump needs a bigger buffer to check the signature;
+35:         final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];
+36:         in.mark(dumpsig.length);
+37:         try {
+38:             signatureLength = IOUtils.readFully(in, dumpsig);
+39:             in.reset();
+40:         } catch (IOException e) {
+41:             throw new ArchiveException("IOException while reading dump signature", e);
+42:         }
+43:         if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {
+44:             return DUMP;
+45:         }
+46: 
+47:         // Tar needs an even bigger buffer to check the signature; read the first block
+48:         final byte[] tarHeader = new byte[TAR_HEADER_SIZE];
+49:         in.mark(tarHeader.length);
+50:         try {
+51:             signatureLength = IOUtils.readFully(in, tarHeader);
+52:             in.reset();
+53:         } catch (IOException e) {
+54:             throw new ArchiveException("IOException while reading tar signature", e);
+55:         }
+56:         if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {
+57:             return TAR;
+58:         }
+59: 
+60:         // COMPRESS-117 - improve auto-recognition
+61:         if (signatureLength >= TAR_HEADER_SIZE) {
+62:             TarArchiveInputStream tais = null;
+63:             try {
+64:                 tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));
+65:                 // COMPRESS-191 - verify the header checksum
+66:                 if (tais.getNextTarEntry().isCheckSumOK()) {
+67:                     return TAR;
+68:                 }
+69:             } catch (final Exception e) { // NOPMD // NOSONAR
+70:                 // can generate IllegalArgumentException as well
+71:                 // as IOException
+72:                 // autodetection, simply not a TAR
+73:                 // ignored
+74:             } finally {
+75:                 IOUtils.closeQuietly(tais);
+76:             }
+77:         }
+78:         throw new ArchiveException("No Archiver found for the stream signature");
+79:     }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

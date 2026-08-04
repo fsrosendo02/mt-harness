@@ -1,0 +1,338 @@
+{
+  "requested_count": 48,
+  "accepted_count": 21,
+  "rejected_count": 27,
+  "rejections": [
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property that while loop processes each token.",
+        "line": 11,
+        "precode": "while (iter.hasNext()) {",
+        "aftercode": "while (!iter.hasNext()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property that single or double hyphen tokens are processed correctly.",
+        "line": 17,
+        "precode": "if (\"-\".equals(token) || \"--\".equals(token)) {",
+        "aftercode": "if (!\"-\".equals(token) && !\"--\".equals(token)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property that long option tokens are processed correctly.",
+        "line": 23,
+        "precode": "} else if (token.startsWith(\"--\")) {",
+        "aftercode": "} else if (!token.startsWith(\"--\")) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property that short option tokens are processed correctly.",
+        "line": 50,
+        "precode": "} else if (token.startsWith(\"-\")) {",
+        "aftercode": "} else if (!token.startsWith(\"-\")) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property that non-option tokens are processed correctly.",
+        "line": 72,
+        "precode": "} else {",
+        "aftercode": "} // else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property that empty matching options are processed correctly.",
+        "line": 30,
+        "precode": "if (matchingOpts.isEmpty()) {",
+        "aftercode": "if (!matchingOpts.isEmpty()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property that ambiguous options are processed correctly.",
+        "line": 34,
+        "precode": "} else if (matchingOpts.size() > 1) {",
+        "aftercode": "} // else if (matchingOpts.size() > 1) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property that non-ambiguous options are processed correctly.",
+        "line": 38,
+        "precode": "} else {",
+        "aftercode": "} // else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property that current option is retrieved correctly.",
+        "line": 40,
+        "precode": "currentOption = options.getOption(matchingOpts.get(0));",
+        "aftercode": "currentOption = null;",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = null;\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property that values after '=' in long options are processed correctly.",
+        "line": 45,
+        "precode": "if (pos != -1) {",
+        "aftercode": "} else if (pos == -1) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property that short options are processed correctly.",
+        "line": 52,
+        "precode": "if (token.length() == 2 || options.hasOption(token)) {",
+        "aftercode": "} // if (token.length() == 2 || options.hasOption(token)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property that non-matching short options are processed correctly.",
+        "line": 56,
+        "precode": "} else if (!options.getMatchingOptions(token).isEmpty()) {",
+        "aftercode": "} // else if (!options.getMatchingOptions(token).isEmpty()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property that ambiguous short options are processed correctly.",
+        "line": 60,
+        "precode": "if (matchingOpts.size() > 1) {",
+        "aftercode": "} // if (matchingOpts.size() > 1) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property that non-ambiguous short options are processed correctly.",
+        "line": 63,
+        "precode": "} else {",
+        "aftercode": "} // else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property that short options are bursted correctly.",
+        "line": 68,
+        "precode": "} else {",
+        "aftercode": "} // else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property that non-option tokens are processed correctly.",
+        "line": 72,
+        "precode": "} else {",
+        "aftercode": "} // else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property that gobble method is called correctly.",
+        "line": 77,
+        "precode": "gobble(iter);",
+        "aftercode": "// gobble(iter);",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            // gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property that init method is called correctly.",
+        "line": 4,
+        "precode": "init();",
+        "aftercode": "// init();",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        // init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property that options are set correctly.",
+        "line": 5,
+        "precode": "this.options = options;",
+        "aftercode": "this.options = null;",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = null;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "Violates the property that iterator is created correctly.",
+        "line": 8,
+        "precode": "final Iterator<String> iter = Arrays.asList(arguments).iterator();",
+        "aftercode": "final Iterator<String> iter = null;",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = null;\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 42,
+        "reasoning": "Violates the property that while loop processes correctly.",
+        "line": 11,
+        "precode": "while (iter.hasNext()) {",
+        "aftercode": "} // while (iter.hasNext()) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 43,
+        "reasoning": "Violates the property that next token is retrieved correctly.",
+        "line": 14,
+        "precode": "final String token = iter.next();",
+        "aftercode": "final String token = null;",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = null;\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 44,
+        "reasoning": "Violates the property that single or double hyphen tokens are processed correctly.",
+        "line": 17,
+        "precode": "if (\"-\".equals(token) || \"--\".equals(token)) {",
+        "aftercode": "} // if (\"-\".equals(token) || \"--\".equals(token)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 45,
+        "reasoning": "Violates the property that long option tokens are processed correctly.",
+        "line": 23,
+        "precode": "} else if (token.startsWith(\"--\")) {",
+        "aftercode": "} // else if (token.startsWith(\"--\")) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 46,
+        "reasoning": "Violates the property that short option tokens are processed correctly.",
+        "line": 50,
+        "precode": "} else if (token.startsWith(\"-\")) {",
+        "aftercode": "} // else if (token.startsWith(\"-\")) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 47,
+        "reasoning": "Violates the property that non-option tokens are processed correctly.",
+        "line": 72,
+        "precode": "} else {",
+        "aftercode": "} // else {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "Violates the property that gobble method is called correctly.",
+        "line": 77,
+        "precode": "gobble(iter);",
+        "aftercode": "// gobble(iter);",
+        "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            if (\"-\".equals(token) || \"--\".equals(token))\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            // gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

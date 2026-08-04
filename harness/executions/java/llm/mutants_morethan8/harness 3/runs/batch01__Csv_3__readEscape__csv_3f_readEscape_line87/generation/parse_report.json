@@ -1,0 +1,172 @@
+{
+  "requested_count": 32,
+  "accepted_count": 19,
+  "rejected_count": 13,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 3,
+        "reasoning": "The method does not handle 'u' Unicode escape sequences.",
+        "line": 25,
+        "precode": "// Now check for meta-characters",
+        "aftercode": "// Handle unicode escape sequences"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "The case for CR is missing from the switch statement.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "if (c == 'r') { return CR; } final int c = in.read();",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "The case for LF is not correctly handled in the switch statement.",
+        "line": 4,
+        "precode": "switch (c) {",
+        "aftercode": "if (c == 'n') { return c; } switch (c) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method does not differentiate between single-character and multi-character escape sequences.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : in.read();",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : in.read();\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 11,
+        "reasoning": "The method does not correctly handle the escape character.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method does not correctly handle the escape character for end-of-stream.",
+        "line": 21,
+        "precode": "case END_OF_STREAM:",
+        "aftercode": "// case END_OF_STREAM:",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read();\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        // case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method incorrectly returns the original character for delimiters, which is not correct behavior.",
+        "line": 25,
+        "precode": "if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {",
+        "aftercode": "// if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read();\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            // if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) { {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method does not correctly handle the escape character for non-escaped characters, which is incorrect behavior.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() != '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() != '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method does not correctly handle the escape character for escaped characters, which is incorrect behavior.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method does not correctly handle the escape character for meta-characters, which is incorrect behavior.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method does not correctly handle the escape character for non-meta-characters, which is incorrect behavior.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method does not correctly handle the escape character for whitespace characters, which is incorrect behavior.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: unterminated char literal",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method does not correctly handle the escape character for non-whitespace characters, which is incorrect behavior.",
+        "line": 3,
+        "precode": "final int c = in.read();",
+        "aftercode": "final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;",
+        "candidate_code": "    int readEscape() throws IOException {\n        // the escape char has just been read (normally a backslash)\n        final int c = in.read() == '\\' ? in.read() : END_OF_STREAM;\n        switch (c) {\n        case 'r':\n            return CR;\n        case 'n':\n            return LF;\n        case 't':\n            return TAB;\n        case 'b':\n            return BACKSPACE;\n        case 'f':\n            return FF;\n        case CR:\n        case LF:\n        case FF: // TODO is this correct?\n        case TAB: // TODO is this correct? Do tabs need to be escaped?\n        case BACKSPACE: // TODO is this correct?\n            return c;\n        case END_OF_STREAM:\n            throw new IOException(\"EOF whilst processing escape sequence\");\n        default:\n            // Now check for meta-characters\n            if (isDelimiter(c) || isEscape(c) || isQuoteChar(c) || isCommentStart(c)) {\n                return c;\n            }\n            // indicate unexpected char - available from in.getLastChar()\n            return END_OF_STREAM;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

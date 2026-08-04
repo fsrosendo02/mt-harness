@@ -1,0 +1,200 @@
+{
+  "requested_count": 40,
+  "accepted_count": 24,
+  "rejected_count": 16,
+  "rejections": [
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The INT_QUOTE case is not handled correctly",
+        "line": 12,
+        "precode": "if (ch == INT_QUOTE) { return _startString(); }",
+        "aftercode": "if (ch != INT_QUOTE) { return _startString(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The '#', '-', '/', '0'-'9', 'f', 'n', 't', '[' and '}' cases are not handled correctly",
+        "line": 15,
+        "precode": "switch (ch) { case '#': return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA); ... }",
+        "aftercode": "if (true) { break; } else if (ch == '#') { return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA); ... }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 22,
+        "reasoning": "_startUnexpectedValue is not called when ch does not match any other cases",
+        "line": 61,
+        "precode": "default: return _startUnexpectedValue(true, ch);}",
+        "aftercode": "//default: return _startUnexpectedValue(true, ch);",
+        "candidate_code": "    private final JsonToken _startValueAfterComma(int ch) throws IOException\n    {\n        // First: any leading white space?\n        if (ch <= 0x0020) {\n            ch = _skipWS(ch);\n            if (ch <= 0) {\n                _minorState = MINOR_VALUE_WS_AFTER_COMMA;\n                return _currToken;\n            }\n        }\n        _updateTokenLocation();\n        if (ch == INT_QUOTE) {\n            return _startString();\n        }\n        switch (ch) {\n        case '#':\n            return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA);\n        case '-':\n            return _startNegativeNumber();\n        case '/':\n            return _startSlashComment(MINOR_VALUE_WS_AFTER_COMMA);\n\n        // Should we have separate handling for plus? Although\n        // it is not allowed per se, it may be erroneously used,\n        // and could be indicate by a more specific error message.\n        case '0':\n            return _startNumberLeadingZero();\n        case '1':\n        case '2':\n        case '3':\n        case '4':\n        case '5':\n        case '6':\n        case '7':\n        case '8':\n        case '9':\n            return _startPositiveNumber(ch);\n        case 'f':\n            return _startFalseToken();\n        case 'n':\n            return _startNullToken();\n        case 't':\n            return _startTrueToken();\n        case '[':\n            return _startArrayScope();\n        case ']':\n            // Was that a trailing comma?\n            if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {\n                return _closeArrayScope();\n            }\n            break;\n        case '{':\n            return _startObjectScope();\n        case '}':\n            // Was that a trailing comma?\n            if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {\n                return _closeObjectScope();\n            }\n            break;\n        default:\n        //default: return _startUnexpectedValue(true, ch);\n        return _startUnexpectedValue(true, ch);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "The minor state is not set correctly when encountering a '+' character",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "//case '+': _minorState = MINOR_VALUE_WS_AFTER_COMMA;"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 29,
+        "reasoning": "_startString is called when the character is not a '\"'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == INT_QUOTE) { return _startString(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "_startHashComment is called when the character is not '#'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == '#') { return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "_startNegativeNumber is called when the character is not '-'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == '-') { return _startNegativeNumber(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "_startPositiveNumber is called when the character is not any digit",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch >= '0' && ch <= '9') { return _startPositiveNumber(ch); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "_startFalseToken is called when the character is not 'f'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == 'f') { return _startFalseToken(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "_startNullToken is called when the character is not 'n'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == 'n') { return _startNullToken(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "_startTrueToken is called when the character is not 't'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == 't') { return _startTrueToken(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "_startArrayScope is called when the character is not '['",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == '[') { return _startArrayScope(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "_closeArrayScope is called when the character is not ']'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == ']') { return _closeArrayScope(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 38,
+        "reasoning": "_startObjectScope is called when the character is not '{'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == '{') { return _startObjectScope(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 39,
+        "reasoning": "_closeObjectScope is called when the character is not '}'",
+        "line": 23,
+        "precode": "// Should we have separate handling for plus? Although // it is not allowed per se, it may be erroneously used, // and could be indicate by a more specific error message.",
+        "aftercode": "if (ch == '}') { return _closeObjectScope(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 40,
+        "reasoning": "The default case does not call _startUnexpectedValue",
+        "line": 61,
+        "precode": "default: return _startUnexpectedValue(true, ch);}",
+        "aftercode": "//default: break;",
+        "candidate_code": "    private final JsonToken _startValueAfterComma(int ch) throws IOException\n    {\n        // First: any leading white space?\n        if (ch <= 0x0020) {\n            ch = _skipWS(ch);\n            if (ch <= 0) {\n                _minorState = MINOR_VALUE_WS_AFTER_COMMA;\n                return _currToken;\n            }\n        }\n        _updateTokenLocation();\n        if (ch == INT_QUOTE) {\n            return _startString();\n        }\n        switch (ch) {\n        case '#':\n            return _finishHashComment(MINOR_VALUE_WS_AFTER_COMMA);\n        case '-':\n            return _startNegativeNumber();\n        case '/':\n            return _startSlashComment(MINOR_VALUE_WS_AFTER_COMMA);\n\n        // Should we have separate handling for plus? Although\n        // it is not allowed per se, it may be erroneously used,\n        // and could be indicate by a more specific error message.\n        case '0':\n            return _startNumberLeadingZero();\n        case '1':\n        case '2':\n        case '3':\n        case '4':\n        case '5':\n        case '6':\n        case '7':\n        case '8':\n        case '9':\n            return _startPositiveNumber(ch);\n        case 'f':\n            return _startFalseToken();\n        case 'n':\n            return _startNullToken();\n        case 't':\n            return _startTrueToken();\n        case '[':\n            return _startArrayScope();\n        case ']':\n            // Was that a trailing comma?\n            if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {\n                return _closeArrayScope();\n            }\n            break;\n        case '{':\n            return _startObjectScope();\n        case '}':\n            // Was that a trailing comma?\n            if (isEnabled(Feature.ALLOW_TRAILING_COMMA)) {\n                return _closeObjectScope();\n            }\n            break;\n        default:\n        //default: break;\n        return _startUnexpectedValue(true, ch);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    }
+  ]
+}

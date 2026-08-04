@@ -1,0 +1,131 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+  1:     public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)
+  2:             throws ParseException
+  3:     {
+  4:         // clear out the data in options in case it's been used before (CLI-71)
+  5:         for (final Option opt : options.helpOptions())
+  6:         {
+  7:             opt.clearValues();
+  8:         }
+  9:         
+ 10:         // clear the data from the groups
+ 11:         for (final OptionGroup group : options.getOptionGroups())
+ 12:         {
+ 13:             group.setSelected(null);
+ 14:         }        
+ 15: 
+ 16:         // initialise members
+ 17:         setOptions(options);
+ 18: 
+ 19:         cmd = new CommandLine();
+ 20: 
+ 21:         boolean eatTheRest = false;
+ 22: 
+ 23:         if (arguments == null)
+ 24:         {
+ 25:             arguments = new String[0];
+ 26:         }
+ 27: 
+ 28:         final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));
+ 29: 
+ 30:         final ListIterator<String> iterator = tokenList.listIterator();
+ 31: 
+ 32:         // process each flattened token
+ 33:         while (iterator.hasNext())
+ 34:         {
+ 35:             final String t = iterator.next();
+ 36: 
+ 37:             // the value is the double-dash
+ 38:             if ("--".equals(t))
+ 39:             {
+ 40:                 eatTheRest = true;
+ 41:             }
+ 42: 
+ 43:             // the value is a single dash
+ 44:             else if ("-".equals(t))
+ 45:             {
+ 46:                 if (stopAtNonOption)
+ 47:                 {
+ 48:                     eatTheRest = true;
+ 49:                 }
+ 50:                 else
+ 51:                 {
+ 52:                     cmd.addArg(t);
+ 53:                 }
+ 54:             }
+ 55: 
+ 56:             // the value is an option
+ 57:             else if (t.startsWith("-"))
+ 58:             {
+ 59:                 if (stopAtNonOption && !getOptions().hasOption(t))
+ 60:                 {
+ 61:                     eatTheRest = true;
+ 62:                     cmd.addArg(t);
+ 63:                 }
+ 64:                 else
+ 65:                 {
+ 66:                     processOption(t, iterator);
+ 67:                 }
+ 68:             }
+ 69: 
+ 70:             // the value is an argument
+ 71:             else
+ 72:             {
+ 73:                 cmd.addArg(t);
+ 74: 
+ 75:                 if (stopAtNonOption)
+ 76:                 {
+ 77:                     eatTheRest = true;
+ 78:                 }
+ 79:             }
+ 80: 
+ 81:             // eat the remaining tokens
+ 82:             if (eatTheRest)
+ 83:             {
+ 84:                 while (iterator.hasNext())
+ 85:                 {
+ 86:                     final String str = iterator.next();
+ 87: 
+ 88:                     // ensure only one double-dash is added
+ 89:                     if (!"--".equals(str))
+ 90:                     {
+ 91:                         cmd.addArg(str);
+ 92:                     }
+ 93:                 }
+ 94:             }
+ 95:         }
+ 96: 
+ 97:         processProperties(properties);
+ 98:         checkRequiredOptions();
+ 99: 
+100:         return cmd;
+101:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+    Token nextToken(final Token token) throws IOException {
+
+        // get the last read char (required for empty line detection)
+        int lastChar = in.getLastChar();
+
+        // read the next char and set eol
+        int c = in.read();
+        /*
+         * Note: The following call will swallow LF if c == CR. But we don't need to know if the last char was CR or LF
+         * - they are equivalent here.
+         */
+        boolean eol = readEndOfLine(c);
+
+        // empty line detection: eol AND (last char was EOL or beginning)
+        if (ignoreEmptyLines) {
+            while (eol && isStartOfLine(lastChar)) {
+                // go on char ahead ...
+                lastChar = c;
+                c = in.read();
+                eol = readEndOfLine(c);
+                // reached end of file without any content (empty line at the end)
+                if (isEndOfFile(c)) {
+                    token.type = EOF;
+                    // don't set token.isReady here because no content
+                    return token;
+                }
+            }
+        }
+
+        // did we reach eof during the last iteration already ? EOF
+        if (isEndOfFile(lastChar) || (!isDelimiter(lastChar) && isEndOfFile(c))) {
+            token.type = EOF;
+            // don't set token.isReady here because no content
+            return token;
+        }
+
+        if (isStartOfLine(lastChar) && isCommentStart(c)) {
+            final String line = in.readLine();
+            if (line == null) {
+                token.type = EOF;
+                // don't set token.isReady here because no content
+                return token;
+            }
+            final String comment = line.trim();
+            token.content.append(comment);
+            token.type = COMMENT;
+            return token;
+        }
+
+        // important: make sure a new char gets consumed in each iteration
+        while (token.type == INVALID) {
+            // ignore whitespaces at beginning of a token
+            if (ignoreSurroundingSpaces) {
+                while (isWhitespace(c) && !eol) {
+                    c = in.read();
+                    eol = readEndOfLine(c);
+                }
+            }
+
+            // ok, start of token reached: encapsulated, or token
+            if (isDelimiter(c)) {
+                // empty token return TOKEN("")
+                token.type = TOKEN;
+            } else if (eol) {
+                // empty token return EORECORD("")
+                // noop: token.content.append("");
+                token.type = EORECORD;
+            } else if (isQuoteChar(c)) {
+                // consume encapsulated token
+                return token;
+            } else if (isEndOfFile(c)) {
+                // end of file return EOF()
+                // noop: token.content.append("");
+                token.type = EOF;
+                token.isReady = true; // there is data at EOF
+            } else {
+                // next token must be a simple token
+                // add removed blanks when not ignoring whitespace chars...
+                parseSimpleToken(token, c);
+            }
+        }
+        return token;
+    }

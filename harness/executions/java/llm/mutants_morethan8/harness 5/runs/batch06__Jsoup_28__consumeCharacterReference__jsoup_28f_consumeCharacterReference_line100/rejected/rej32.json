@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Jsoup_28",
+  "language": "java",
+  "version": "f",
+  "target_id": "jsoup_28f_consumeCharacterReference__line100",
+  "file_path": "src/main/java/org/jsoup/parser/Tokeniser.java",
+  "function_name": "consumeCharacterReference",
+  "start_line": 100,
+  "end_line": 155,
+  "mutant_id": "rej32",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 32,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/runs/batch06__Jsoup_28__consumeCharacterReference__jsoup_28f_consumeCharacterReference_line100/generation/raw_response.txt",
+  "payload": {
+    "id": 32,
+    "reasoning": "Reader's current character is not checked for null when it's a named reference",
+    "line": 34,
+    "precode": "reader.current() != null",
+    "aftercode": "// reader.current()",
+    "candidate_code": "    Character consumeCharacterReference(Character additionalAllowedCharacter, boolean inAttribute) {\n        if (reader.isEmpty())\n            return null;\n        if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())\n            return null;\n        if (reader.matchesAny('\\t', '\\n', '\\r', '\\f', ' ', '<', '&'))\n            return null;\n\n        reader.mark();\n        if (reader.matchConsume(\"#\")) { // numbered\n            boolean isHexMode = reader.matchConsumeIgnoreCase(\"X\");\n            String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();\n            if (numRef.length() == 0) { // didn't match anything\n                characterReferenceError(\"numeric reference with no numerals\");\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            int charval = -1;\n            try {\n                int base = isHexMode ? 16 : 10;\n                charval = Integer.valueOf(numRef, base);\n            } catch (NumberFormatException e) {\n            } // skip\n            if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {\n                characterReferenceError(\"character outside of valid range\");\n                return replacementChar;\n            } else {\n                // todo: implement number replacement table\n                // todo: check for extra illegal unicode points as parse errors\n                return (char) charval;\n            }\n        // reader.current() {\n            // get as many letters as possible, and look for matching entities.\n            String nameRef = reader.consumeLetterThenDigitSequence();\n            boolean looksLegit = reader.matches(';');\n            // found if a base named entity without a ;, or an extended entity with the ;.\n            boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));\n\n            if (!found) {\n                reader.rewindToMark();\n                if (looksLegit) // named with semicolon\n                    characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));\n                return null;\n            }\n            if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {\n                // don't want that to match\n                reader.rewindToMark();\n                return null;\n            }\n            if (!reader.matchConsume(\";\"))\n                characterReferenceError(\"missing semicolon\"); // missing semi\n            return Entities.getCharacterByName(nameRef);\n        }\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/runs/batch06__Jsoup_28__consumeCharacterReference__jsoup_28f_consumeCharacterReference_line100/rejected/rej32.log",
+  "mutant_path": "harness/runs/batch06__Jsoup_28__consumeCharacterReference__jsoup_28f_consumeCharacterReference_line100/rejected/rej32.mutant.txt",
+  "original_path": "harness/runs/batch06__Jsoup_28__consumeCharacterReference__jsoup_28f_consumeCharacterReference_line100/rejected/original.txt"
+}

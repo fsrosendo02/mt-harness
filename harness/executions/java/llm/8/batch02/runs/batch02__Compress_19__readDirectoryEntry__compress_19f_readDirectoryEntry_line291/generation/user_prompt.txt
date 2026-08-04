@@ -1,0 +1,114 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void readDirectoryEntry(DumpArchiveEntry entry)
+ 2:         throws IOException {
+ 3:         long size = entry.getEntrySize();
+ 4:         boolean first = true;
+ 5: 
+ 6:         while (first ||
+ 7:                 (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {
+ 8:             // read the header that we just peeked at.
+ 9:             if (!first) {
+10:                 raw.readRecord();
+11:             }
+12: 
+13:             if (!names.containsKey(Integer.valueOf(entry.getIno())) &&
+14:                     (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {
+15:                 pending.put(Integer.valueOf(entry.getIno()), entry);
+16:             }
+17: 
+18:             int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();
+19: 
+20:             if (blockBuffer.length < datalen) {
+21:                 blockBuffer = new byte[datalen];
+22:             }
+23: 
+24:             if (raw.read(blockBuffer, 0, datalen) != datalen) {
+25:                 throw new EOFException();
+26:             }
+27: 
+28:             int reclen = 0;
+29: 
+30:             for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));
+31:                     i += reclen) {
+32:                 int ino = DumpArchiveUtil.convert32(blockBuffer, i);
+33:                 reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);
+34: 
+35:                 byte type = blockBuffer[i + 6];
+36: 
+37:                 String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?
+38: 
+39:                 if (".".equals(name) || "..".equals(name)) {
+40:                     // do nothing...
+41:                     continue;
+42:                 }
+43: 
+44:                 Dirent d = new Dirent(ino, entry.getIno(), type, name);
+45: 
+46:                 /*
+47:                 if ((type == 4) && names.containsKey(ino)) {
+48:                     System.out.println("we already have ino: " +
+49:                                        names.get(ino));
+50:                 }
+51:                 */
+52: 
+53:                 names.put(Integer.valueOf(ino), d);
+54: 
+55:                 // check whether this allows us to fill anything in the pending list.
+56:                 for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {
+57:                     String path = getPath(e.getValue());
+58: 
+59:                     if (path != null) {
+60:                         e.getValue().setName(path);
+61:                         e.getValue()
+62:                          .setSimpleName(names.get(e.getKey()).getName());
+63:                         queue.add(e.getValue());
+64:                     }
+65:                 }
+66: 
+67:                 // remove anything that we found. (We can't do it earlier
+68:                 // because of concurrent modification exceptions.)
+69:                 for (DumpArchiveEntry e : queue) {
+70:                     pending.remove(Integer.valueOf(e.getIno()));
+71:                 }
+72:             }
+73: 
+74:             byte[] peekBytes = raw.peek();
+75: 
+76:             if (!DumpArchiveUtil.verify(peekBytes)) {
+77:                 throw new InvalidFormatException();
+78:             }
+79: 
+80:             entry = DumpArchiveEntry.parse(peekBytes);
+81:             first = false;
+82:             size -= DumpArchiveConstants.TP_SIZE;
+83:         }
+84:     }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private byte[] createLocalFileHeader(ZipArchiveEntry ze, ByteBuffer name, boolean encodable,
+ 2:                                          boolean phased)  {
+ 3:         byte[] extra = ze.getLocalFileDataExtra();
+ 4:         final int nameLen = name.limit() - name.position();
+ 5:         int len= LFH_FILENAME_OFFSET + nameLen + extra.length;
+ 6:         byte[] buf = new byte[len];
+ 7: 
+ 8:         System.arraycopy(LFH_SIG,  0, buf, LFH_SIG_OFFSET, WORD);
+ 9: 
+10:         //store method in local variable to prevent multiple method calls
+11:         final int zipMethod = ze.getMethod();
+12: 
+13:         if (phased &&  !isZip64Required(entry.entry, zip64Mode)){
+14:             putShort(INITIAL_VERSION, buf, LFH_VERSION_NEEDED_OFFSET);
+15:         } else {
+16:             putShort(versionNeededToExtract(zipMethod, hasZip64Extra(ze)), buf, LFH_VERSION_NEEDED_OFFSET);
+17:         }
+18: 
+19:         GeneralPurposeBit generalPurposeBit = getGeneralPurposeBits(zipMethod, !encodable && fallbackToUTF8);
+20:         generalPurposeBit.encode(buf, LFH_GPB_OFFSET);
+21: 
+22:         // compression method
+23:         putShort(zipMethod, buf, LFH_METHOD_OFFSET);
+24: 
+25:         ZipUtil.toDosTime(calendarInstance, ze.getTime(), buf, LFH_TIME_OFFSET);
+26: 
+27:         // CRC
+28:         if (phased){
+29:             putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+30:         } else if (zipMethod == DEFLATED || raf != null) {
+31:             System.arraycopy(LZERO, 0, buf, LFH_CRC_OFFSET, WORD);
+32:         } else {
+33:             putLong(ze.getCrc(), buf, LFH_CRC_OFFSET);
+34:         }
+35: 
+36:         // compressed length
+37:         // uncompressed length
+38:         if (hasZip64Extra(entry.entry)){
+39:             // point to ZIP64 extended information extra field for
+40:             // sizes, may get rewritten once sizes are known if
+41:             // stream is seekable
+42:             ZipLong.ZIP64_MAGIC.putLong(buf, LFH_COMPRESSED_SIZE_OFFSET);
+43:             ZipLong.ZIP64_MAGIC.putLong(buf, LFH_ORIGINAL_SIZE_OFFSET);
+44:         } else if (phased) {
+45:             putLong(ze.getCompressedSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+46:             putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+47:         } else if (zipMethod == DEFLATED || raf != null) {
+48:             System.arraycopy(LZERO, 0, buf, LFH_COMPRESSED_SIZE_OFFSET, WORD);
+49:             System.arraycopy(LZERO, 0, buf, LFH_ORIGINAL_SIZE_OFFSET, WORD);
+50:         } else { // Stored
+51:             putLong(ze.getSize(), buf, LFH_COMPRESSED_SIZE_OFFSET);
+52:             putLong(ze.getSize(), buf, LFH_ORIGINAL_SIZE_OFFSET);
+53:         }
+54:         // file name length
+55:         putShort(nameLen, buf, LFH_FILENAME_LENGTH_OFFSET);
+56: 
+57:         // extra field length
+58:         putShort(extra.length, buf, LFH_EXTRA_LENGTH_OFFSET);
+59: 
+60:         // file name
+61:         System.arraycopy( name.array(), name.arrayOffset(), buf, LFH_FILENAME_OFFSET, nameLen);
+62: 
+63:         System.arraycopy(extra, 0, buf, LFH_FILENAME_OFFSET + nameLen, extra.length);
+64:         return buf;
+65:     }
+
+Then, generate exactly 40 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

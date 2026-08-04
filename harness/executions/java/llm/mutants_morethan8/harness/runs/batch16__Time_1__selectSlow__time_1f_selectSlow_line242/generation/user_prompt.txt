@@ -1,0 +1,105 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private static Converter selectSlow(ConverterSet set, Class<?> type) {
+ 2:         Converter[] converters = set.iConverters;
+ 3:         int length = converters.length;
+ 4:         Converter converter;
+ 5: 
+ 6:         for (int i=length; --i>=0; ) {
+ 7:             converter = converters[i];
+ 8:             Class<?> supportedType = converter.getSupportedType();
+ 9: 
+10:             if (supportedType == type) {
+11:                 // Exact match.
+12:                 return converter;
+13:             }
+14: 
+15:             if (supportedType == null || (type != null && !supportedType.isAssignableFrom(type))) {
+16:                 // Eliminate the impossible.
+17:                 set = set.remove(i, null);
+18:                 converters = set.iConverters;
+19:                 length = converters.length;
+20:             }
+21:         }
+22: 
+23:         // Haven't found exact match, so check what remains in the set.
+24: 
+25:         if (type == null || length == 0) {
+26:             return null;
+27:         }
+28:         if (length == 1) {
+29:             // Found the one best match.
+30:             return converters[0];
+31:         }
+32: 
+33:         // At this point, there exist multiple potential converters.
+34: 
+35:         // Eliminate supertypes.
+36:         for (int i=length; --i>=0; ) {
+37:             converter = converters[i];
+38:             Class<?> supportedType = converter.getSupportedType();
+39:             for (int j=length; --j>=0; ) {
+40:                 if (j != i && converters[j].getSupportedType().isAssignableFrom(supportedType)) {
+41:                     // Eliminate supertype.
+42:                     set = set.remove(j, null);
+43:                     converters = set.iConverters;
+44:                     length = converters.length;
+45:                     i = length - 1;
+46:                 }
+47:             }
+48:         }        
+49:         
+50:         // Check what remains in the set.
+51: 
+52:         if (length == 1) {
+53:             // Found the one best match.
+54:             return converters[0];
+55:         }
+56: 
+57:         // Class c implements a, b {}
+58:         // Converters exist only for a and b. Which is better? Neither.
+59: 
+60:         StringBuilder msg = new StringBuilder();
+61:         msg.append("Unable to find best converter for type \"");
+62:         msg.append(type.getName());
+63:         msg.append("\" from remaining set: ");
+64:         for (int i=0; i<length; i++) {
+65:             converter = converters[i];
+66:             Class<?> supportedType = converter.getSupportedType();
+67: 
+68:             msg.append(converter.getClass().getName());
+69:             msg.append('[');
+70:             msg.append(supportedType == null ? null : supportedType.getName());
+71:             msg.append("], ");
+72:         }
+73: 
+74:         throw new IllegalStateException(msg.toString());
+75:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

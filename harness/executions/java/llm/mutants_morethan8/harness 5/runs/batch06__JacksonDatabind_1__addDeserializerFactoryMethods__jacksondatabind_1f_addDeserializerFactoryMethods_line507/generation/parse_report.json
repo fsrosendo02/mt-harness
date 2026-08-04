@@ -1,0 +1,544 @@
+{
+  "requested_count": 48,
+  "accepted_count": 5,
+  "rejected_count": 43,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 5,
+        "reasoning": "A zero-arg method is not annotated as a creator",
+        "line": 12,
+        "precode": "if (isCreator) {",
+        "aftercode": "if (!isCreator) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (!isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 6,
+        "reasoning": "A single-arg factory method without name annotation is not ignored",
+        "line": 25,
+        "precode": "if ((injectId == null) && (name == null || name.length() == 0)) {",
+        "aftercode": "if ((injectId == null) && (name != null && name.length() > 0)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name != null && name.length() > 0)) {// not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 7,
+        "reasoning": "A single-arg factory method without injectable annotation is not ignored",
+        "line": 25,
+        "precode": "if ((injectId == null) && (name == null || name.length() == 0)) {",
+        "aftercode": "if ((injectId != null) && (name == null || name.length() == 0)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId != null) && (name == null || name.length() == 0)) {// not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "comment_insensitive_match"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 8,
+        "reasoning": "A method with more than 2 args is annotated as a creator",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "A non-annotated parameter is ignored in a single-arg factory method",
+        "line": 54,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "A non-annotated parameter is not ignored in a single-arg factory method",
+        "line": 54,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "A single-arg factory method with an injectable parameter is not ignored",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is ignored",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "A single-arg factory method with a named parameter is ignored",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "A single-arg factory method with a named parameter is not ignored when annotated as creator",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "A single-arg factory method with an injectable parameter is not ignored when annotated as creator",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is ignored when annotated as creator",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when not annotated as creator",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when not annotated as creator",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when not annotated as creator",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when annotated as creator and has injectable parameters",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when annotated as creator and has named parameters",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when annotated as creator and has named parameters or injectable parameters",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when not annotated as creator and has injectable parameters",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when not annotated as creator and has named parameters",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when not annotated as creator and has named parameters or injectable parameters",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when annotated as creator and has multiple parameters",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when annotated as creator and has multiple parameters",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when annotated as creator and has multiple parameters",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when not annotated as creator and has multiple parameters",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when not annotated as creator and has multiple parameters",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when not annotated as creator and has multiple parameters",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when annotated as creator and has injectable parameters in the middle",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when annotated as creator and has named parameters in the middle",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when annotated as creator and has named parameters or injectable parameters in the middle",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "A single-arg factory method with a named parameter is ignored when not annotated as creator and has injectable parameters in the middle",
+        "line": 48,
+        "precode": "if (name != null && name.length() > 0) {",
+        "aftercode": "if (name == null || name.length() <= 0) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (!intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name == null || name.length() <= 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 39,
+        "reasoning": "A single-arg factory method with an injectable parameter is ignored when not annotated as creator and has named parameters in the middle",
+        "line": 48,
+        "precode": "if (injectId != null) {",
+        "aftercode": "if (injectId == null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "A single-arg factory method with a non-named and non-injectable parameter is not ignored when not annotated as creator and has named parameters or injectable parameters in the middle",
+        "line": 48,
+        "precode": "else if (nonAnnotatedParam == null) {",
+        "aftercode": "else if (nonAnnotatedParam != null) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "A method with more than 2 args is annotated as a creator when not annotated as creator",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 42,
+        "reasoning": "A method with more than 2 args is not annotated as a creator when annotated as creator",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 43,
+        "reasoning": "A method with more than 2 args is annotated as a creator when not annotated as creator and has injectable parameters",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 44,
+        "reasoning": "A method with more than 2 args is not annotated as a creator when not annotated as creator and has named parameters",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 45,
+        "reasoning": "A method with more than 2 args is annotated as a creator when not annotated as creator and has multiple parameters",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 46,
+        "reasoning": "A method with more than 2 args is not annotated as a creator when annotated as creator and has injectable parameters in the middle",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 47,
+        "reasoning": "A method with more than 2 args is annotated as a creator when not annotated as creator and has injectable parameters in the middle",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "A method with more than 2 args is annotated as a creator when not annotated as creator and has named parameters in the middle",
+        "line": 33,
+        "precode": "if (!intr.hasCreatorAnnotation(factory)) {",
+        "aftercode": "if (intr.hasCreatorAnnotation(factory)) {",
+        "candidate_code": "    protected void _addDeserializerFactoryMethods\n        (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,\n         AnnotationIntrospector intr, CreatorCollector creators)\n        throws JsonMappingException\n    {\n        final DeserializationConfig config = ctxt.getConfig();\n        for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {\n            boolean isCreator = intr.hasCreatorAnnotation(factory);\n            int argCount = factory.getParameterCount();\n            // zero-arg methods must be annotated; if so, are \"default creators\" [JACKSON-850]\n            if (argCount == 0) {\n                if (isCreator) {\n                    creators.setDefaultCreator(factory);\n                }\n                continue;\n            }\n            // some single-arg factory methods (String, number) are auto-detected\n            if (argCount == 1) {\n                AnnotatedParameter param = factory.getParameter(0);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n\n                if ((injectId == null) && (name == null || name.length() == 0)) { // not property based\n                    _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,\n                            factory, isCreator);\n                    // otherwise just ignored\n                    continue;\n                }\n                // fall through if there's name\n            } else {\n                // more than 2 args, must be @JsonCreator\n                if (intr.hasCreatorAnnotation(factory)) {\n                    continue;\n                }\n            }\n            // 1 or more args; all params must have name annotations\n            AnnotatedParameter nonAnnotatedParam = null;            \n            CreatorProperty[] properties = new CreatorProperty[argCount];\n            int namedCount = 0;\n            int injectCount = 0;            \n            for (int i = 0; i < argCount; ++i) {\n                AnnotatedParameter param = factory.getParameter(i);\n                PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);\n                String name = (pn == null) ? null : pn.getSimpleName();\n                Object injectId = intr.findInjectableValueId(param);\n                if (name != null && name.length() > 0) {\n                    ++namedCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (injectId != null) {\n                    ++injectCount;\n                    properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);\n                } else if (nonAnnotatedParam == null) {\n                    nonAnnotatedParam = param;\n                }\n            }\n\n            // Ok: if named or injectable, we have more work to do\n            if (isCreator || namedCount > 0 || injectCount > 0) {\n                // simple case; everything covered:\n                if ((namedCount + injectCount) == argCount) {\n                    creators.addPropertyCreator(factory, properties);\n                } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {\n                    // [712] secondary: all but one injectable, one un-annotated (un-named)\n                    creators.addDelegatingCreator(factory, properties);\n                } else { // otherwise, epic fail\n                    throw new IllegalArgumentException(\"Argument #\"+nonAnnotatedParam.getIndex()\n                            +\" of factory method \"+factory+\" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator\");\n                }\n            }\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

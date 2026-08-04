@@ -1,0 +1,125 @@
+{
+  "requested_count": 24,
+  "accepted_count": 14,
+  "rejected_count": 10,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violates the property of handling unexpected end of stream gracefully.",
+        "line": 3,
+        "precode": "int flags = readOneByte();",
+        "aftercode": "byte[] buffer = new byte[1]; int bytesRead = in.read(buffer); if (bytesRead == -1) { throw new IOException(\"Premature end of stream while reading frame flags\"); } int flags = buffer[0];",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of handling I/O errors gracefully.",
+        "line": 28,
+        "precode": "int skipped = IOUtils.readFully(in, contentSize);",
+        "aftercode": "byte[] buffer = new byte[8]; int bytesRead = in.read(buffer); if (bytesRead == -1) { throw new IOException(\"Premature end of stream while reading content size\"); } System.arraycopy(buffer, 0, contentSize, 0, 8);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of handling unexpected end of stream gracefully.",
+        "line": 35,
+        "precode": "int headerHash = readOneByte();",
+        "aftercode": "byte[] buffer = new byte[1]; int bytesRead = in.read(buffer); if (bytesRead == -1) { throw new IOException(\"Premature end of stream while reading frame header checksum\"); } int headerHash = buffer[0];",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly handling I/O errors gracefully.",
+        "line": 22,
+        "precode": "int bdByte = readOneByte();",
+        "aftercode": "byte[] buffer = new byte[1]; int bytesRead = in.read(buffer); if (bytesRead == -1) { throw new IOException(\"Premature end of stream while reading frame BD byte\"); } int bdByte = buffer[0];",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly updating checksums for content sizes.",
+        "line": 27,
+        "precode": "contentHash.update(contentSize, 0, contentSize.length);",
+        "aftercode": "for (byte b : contentSize) { contentHash.update(b); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly updating checksums for content.",
+        "line": 33,
+        "precode": "contentHash.update(contentSize, 0, contentSize.length);",
+        "aftercode": "for (byte b : contentSize) { contentHash.update(b); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly updating checksums for headers.",
+        "line": 43,
+        "precode": "",
+        "aftercode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff); if (headerHash != expectedHash) { throw new IOException(\"frame header checksum mismatch.\"); }"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly resetting content hashes.",
+        "line": 40,
+        "precode": "contentHash.reset();",
+        "aftercode": "int hashValue = (int) ((contentHash.getValue() >> 8) & 0xff); contentHash.reset(hashValue);",
+        "candidate_code": "    private void readFrameDescriptor() throws IOException {\n        int flags = readOneByte();\n        if (flags == -1) {\n            throw new IOException(\"Premature end of stream while reading frame flags\");\n        }\n        contentHash.update(flags);\n        if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {\n            throw new IOException(\"Unsupported version \" + (flags >> 6));\n        }\n        expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;\n        if (expectBlockDependency) {\n            if (blockDependencyBuffer == null) {\n                blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE];\n            }\n        } else {\n            blockDependencyBuffer = null;\n        }\n        expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;\n        expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;\n        expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;\n        int bdByte = readOneByte();\n        if (bdByte == -1) { // max size is irrelevant for this implementation\n            throw new IOException(\"Premature end of stream while reading frame BD byte\");\n        }\n        contentHash.update(bdByte);\n        if (expectContentSize) { // for now we don't care, contains the uncompressed size\n            byte[] contentSize = new byte[8];\n            int skipped = IOUtils.readFully(in, contentSize);\n            count(skipped);\n            if (8 != skipped) {\n                throw new IOException(\"Premature end of stream while reading content size\");\n            }\n            contentHash.update(contentSize, 0, contentSize.length);\n        }\n        int headerHash = readOneByte();\n        if (headerHash == -1) { // partial hash of header.\n            throw new IOException(\"Premature end of stream while reading frame header checksum\");\n        }\n        int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);\n        int hashValue = (int) ((contentHash.getValue() >> 8) & 0xff); contentHash.reset(hashValue);\n        if (headerHash != expectedHash) {\n            throw new IOException(\"frame header checksum mismatch.\");\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly handling I/O errors gracefully.",
+        "line": 23,
+        "precode": "",
+        "aftercode": "throw new IOException(\"Premature end of stream while reading frame flags\");"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly handling unsupported versions.",
+        "line": 8,
+        "precode": "",
+        "aftercode": "throw new IOException(\"Unsupported version \" + (flags >> 6));"
+      }
+    }
+  ]
+}

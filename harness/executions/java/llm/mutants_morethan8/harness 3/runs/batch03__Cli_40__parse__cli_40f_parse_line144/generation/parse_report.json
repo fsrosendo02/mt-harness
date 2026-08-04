@@ -1,0 +1,53 @@
+{
+  "requested_count": 32,
+  "accepted_count": 28,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 1,
+        "reasoning": "Fails to reset options before parsing",
+        "line": 4,
+        "precode": "        // clear out the data in options in case it's been used before (CLI-71)",
+        "aftercode": "        // clear out the data in options in case it's been used before (CLI-71) // intentionally left blank"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Fails to reset option groups before parsing",
+        "line": 10,
+        "precode": "        // clear the data from the groups",
+        "aftercode": "        // clear the data from the groups // intentionally left blank"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Fails to add arguments when stopAtNonOption is false",
+        "line": 75,
+        "precode": "                    eatTheRest = true;",
+        "aftercode": "                    eatTheRest = false;",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = false;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "Fails to check required options",
+        "line": 98,
+        "precode": "        checkRequiredOptions();",
+        "aftercode": "        checkRequiredOptions(); // intentionally left blank"
+      }
+    }
+  ]
+}

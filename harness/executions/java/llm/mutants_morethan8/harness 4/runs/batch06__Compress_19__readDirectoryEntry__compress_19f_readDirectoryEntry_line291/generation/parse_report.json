@@ -1,0 +1,435 @@
+{
+  "requested_count": 40,
+  "accepted_count": 6,
+  "rejected_count": 34,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if (!(names.containsKey(Integer.valueOf(entry.getIno())) || names.containsKey(Integer.valueOf(entry.getIno()))) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if (!(names.containsKey(Integer.valueOf(entry.getIno())) || names.containsKey(Integer.valueOf(entry.getIno()))) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && ((DumpArchiveConstants.SEGMENT_TYPE.INODE != entry.getHeaderType()) || (entry.getHeaderType() == DumpArchiveConstants.SEGMENT_TYPE.ADDR))) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if (!names.containsKey(Integer.valueOf(entry.getIno())) && ((DumpArchiveConstants.SEGMENT_TYPE.INODE != entry.getHeaderType()) || (entry.getHeaderType() == DumpArchiveConstants.SEGMENT_TYPE.ADDR))) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the property of correctly handling directory entries by not updating names map.",
+        "line": 53,
+        "precode": "names.put(Integer.valueOf(ino), d);",
+        "aftercode": "if (false) { names.put(Integer.valueOf(ino), d); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly handling directory entries by not adding to queue.",
+        "line": 63,
+        "precode": "queue.add(e.getValue());",
+        "aftercode": "if (false) { queue.add(e.getValue()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly handling directory entries by not removing from pending.",
+        "line": 69,
+        "precode": "for (DumpArchiveEntry e : queue) {",
+        "aftercode": "if (false) { for (DumpArchiveEntry e : queue) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                if (false) { for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating entry.",
+        "line": 79,
+        "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+        "aftercode": "if (false) { entry = DumpArchiveEntry.parse(peekBytes); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && ((DumpArchiveConstants.SEGMENT_TYPE.INODE != entry.getHeaderType()) || (entry.getHeaderType() == DumpArchiveConstants.SEGMENT_TYPE.ADDR))) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && ((DumpArchiveConstants.SEGMENT_TYPE.INODE != entry.getHeaderType()) || (entry.getHeaderType() == DumpArchiveConstants.SEGMENT_TYPE.ADDR))) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || names.containsKey(Integer.valueOf(entry.getIno()))) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || names.containsKey(Integer.valueOf(entry.getIno()))) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || true) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || true) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating size correctly.",
+        "line": 82,
+        "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+        "aftercode": "if (false) { size -= DumpArchiveConstants.TP_SIZE; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating names map.",
+        "line": 53,
+        "precode": "names.put(Integer.valueOf(ino), d);",
+        "aftercode": "if (true) { names.put(Integer.valueOf(ino), d); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly parsing directory entries by not adding to queue.",
+        "line": 63,
+        "precode": "queue.add(e.getValue());",
+        "aftercode": "if (true) { queue.add(e.getValue()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly parsing directory entries by not removing from pending.",
+        "line": 69,
+        "precode": "for (DumpArchiveEntry e : queue) {",
+        "aftercode": "if (true) { for (DumpArchiveEntry e : queue) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                if (true) { for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating entry.",
+        "line": 79,
+        "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+        "aftercode": "if (false) { entry = DumpArchiveEntry.parse(peekBytes); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || names.containsKey(Integer.valueOf(entry.getIno()))) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || names.containsKey(Integer.valueOf(entry.getIno()))) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || true) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || true) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && true) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && true) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating size correctly.",
+        "line": 82,
+        "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+        "aftercode": "if (false) { size -= DumpArchiveConstants.TP_SIZE; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating names map.",
+        "line": 53,
+        "precode": "names.put(Integer.valueOf(ino), d);",
+        "aftercode": "if (true) { names.put(Integer.valueOf(ino), d); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly parsing directory entries by not adding to queue.",
+        "line": 63,
+        "precode": "queue.add(e.getValue());",
+        "aftercode": "if (true) { queue.add(e.getValue()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly parsing directory entries by not removing from pending.",
+        "line": 69,
+        "precode": "for (DumpArchiveEntry e : queue) {",
+        "aftercode": "if (true) { for (DumpArchiveEntry e : queue) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                if (true) { for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of ensuring data integrity by not verifying read operations.",
+        "line": 24,
+        "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+        "aftercode": "if ((raw.read(blockBuffer, 0, datalen) != datalen) || false) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if ((raw.read(blockBuffer, 0, datalen) != datalen) || false) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 75,
+        "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+        "aftercode": "if ((!DumpArchiveUtil.verify(peekBytes)) && false) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if ((!DumpArchiveUtil.verify(peekBytes)) && false) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating entry.",
+        "line": 79,
+        "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+        "aftercode": "if (false) { entry = DumpArchiveEntry.parse(peekBytes); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || names.containsKey(Integer.valueOf(entry.getIno()))) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || names.containsKey(Integer.valueOf(entry.getIno()))) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || true) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) || true) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the property of ensuring proper handling of directory entries by skipping name comparison for inodes.",
+        "line": 31,
+        "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+        "aftercode": "if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && true) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    if ((!names.containsKey(Integer.valueOf(entry.getIno()))) && true) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating size correctly.",
+        "line": 82,
+        "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+        "aftercode": "if (false) { size -= DumpArchiveConstants.TP_SIZE; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the property of correctly parsing directory entries by not updating names map.",
+        "line": 53,
+        "precode": "names.put(Integer.valueOf(ino), d);",
+        "aftercode": "if (true) { names.put(Integer.valueOf(ino), d); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the property of correctly parsing directory entries by not adding to queue.",
+        "line": 63,
+        "precode": "queue.add(e.getValue());",
+        "aftercode": "if (true) { queue.add(e.getValue()); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the property of correctly parsing directory entries by not removing from pending.",
+        "line": 69,
+        "precode": "for (DumpArchiveEntry e : queue) {",
+        "aftercode": "if (true) { for (DumpArchiveEntry e : queue) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                if (true) { for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the property of ensuring data integrity by not verifying read operations.",
+        "line": 24,
+        "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+        "aftercode": "if ((raw.read(blockBuffer, 0, datalen) != datalen) || false) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if ((raw.read(blockBuffer, 0, datalen) != datalen) || false) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if (!DumpArchiveUtil.verify(peekBytes)) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the property of correctly parsing directory entries by not checking for specific segment types.",
+        "line": 75,
+        "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+        "aftercode": "if ((!DumpArchiveUtil.verify(peekBytes)) && false) {",
+        "candidate_code": "    private void readDirectoryEntry(DumpArchiveEntry entry)\n        throws IOException {\n        long size = entry.getEntrySize();\n        boolean first = true;\n\n        while (first ||\n                (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {\n            // read the header that we just peeked at.\n            if (!first) {\n                raw.readRecord();\n            }\n\n            if (!names.containsKey(Integer.valueOf(entry.getIno())) &&\n                    (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {\n                pending.put(Integer.valueOf(entry.getIno()), entry);\n            }\n\n            int datalen = DumpArchiveConstants.TP_SIZE * entry.getHeaderCount();\n\n            if (blockBuffer.length < datalen) {\n                blockBuffer = new byte[datalen];\n            }\n\n            if (raw.read(blockBuffer, 0, datalen) != datalen) {\n                throw new EOFException();\n            }\n\n            int reclen = 0;\n\n            for (int i = 0; (i < (datalen - 8)) && (i < (size - 8));\n                    i += reclen) {\n                int ino = DumpArchiveUtil.convert32(blockBuffer, i);\n                reclen = DumpArchiveUtil.convert16(blockBuffer, i + 4);\n\n                byte type = blockBuffer[i + 6];\n\n                String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]); // TODO default charset?\n\n                if (\".\".equals(name) || \"..\".equals(name)) {\n                    // do nothing...\n                    continue;\n                }\n\n                Dirent d = new Dirent(ino, entry.getIno(), type, name);\n\n                /*\n                if ((type == 4) && names.containsKey(ino)) {\n                    System.out.println(\"we already have ino: \" +\n                                       names.get(ino));\n                }\n                */\n\n                names.put(Integer.valueOf(ino), d);\n\n                // check whether this allows us to fill anything in the pending list.\n                for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {\n                    String path = getPath(e.getValue());\n\n                    if (path != null) {\n                        e.getValue().setName(path);\n                        e.getValue()\n                         .setSimpleName(names.get(e.getKey()).getName());\n                        queue.add(e.getValue());\n                    }\n                }\n\n                // remove anything that we found. (We can't do it earlier\n                // because of concurrent modification exceptions.)\n                for (DumpArchiveEntry e : queue) {\n                    pending.remove(Integer.valueOf(e.getIno()));\n                }\n            }\n\n            byte[] peekBytes = raw.peek();\n\n            if ((!DumpArchiveUtil.verify(peekBytes)) && false) {\n                throw new InvalidFormatException();\n            }\n\n            entry = DumpArchiveEntry.parse(peekBytes);\n            first = false;\n            size -= DumpArchiveConstants.TP_SIZE;\n        }\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

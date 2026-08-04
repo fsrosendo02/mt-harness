@@ -1,0 +1,340 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The while loop does not correctly handle the case where the entry is of type ADDR and first is true, potentially causing an infinite loop.",
+      "line": 7,
+      "precode": "while (first || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {",
+      "aftercode": "while (false || (DumpArchiveConstants.SEGMENT_TYPE.ADDR == entry.getHeaderType())) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The condition for reading a record is incorrect, it should only read if the current entry is not the first one.",
+      "line": 9,
+      "precode": "// read the header that we just peeked at.",
+      "aftercode": ""
+    },
+    {
+      "id": 3,
+      "reasoning": "The condition to add an inode to the pending list is incorrect, it should only do so if the entry type is INODE and the inode is not already in the names map.",
+      "line": 13,
+      "precode": "if (!names.containsKey(Integer.valueOf(entry.getIno())) && (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {",
+      "aftercode": "if (names.containsKey(Integer.valueOf(entry.getIno())) || (DumpArchiveConstants.SEGMENT_TYPE.INODE == entry.getHeaderType())) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "The block buffer size is not correctly adjusted, it should be set to the size of the data length if greater.",
+      "line": 20,
+      "precode": "if (blockBuffer.length < datalen) {",
+      "aftercode": "if (blockBuffer.length > datalen) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "The read operation does not correctly check if the expected data length is read, it should throw an EOFException if less is read.",
+      "line": 24,
+      "precode": "if (raw.read(blockBuffer, 0, datalen) != datalen) {",
+      "aftercode": "if (raw.read(blockBuffer, 0, datalen) == datalen) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "The loop to process records does not correctly handle the size condition, it should break if the end of the entry is reached.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 7,
+      "reasoning": "The inode conversion does not correctly handle the case where the data is not in the correct format.",
+      "line": 32,
+      "precode": "int ino = DumpArchiveUtil.convert32(blockBuffer, i);",
+      "aftercode": "int ino = DumpArchiveUtil.convert16(blockBuffer, i + 4);"
+    },
+    {
+      "id": 8,
+      "reasoning": "The directory entry type is not correctly handled, it should be assigned based on the byte at offset i + 6.",
+      "line": 35,
+      "precode": "byte type = blockBuffer[i + 6];",
+      "aftercode": "byte type = blockBuffer[i + 5];"
+    },
+    {
+      "id": 9,
+      "reasoning": "The name conversion does not correctly handle the case where the name is null.",
+      "line": 37,
+      "precode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 7]);",
+      "aftercode": "String name = new String(blockBuffer, i + 8, blockBuffer[i + 8] == 0 ? 1 : blockBuffer[i + 7]);"
+    },
+    {
+      "id": 10,
+      "reasoning": "The condition to continue with a period or double period name is incorrect, it should only continue if the name is not a period or double period.",
+      "line": 39,
+      "precode": "\".\".equals(name) || \"..\".equals(name)",
+      "aftercode": "!\".\".equals(name) && !\"..\".equals(name)"
+    },
+    {
+      "id": 11,
+      "reasoning": "The condition to add a directory entry is incorrect, it should only add if the type is not equal to 4 or the inode is already in the names map.",
+      "line": 43,
+      "precode": "Dirent d = new Dirent(ino, entry.getIno(), type, name);",
+      "aftercode": "Dirent d = new Dirent(ino, entry.getIno(), type == 4 ? names.get(ino).getType() : type, name);"
+    },
+    {
+      "id": 12,
+      "reasoning": "The condition to fill in the pending list is incorrect, it should only do so if the path is not null.",
+      "line": 56,
+      "precode": "for (Map.Entry<Integer, DumpArchiveEntry> e : pending.entrySet()) {",
+      "aftercode": "for (Map.Entry<Integer, DumpArchiveEntry> e : queue) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "The condition to check if the peek bytes are valid is incorrect, it should only throw an exception if the peek bytes are not valid.",
+      "line": 76,
+      "precode": "if (!DumpArchiveUtil.verify(peekBytes)) {",
+      "aftercode": "if (DumpArchiveUtil.verify(peekBytes)) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "The entry parsing does not correctly handle the case where the peek bytes are null.",
+      "line": 80,
+      "precode": "entry = DumpArchiveEntry.parse(peekBytes);",
+      "aftercode": "entry = DumpArchiveEntry.parse(null);"
+    },
+    {
+      "id": 15,
+      "reasoning": "The size subtraction is incorrect, it should only subtract the data length from the size.",
+      "line": 82,
+      "precode": "size -= DumpArchiveConstants.TP_SIZE;",
+      "aftercode": "size += DumpArchiveConstants.TP_SIZE;"
+    },
+    {
+      "id": 16,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than 8, it should throw an InvalidFormatException.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 17,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 18,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 19,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 21,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 22,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 23,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 24,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 25,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 26,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 27,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 28,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 29,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 30,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 31,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 32,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 33,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 34,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 35,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 36,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 37,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 38,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 39,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 40,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 41,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 42,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 43,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 44,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 45,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 46,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 47,
+      "reasoning": "The condition to process records does not correctly handle the case where the size is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    },
+    {
+      "id": 48,
+      "reasoning": "The condition to process records does not correctly handle the case where the data length is less than or equal to 8, it should break from the loop.",
+      "line": 30,
+      "precode": "for (int i = 0; (i < (datalen - 8)) && (i < (size - 8)); i += reclen) {",
+      "aftercode": "for (int i = 0; (i > (datalen - 8)) || (i > (size - 8)); i += reclen) {"
+    }
+  ]
+}

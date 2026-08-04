@@ -1,0 +1,49 @@
+# Reproducible mull toolchain image for the ManyBugs `libtiff` family.
+#
+# Base is Ubuntu 18.04 (bionic), same rationale as Dockerfile.gzip. Original
+# image is Ubuntu 14.04 (Trusty), same as lighttpd.
+#
+# Unlike lighttpd but LIKE gzip, libtiff's original CFLAGS have -m32 —
+# gcc-multilib/g++-multilib are required. g++ is needed too: libtiff's
+# ./configure probes for optional C++ support and fails ("C++ preprocessor
+# fails sanity check") if no C++ compiler is present at all, even though
+# the mull baseline only cares about the C library.
+#
+# See mull_baseline_plan.md ("Investigação libtiff") for two more
+# project-specific quirks handled by prepare_mull_checkout.py, not this
+# Dockerfile: (1) CFLAGS must be baked into `./configure` (not just passed
+# to the initial `make`) because libtiff's test suite recompiles small
+# test binaries on demand via a bare `make <target>` with no override; (2)
+# test/Makefile has an unresolved 2005-era Automake conditional that needs
+# a one-line sed patch after every ./configure run.
+FROM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && apt-get install -y -qq \
+      curl \
+      ca-certificates \
+      gnupg \
+      apt-transport-https \
+      clang-9 \
+      gcc-multilib \
+      g++ \
+      g++-multilib \
+      make \
+      perl \
+      psmisc \
+      sqlite3 \
+    && curl -1sLf "https://dl.cloudsmith.io/public/mull-project/mull-stable/setup.deb.sh" | bash \
+    && apt-get install -y -qq mull-9 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# See Dockerfile.gzip for why -O1 -fexperimental-new-pass-manager are
+# required. Unlike gzip, these flags get baked into `./configure` itself
+# for libtiff (see prepare_mull_checkout.py's CFLAGS_AT_CONFIGURE_TIME) —
+# still exported here as the single source of truth for the flag string.
+ENV MULL_CC=clang-9
+ENV MULL_CFLAGS="-m32 -O1 -fexperimental-new-pass-manager -fpass-plugin=/usr/lib/mull-ir-frontend-9 -g -grecord-command-line"
+ENV MULL_LDFLAGS="-m32"
+
+WORKDIR /experiment

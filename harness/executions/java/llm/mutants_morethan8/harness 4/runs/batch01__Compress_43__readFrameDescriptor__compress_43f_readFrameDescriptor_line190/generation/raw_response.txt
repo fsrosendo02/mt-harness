@@ -1,0 +1,214 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The check for the supported version in the flags byte may not detect unsupported versions correctly.",
+      "line": 7,
+      "precode": "if ((flags & VERSION_MASK) != SUPPORTED_VERSION)",
+      "aftercode": "if ((flags & VERSION_MASK) == SUPPORTED_VERSION)"
+    },
+    {
+      "id": 2,
+      "reasoning": "The method does not account for a case where the frame flags are read successfully but an unsupported version is indicated.",
+      "line": 8,
+      "precode": "throw new IOException(\"Unsupported version \" + (flags >> 6))",
+      "aftercode": "// throw new IOException(\"Unsupported version \" + (flags >> 6))"
+    },
+    {
+      "id": 3,
+      "reasoning": "The method expects a block dependency flag to be set for the buffer allocation to succeed.",
+      "line": 10,
+      "precode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0",
+      "aftercode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) != 0"
+    },
+    {
+      "id": 4,
+      "reasoning": "The method fails to handle the case where block independence is not expected, but a buffer allocation still occurs.",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]",
+      "aftercode": "// blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]"
+    },
+    {
+      "id": 5,
+      "reasoning": "The method incorrectly updates the content hash when reading the block dependency byte.",
+      "line": 25,
+      "precode": "contentHash.update(bdByte)",
+      "aftercode": "// contentHash.update(bdByte)"
+    },
+    {
+      "id": 6,
+      "reasoning": "The method does not handle the case where the frame BD byte is read successfully but an unexpected value is encountered.",
+      "line": 23,
+      "precode": "throw new IOException(\"Premature end of stream while reading frame BD byte\")",
+      "aftercode": "// throw new IOException(\"Premature end of stream while reading frame BD byte\")"
+    },
+    {
+      "id": 7,
+      "reasoning": "The method does not account for the possibility that content size information may be present even when expectedContentSize is false.",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8]",
+      "aftercode": "// byte[] contentSize = new byte[8]"
+    },
+    {
+      "id": 8,
+      "reasoning": "The method does not handle the case where the content size is read but an unexpected number of bytes are returned.",
+      "line": 31,
+      "precode": "throw new IOException(\"Premature end of stream while reading content size\")",
+      "aftercode": "// throw new IOException(\"Premature end of stream while reading content size\")"
+    },
+    {
+      "id": 9,
+      "reasoning": "The method incorrectly updates the content hash when reading the content size.",
+      "line": 33,
+      "precode": "contentHash.update(contentSize, 0, contentSize.length)",
+      "aftercode": "// contentHash.update(contentSize, 0, contentSize.length)"
+    },
+    {
+      "id": 10,
+      "reasoning": "The method does not account for the possibility that a header hash may be read successfully but an unexpected value is encountered.",
+      "line": 37,
+      "precode": "throw new IOException(\"Premature end of stream while reading frame header checksum\")",
+      "aftercode": "// throw new IOException(\"Premature end of stream while reading frame header checksum\")"
+    },
+    {
+      "id": 11,
+      "reasoning": "The method incorrectly calculates the expected hash value.",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff)",
+      "aftercode": "int expectedHash = contentHash.getValue()"
+    },
+    {
+      "id": 12,
+      "reasoning": "The method fails to reset the content hash after calculating the header checksum.",
+      "line": 40,
+      "precode": "contentHash.reset()",
+      "aftercode": "// contentHash.reset()"
+    },
+    {
+      "id": 13,
+      "reasoning": "The method incorrectly throws an exception when the frame header checksum does not match.",
+      "line": 42,
+      "precode": "throw new IOException(\"frame header checksum mismatch.\")",
+      "aftercode": "// throw new IOException(\"frame header checksum mismatch.\")"
+    },
+    {
+      "id": 14,
+      "reasoning": "The method fails to handle the case where a block dependency is expected but the buffer allocation throws an exception.",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]",
+      "aftercode": "try { blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]; } catch (Exception e) {}"
+    },
+    {
+      "id": 15,
+      "reasoning": "The method fails to handle the case where content size is expected but reading it throws an exception.",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8]",
+      "aftercode": "try { byte[] contentSize = new byte[8]; } catch (Exception e) {}"
+    },
+    {
+      "id": 16,
+      "reasoning": "The method incorrectly uses the same buffer for both block dependency and content size operations.",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]",
+      "aftercode": "blockDependencyBuffer = new byte[0]"
+    },
+    {
+      "id": 17,
+      "reasoning": "The method incorrectly uses the same buffer for both block dependency and content size operations.",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8]",
+      "aftercode": "contentSize = new byte[0]"
+    },
+    {
+      "id": 18,
+      "reasoning": "The method incorrectly updates the content hash with an incorrect value.",
+      "line": 25,
+      "precode": "contentHash.update(bdByte)",
+      "aftercode": "contentHash.update(0)"
+    },
+    {
+      "id": 19,
+      "reasoning": "The method incorrectly updates the content hash after reading the content size.",
+      "line": 33,
+      "precode": "contentHash.update(contentSize, 0, contentSize.length)",
+      "aftercode": "contentHash.update(0)"
+    },
+    {
+      "id": 20,
+      "reasoning": "The method incorrectly calculates the expected hash value from the content hash.",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff)",
+      "aftercode": "int expectedHash = 0"
+    },
+    {
+      "id": 21,
+      "reasoning": "The method does not reset the content hash after calculating the header checksum.",
+      "line": 40,
+      "precode": "contentHash.reset()",
+      "aftercode": "// contentHash.reset(); contentHash.update(0)"
+    },
+    {
+      "id": 22,
+      "reasoning": "The method incorrectly throws an exception when the frame header checksum does not match.",
+      "line": 42,
+      "precode": "throw new IOException(\"frame header checksum mismatch.\")",
+      "aftercode": "// throw new IOException(\"frame header checksum mismatch.\"); contentHash.update(0)"
+    },
+    {
+      "id": 23,
+      "reasoning": "The method does not handle the case where the frame flags are read successfully but an unsupported version is indicated.",
+      "line": 8,
+      "precode": "throw new IOException(\"Unsupported version \" + (flags >> 6))",
+      "aftercode": "// throw new IOException(\"Unsupported version \" + (flags >> 6)); contentHash.update(0)"
+    },
+    {
+      "id": 24,
+      "reasoning": "The method incorrectly handles the case where a block dependency is expected but the buffer allocation throws an exception.",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]",
+      "aftercode": "// try { blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]; } catch (Exception e) {}"
+    },
+    {
+      "id": 25,
+      "reasoning": "The method incorrectly handles the case where content size is expected but reading it throws an exception.",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8]",
+      "aftercode": "// try { byte[] contentSize = new byte[8]; } catch (Exception e) {}"
+    },
+    {
+      "id": 26,
+      "reasoning": "The method incorrectly uses the same buffer for both block dependency and content size operations.",
+      "line": 13,
+      "precode": "blockDependencyBuffer = new byte[BlockLZ4CompressorInputStream.WINDOW_SIZE]",
+      "aftercode": "// blockDependencyBuffer = new byte[0]"
+    },
+    {
+      "id": 27,
+      "reasoning": "The method incorrectly uses the same buffer for both block dependency and content size operations.",
+      "line": 28,
+      "precode": "byte[] contentSize = new byte[8]",
+      "aftercode": "// contentSize = new byte[0]"
+    },
+    {
+      "id": 28,
+      "reasoning": "The method incorrectly updates the content hash with an incorrect value.",
+      "line": 25,
+      "precode": "contentHash.update(bdByte)",
+      "aftercode": "// contentHash.update(0)"
+    },
+    {
+      "id": 29,
+      "reasoning": "The method incorrectly updates the content hash after reading the content size.",
+      "line": 33,
+      "precode": "contentHash.update(contentSize, 0, contentSize.length)",
+      "aftercode": "// contentHash.update(0)"
+    },
+    {
+      "id": 30,
+      "reasoning": "The method incorrectly calculates the expected hash value from the content hash.",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff)",
+      "aftercode": "// int expectedHash = 0"
+    }
+  ]
+}

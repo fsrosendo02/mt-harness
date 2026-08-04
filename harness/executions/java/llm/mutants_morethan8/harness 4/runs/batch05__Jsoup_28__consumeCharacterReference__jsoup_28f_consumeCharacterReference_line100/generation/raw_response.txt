@@ -1,0 +1,284 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Incorrectly returns null when reader is not empty",
+      "line": 2,
+      "precode": "if (reader.isEmpty())",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 2,
+      "reasoning": "Always returns null for additional allowed character match",
+      "line": 4,
+      "precode": "if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 3,
+      "reasoning": "Always returns null for forbidden characters",
+      "line": 6,
+      "precode": "if (reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&'))",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 4,
+      "reasoning": "Skips numeric reference handling",
+      "line": 10,
+      "precode": "if (reader.matchConsume(\"#\")) { // numbered",
+      "aftercode": "if (false) { // numbered"
+    },
+    {
+      "id": 5,
+      "reasoning": "Always treats numeric references as hex",
+      "line": 11,
+      "precode": "boolean isHexMode = reader.matchConsumeIgnoreCase(\"X\");",
+      "aftercode": "boolean isHexMode = true;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Always uses digit sequence for numeric references",
+      "line": 12,
+      "precode": "String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();",
+      "aftercode": "String numRef = reader.consumeDigitSequence();"
+    },
+    {
+      "id": 7,
+      "reasoning": "Always returns null for numeric references with numerals",
+      "line": 13,
+      "precode": "if (numRef.length() == 0) { // didn't match anything",
+      "aftercode": "if (true) { // didn't match anything"
+    },
+    {
+      "id": 8,
+      "reasoning": "Skips error handling for numeric references with no numerals",
+      "line": 14,
+      "precode": "characterReferenceError(\"numeric reference with no numerals\");",
+      "aftercode": " // characterReferenceError(\"numeric reference with no numerals\");"
+    },
+    {
+      "id": 9,
+      "reasoning": "Skips rewinding to mark after numeric error",
+      "line": 15,
+      "precode": "reader.rewindToMark();",
+      "aftercode": " // reader.rewindToMark();"
+    },
+    {
+      "id": 10,
+      "reasoning": "Returns replacementChar instead of null for numeric errors",
+      "line": 17,
+      "precode": "return null;",
+      "aftercode": "return replacementChar;"
+    },
+    {
+      "id": 11,
+      "reasoning": "Skips semicolon check for numeric references",
+      "line": 18,
+      "precode": "if (!reader.matchConsume(\";\"))",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 12,
+      "reasoning": "Initializes charval to 0 instead of -1",
+      "line": 20,
+      "precode": "int charval = -1;",
+      "aftercode": "int charval = 0;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Always uses base 10 for numeric references",
+      "line": 22,
+      "precode": "int base = isHexMode ? 16 : 10;",
+      "aftercode": "int base = 10;"
+    },
+    {
+      "id": 14,
+      "reasoning": "Parses numeric references with base 2",
+      "line": 23,
+      "precode": "charval = Integer.valueOf(numRef, base);",
+      "aftercode": "charval = Integer.valueOf(numRef, 2);"
+    },
+    {
+      "id": 15,
+      "reasoning": "Removes NumberFormatException handling",
+      "line": 24,
+      "precode": "} // skip",
+      "aftercode": "} throw e; // skip"
+    },
+    {
+      "id": 16,
+      "reasoning": "Always returns replacementChar for valid numeric references",
+      "line": 26,
+      "precode": "if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {",
+      "aftercode": "if (true) {"
+    },
+    {
+      "id": 17,
+      "reasoning": "Skips error handling for invalid numeric ranges",
+      "line": 27,
+      "precode": "characterReferenceError(\"character outside of valid range\");",
+      "aftercode": " // characterReferenceError(\"character outside of valid range\");"
+    },
+    {
+      "id": 18,
+      "reasoning": "Returns null instead of replacementChar for invalid ranges",
+      "line": 28,
+      "precode": "return replacementChar;",
+      "aftercode": "return null;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Returns a different character for valid numeric references",
+      "line": 32,
+      "precode": "return (char) charval;",
+      "aftercode": "return (char) 0;"
+    },
+    {
+      "id": 20,
+      "reasoning": "Consumes only letters for named references",
+      "line": 36,
+      "precode": "String nameRef = reader.consumeLetterThenDigitSequence();",
+      "aftercode": "String nameRef = reader.consumeLetterSequence();"
+    },
+    {
+      "id": 21,
+      "reasoning": "Always assumes semicolon is present for named references",
+      "line": 37,
+      "precode": "boolean looksLegit = reader.matches(';');",
+      "aftercode": "boolean looksLegit = true;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Always returns false for named entity validation",
+      "line": 38,
+      "precode": "boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));",
+      "aftercode": "boolean found = false;"
+    },
+    {
+      "id": 23,
+      "reasoning": "Always returns true for named entity validation",
+      "line": 38,
+      "precode": "boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(name仁) && looksLegit));",
+      "aftercode": "boolean found = true;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Returns a different value for invalid named references",
+      "line": 40,
+      "precode": "return null;",
+      "aftercode": "return 'X';"
+    },
+    {
+      "id": 25,
+      "reasoning": "Skips rewinding to mark after named error",
+      "line": 42,
+      "precode": "reader.rewindToMark();",
+      "aftercode": " // reader.rewindToMark();"
+    },
+    {
+      "id": 26,
+      "reasoning": "Returns a different value for invalid named references",
+      "line": 44,
+      "precode": "characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));",
+      "aftercode": " // characterReferenceError(String.format(\"invalid named referenece '%s'\", nameRef));"
+    },
+    {
+      "id": 27,
+      "reasoning": "Returns a different value for invalid named references",
+      "line": 45,
+      "precode": "return null;",
+      "aftercode": "return 'Y';"
+    },
+    {
+      "id": 28,
+      "reasoning": "Skips attribute validation check",
+      "line": 47,
+      "precode": "if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {",
+      "aftercode": "if (false) {"
+    },
+    {
+      "id": 29,
+      "reasoning": "Skips rewinding to mark after attribute error",
+      "line": 49,
+      "precode": "reader.rewindToMark();",
+      "aftercode": " // reader.rewindToMark();"
+    },
+    {
+      "id": 30,
+      "reasoning": "Returns a different value for missing semicolon in named references",
+      "line": 53,
+      "precode": "characterReferenceError(\"missing semicolon\"); // missing semi",
+      "aftercode": " // characterReferenceError(\"missing semicolon\"); // missing semi"
+    },
+    {
+      "id": 31,
+      "reasoning": "Returns a different character for valid named references",
+      "line": 54,
+      "precode": "return Entities.getCharacterByName(nameRef);",
+      "aftercode": "return (char) 0;"
+    },
+    {
+      "id": 32,
+      "reasoning": "Always skips semicolon check for named references",
+      "line": 52,
+      "precode": "if (!reader.matchConsume(\";\"))",
+      "aftercode": "if (true)"
+    },
+    {
+      "id": 33,
+      "reasoning": "Skips error handling for missing semicolon in named references",
+      "line": 53,
+      "precode": "characterReferenceError(\"missing semicolon\"); // missing semi",
+      "aftercode": " // characterReferenceError(\"missing semicolon\"); // missing semi"
+    },
+    {
+      "id": 34,
+      "reasoning": "Returns a different value for valid named references",
+      "line": 54,
+      "precode": "return Entities.getCharacterByName(nameRef);",
+      "aftercode": "return 'Z';"
+    },
+    {
+      "id": 35,
+      "reasoning": "Changes base to 16 for all numeric references",
+      "line": 22,
+      "precode": "int base = isHexMode ? 16 : 10;",
+      "aftercode": "int base = 16;"
+    },
+    {
+      "id": 36,
+      "reasoning": "Always returns null for valid numeric references",
+      "line": 33,
+      "precode": "return (char) charval;",
+      "aftercode": "return null;"
+    },
+    {
+      "id": 37,
+      "reasoning": "Changes charval initialization to 1",
+      "line": 20,
+      "precode": "int charval = -1;",
+      "aftercode": "int charval = 1;"
+    },
+    {
+      "id": 38,
+      "reasoning": "Always throws NumberFormatException",
+      "line": 24,
+      "precode": "} // skip",
+      "aftercode": "} throw new NumberFormatException(); // skip"
+    },
+    {
+      "id": 39,
+      "reasoning": "Always skips numeric reference handling",
+      "line": 10,
+      "precode": "if (reader.matchConsume(\"#\")) { // numbered",
+      "aftercode": "if (false) { // numbered"
+    },
+    {
+      "id": 40,
+      "reasoning": "Consumes only digits for named references",
+      "line": 36,
+      "precode": "String nameRef = reader.consumeLetterThenDigitSequence();",
+      "aftercode": "String nameRef = reader.consumeDigitSequence();"
+    }
+  ]
+}

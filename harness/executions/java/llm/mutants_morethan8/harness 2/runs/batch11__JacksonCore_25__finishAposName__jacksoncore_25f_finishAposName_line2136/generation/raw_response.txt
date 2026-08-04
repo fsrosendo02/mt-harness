@@ -1,0 +1,109 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "The loop to process characters may not properly handle a different character than the apos ('').",
+      "line": 17,
+      "precode": "if (ch == INT_APOS) {",
+      "aftercode": "if (ch != 'a') {"
+    },
+    {
+      "id": 2,
+      "reasoning": "The mutation changes the condition that triggers an escape sequence, possibly affecting how characters are processed.",
+      "line": 20,
+      "precode": "if (ch != '"' && codes[ch] != 0)",
+      "aftercode": "if (ch == 'x' && codes[ch] != 0)"
+    },
+    {
+      "id": 3,
+      "reasoning": "The mutation changes the escape sequence handling, which could lead to incorrect character decoding.",
+      "line": 26,
+      "precode": "ch = _decodeCharEscape();",
+      "aftercode": "ch = _decodeCharEscape() + 1;"
+    },
+    {
+      "id": 4,
+      "reasoning": "The mutation alters the condition for handling multi-byte characters, potentially changing how names are processed.",
+      "line": 36,
+      "precode": "if (ch > 127)",
+      "aftercode": "if (ch < 128)"
+    },
+    {
+      "id": 5,
+      "reasoning": "The mutation modifies the way the current quad is updated when processing a multi-byte character, which could affect name encoding.",
+      "line": 47,
+      "precode": "currQuad = (currQuad << 8) | (0xc0 | (ch >> 6));",
+      "aftercode": "currQuad = (currQuad << 8) | (0x40 | (ch >> 6));"
+    },
+    {
+      "id": 6,
+      "reasoning": "The mutation changes the condition for growing the quad buffer, potentially leading to an array overflow.",
+      "line": 38,
+      "precode": "if (currQuadBytes >= 4)",
+      "aftercode": "if (currQuadBytes <= 3)"
+    },
+    {
+      "id": 7,
+      "reasoning": "The mutation changes how the last quad is padded, potentially affecting the final name string.",
+      "line": 87,
+      "precode": "quads[qlen++] = _padLastQuad(currQuad, currQuadBytes);",
+      "aftercode": "quads[qlen++] = currQuad;"
+    },
+    {
+      "id": 8,
+      "reasoning": "The mutation changes the condition to complete a field, potentially leading to an incorrect token.",
+      "line": 83,
+      "precode": "if (currQuadBytes > 0)",
+      "aftercode": "if (currQuadBytes < 1)"
+    },
+    {
+      "id": 9,
+      "reasoning": "The mutation changes the condition for finding a name in the symbol table, possibly leading to undefined names.",
+      "line": 91,
+      "precode": "String name = _symbols.findName(quads, qlen);",
+      "aftercode": "String name = null;"
+    },
+    {
+      "id": 10,
+      "reasoning": "The mutation alters the condition under which a new name is added to the symbol table, potentially causing duplicate names.",
+      "line": 92,
+      "precode": "if (name == null)",
+      "aftercode": "if (name != null)"
+    },
+    {
+      "id": 11,
+      "reasoning": "The mutation changes the way a field is completed, potentially altering the token produced.",
+      "line": 95,
+      "precode": "return _fieldComplete(name);",
+      "aftercode": "return _fieldComplete(null);"
+    },
+    {
+      "id": 12,
+      "reasoning": "The mutation changes the minor state after splitting, potentially disrupting escape sequence handling.",
+      "line": 29,
+      "precode": "_minorStateAfterSplit = MINOR_FIELD_APOS_NAME;",
+      "aftercode": "_minorStateAfterSplit = MINOR_FIELD_OTHER;"
+    },
+    {
+      "id": 13,
+      "reasoning": "The mutation changes the minor state for handling an escape sequence, which could lead to incorrect state transitions.",
+      "line": 28,
+      "precode": "_minorState = MINOR_FIELD_NAME_ESCAPE;",
+      "aftercode": "_minorState = MINOR_FIELD_OTHER;"
+    },
+    {
+      "id": 14,
+      "reasoning": "The mutation alters the condition for returning a token when input is exhausted, potentially leading to incorrect state.",
+      "line": 13,
+      "precode": "return (_currToken = JsonToken.NOT_AVAILABLE);",
+      "aftercode": "return (_currToken = JsonToken.END_ARRAY);"
+    },
+    {
+      "id": 15,
+      "reasoning": "The mutation changes how the quad buffer is grown, which could lead to an incorrect array size.",
+      "line": 40,
+      "precode": "_quadBuffer = quads = growArrayBy(quads, quads.length);",
+      "aftercode": "_quadBuffer = quads = new int[quads.length + 1];"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     Character consumeCharacterReference(Character additionalAllowedCharacter, boolean inAttribute) {
+ 2:         if (reader.isEmpty())
+ 3:             return null;
+ 4:         if (additionalAllowedCharacter != null && additionalAllowedCharacter == reader.current())
+ 5:             return null;
+ 6:         if (reader.matchesAny('\t', '\n', '\r', '\f', ' ', '<', '&'))
+ 7:             return null;
+ 8: 
+ 9:         reader.mark();
+10:         if (reader.matchConsume("#")) { // numbered
+11:             boolean isHexMode = reader.matchConsumeIgnoreCase("X");
+12:             String numRef = isHexMode ? reader.consumeHexSequence() : reader.consumeDigitSequence();
+13:             if (numRef.length() == 0) { // didn't match anything
+14:                 characterReferenceError("numeric reference with no numerals");
+15:                 reader.rewindToMark();
+16:                 return null;
+17:             }
+18:             if (!reader.matchConsume(";"))
+19:                 characterReferenceError("missing semicolon"); // missing semi
+20:             int charval = -1;
+21:             try {
+22:                 int base = isHexMode ? 16 : 10;
+23:                 charval = Integer.valueOf(numRef, base);
+24:             } catch (NumberFormatException e) {
+25:             } // skip
+26:             if (charval == -1 || (charval >= 0xD800 && charval <= 0xDFFF) || charval > 0x10FFFF) {
+27:                 characterReferenceError("character outside of valid range");
+28:                 return replacementChar;
+29:             } else {
+30:                 // todo: implement number replacement table
+31:                 // todo: check for extra illegal unicode points as parse errors
+32:                 return (char) charval;
+33:             }
+34:         } else { // named
+35:             // get as many letters as possible, and look for matching entities.
+36:             String nameRef = reader.consumeLetterThenDigitSequence();
+37:             boolean looksLegit = reader.matches(';');
+38:             // found if a base named entity without a ;, or an extended entity with the ;.
+39:             boolean found = (Entities.isBaseNamedEntity(nameRef) || (Entities.isNamedEntity(nameRef) && looksLegit));
+40: 
+41:             if (!found) {
+42:                 reader.rewindToMark();
+43:                 if (looksLegit) // named with semicolon
+44:                     characterReferenceError(String.format("invalid named referenece '%s'", nameRef));
+45:                 return null;
+46:             }
+47:             if (inAttribute && (reader.matchesLetter() || reader.matchesDigit() || reader.matchesAny('=', '-', '_'))) {
+48:                 // don't want that to match
+49:                 reader.rewindToMark();
+50:                 return null;
+51:             }
+52:             if (!reader.matchConsume(";"))
+53:                 characterReferenceError("missing semicolon"); // missing semi
+54:             return Entities.getCharacterByName(nameRef);
+55:         }
+56:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

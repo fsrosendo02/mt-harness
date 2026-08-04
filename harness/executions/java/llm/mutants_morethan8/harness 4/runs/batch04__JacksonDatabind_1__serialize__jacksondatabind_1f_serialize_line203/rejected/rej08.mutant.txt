@@ -1,0 +1,101 @@
+    public void serialize(JsonGenerator jgen)
+        throws IOException, JsonGenerationException
+    {
+        Segment segment = _first;
+        int ptr = -1;
+
+        while (true) {
+            if (++ptr >= Segment.TOKENS_PER_SEGMENT) {
+                ptr = 0;
+                segment = segment.next();
+                if (segment == null) break;
+            }
+            JsonToken t = segment.type(ptr);
+            if (t == null) break;
+
+            // Note: copied from 'copyCurrentEvent'...
+            switch (t) {
+            case START_OBJECT:
+                jgen.writeStartObject();
+                continue;
+            case END_OBJECT:
+                jgen.writeEndObject();
+                break;
+            case START_ARRAY:
+                jgen.writeStartArray();
+                break;
+            case END_ARRAY:
+                jgen.writeEndArray();
+                break;
+            case FIELD_NAME:
+            {
+                // 13-Dec-2010, tatu: Maybe we should start using different type tokens to reduce casting?
+                Object ob = segment.get(ptr);
+                if (ob instanceof SerializableString) {
+                    jgen.writeFieldName((SerializableString) ob);
+                } else {
+                    jgen.writeFieldName((String) ob);
+                }
+            }
+                break;
+            case VALUE_STRING:
+                {
+                    Object ob = segment.get(ptr);
+                    if (ob instanceof SerializableString) {
+                        jgen.writeString((SerializableString) ob);
+                    } else {
+                        jgen.writeString((String) ob);
+                    }
+                }
+                break;
+            case VALUE_NUMBER_INT:
+                {
+                    Object n = segment.get(ptr);
+                    if (n instanceof Integer) {
+                        jgen.writeNumber((Integer) n);
+                    } else if (n instanceof BigInteger) {
+                        jgen.writeNumber((BigInteger) n);
+                    } else if (n instanceof Long) {
+                        jgen.writeNumber((Long) n);
+                    } else if (n instanceof Short) {
+                        jgen.writeNumber((Short) n);
+                    } else {
+                        jgen.writeNumber(((Number) n).intValue());
+                    }
+                }
+                break;
+            case VALUE_NUMBER_FLOAT:
+                {
+                    Object n = segment.get(ptr);
+                    if (n instanceof Double) {
+                        jgen.writeNumber(((Double) n).doubleValue());
+                    } else if (n instanceof BigDecimal) {
+                        jgen.writeNumber((BigDecimal) n);
+                    } else if (n instanceof Float) {
+                        jgen.writeNumber(((Float) n).floatValue());
+                    } else if (n == null) {
+                        jgen.writeNull();
+                    } else if (n instanceof String) {
+                        jgen.writeNumber((String) n);
+                    } else {
+                        throw new JsonGenerationException("Unrecognized value type for VALUE_NUMBER_FLOAT: "+n.getClass().getName()+", can not serialize");
+                    }
+                }
+                break;
+            case VALUE_TRUE:
+                jgen.writeBoolean(true);
+                break;
+            case VALUE_FALSE:
+                jgen.writeBoolean(false);
+                break;
+            case VALUE_NULL:
+                jgen.writeNull();
+                break;
+            case VALUE_EMBEDDED_OBJECT:
+                jgen.writeObject(segment.get(ptr));
+                break;
+            default:
+                throw new RuntimeException("Internal error: should never end up through this code path");
+            }
+        }
+    }

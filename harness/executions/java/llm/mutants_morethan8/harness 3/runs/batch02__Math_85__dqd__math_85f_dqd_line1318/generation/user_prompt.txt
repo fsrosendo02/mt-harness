@@ -1,0 +1,124 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void dqd(final int start, final int end) {
+ 2: 
+ 3:         eMin = work[4 * start + pingPong + 4];
+ 4:         double d = work[4 * start + pingPong];
+ 5:         dMin = d;
+ 6: 
+ 7:         if (pingPong == 0) {
+ 8:             for (int j4 = 4 * start + 3; j4 < 4 * (end - 3); j4 += 4) {
+ 9:                 work[j4 - 2] = d + work[j4 - 1];
+10:                 if (work[j4 - 2] == 0.0) {
+11:                     work[j4] = 0.0;
+12:                     d = work[j4 + 1];
+13:                     dMin = d;
+14:                     eMin = 0.0;
+15:                 } else if ((MathUtils.SAFE_MIN * work[j4 + 1] < work[j4 - 2]) &&
+16:                            (MathUtils.SAFE_MIN * work[j4 - 2] < work[j4 + 1])) {
+17:                     final double tmp = work[j4 + 1] / work[j4 - 2];
+18:                     work[j4] = work[j4 - 1] * tmp;
+19:                     d *= tmp;
+20:                 } else {
+21:                     work[j4] = work[j4 + 1] * (work[j4 - 1] / work[j4 - 2]);
+22:                     d *= work[j4 + 1] / work[j4 - 2];
+23:                 }
+24:                 dMin = Math.min(dMin, d);
+25:                 eMin = Math.min(eMin, work[j4]);
+26:             }
+27:         } else {
+28:             for (int j4 = 4 * start + 3; j4 < 4 * (end - 3); j4 += 4) {
+29:                 work[j4 - 3] = d + work[j4];
+30:                 if (work[j4 - 3] == 0.0) {
+31:                     work[j4 - 1] = 0.0;
+32:                     d = work[j4 + 2];
+33:                     dMin = d;
+34:                     eMin = 0.0;
+35:                 } else if ((MathUtils.SAFE_MIN * work[j4 + 2] < work[j4 - 3]) &&
+36:                            (MathUtils.SAFE_MIN * work[j4 - 3] < work[j4 + 2])) {
+37:                     final double tmp = work[j4 + 2] / work[j4 - 3];
+38:                     work[j4 - 1] = work[j4] * tmp;
+39:                     d *= tmp;
+40:                 } else {
+41:                     work[j4 - 1] = work[j4 + 2] * (work[j4] / work[j4 - 3]);
+42:                     d *= work[j4 + 2] / work[j4 - 3];
+43:                 }
+44:                 dMin = Math.min(dMin, d);
+45:                 eMin = Math.min(eMin, work[j4 - 1]);
+46:             }
+47:         }
+48: 
+49:         // Unroll last two steps
+50:         dN2   = d;
+51:         dMin2 = dMin;
+52:         int j4 = 4 * (end - 2) - pingPong - 1;
+53:         int j4p2 = j4 + 2 * pingPong - 1;
+54:         work[j4 - 2] = dN2 + work[j4p2];
+55:         if (work[j4 - 2] == 0.0) {
+56:             work[j4] = 0.0;
+57:             dN1  = work[j4p2 + 2];
+58:             dMin = dN1;
+59:             eMin = 0.0;
+60:         } else if ((MathUtils.SAFE_MIN * work[j4p2 + 2] < work[j4 - 2]) &&
+61:                    (MathUtils.SAFE_MIN * work[j4 - 2] < work[j4p2 + 2])) {
+62:             final double tmp = work[j4p2 + 2] / work[j4 - 2];
+63:             work[j4] = work[j4p2] * tmp;
+64:             dN1 = dN2 * tmp;
+65:         } else {
+66:             work[j4] = work[j4p2 + 2] * (work[j4p2] / work[j4 - 2]);
+67:             dN1 = work[j4p2 + 2] * (dN2 / work[j4 - 2]);
+68:         }
+69:         dMin = Math.min(dMin, dN1);
+70: 
+71:         dMin1 = dMin;
+72:         j4 = j4 + 4;
+73:         j4p2 = j4 + 2 * pingPong - 1;
+74:         work[j4 - 2] = dN1 + work[j4p2];
+75:         if (work[j4 - 2] == 0.0) {
+76:             work[j4] = 0.0;
+77:             dN   = work[j4p2 + 2];
+78:             dMin = dN;
+79:             eMin = 0.0;
+80:         } else if ((MathUtils.SAFE_MIN * work[j4p2 + 2] < work[j4 - 2]) &&
+81:                    (MathUtils.SAFE_MIN * work[j4 - 2] < work[j4p2 + 2])) {
+82:             final double tmp = work[j4p2 + 2] / work[j4 - 2];
+83:             work[j4] = work[j4p2] * tmp;
+84:             dN = dN1 * tmp;
+85:         } else {
+86:             work[j4] = work[j4p2 + 2] * (work[j4p2] / work[j4 - 2]);
+87:             dN = work[j4p2 + 2] * (dN1 / work[j4 - 2]);
+88:         }
+89:         dMin = Math.min(dMin, dN);
+90: 
+91:         work[j4 + 2] = dN;
+92:         work[4 * end - pingPong - 1] = eMin;
+93: 
+94:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

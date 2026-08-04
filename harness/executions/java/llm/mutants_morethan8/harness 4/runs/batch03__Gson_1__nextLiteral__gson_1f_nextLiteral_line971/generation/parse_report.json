@@ -1,0 +1,258 @@
+{
+  "requested_count": 40,
+  "accepted_count": 20,
+  "rejected_count": 20,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "The 'builder' StringBuilder is not cleared before reuse.",
+        "line": 39,
+        "precode": "if (builder == null) {\n\tbuilder = new StringBuilder();",
+        "aftercode": "if (builder != null) {\n\tbuilder.clear();",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder != null) {\n\tbuilder.clear(); {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "The 'skipping' flag is not checked before incrementing the 'pos' variable.",
+        "line": 28,
+        "precode": "} else if (builder == null)",
+        "aftercode": "} else if (!skipping)",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "No 'new String(buffer, start, pos - start)' is created when the 'builder' StringBuilder is not null.",
+        "line": 31,
+        "precode": "} else {\n\treturn new String(buffer, start, pos - start);",
+        "aftercode": "} else {\n\treturn builder.toString();",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "The 'builder.append()' method is not called when the 'builder' StringBuilder is null.",
+        "line": 34,
+        "precode": "} else {\n\tbuilder.append(buffer, start, pos - start);",
+        "aftercode": "} else {\n\treturn builder.toString();",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "The 'pos' variable is incremented even when the 'skipping' flag is true.",
+        "line": 28,
+        "precode": "} else if (builder == null)",
+        "aftercode": "} else {\n\t++pos;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The 'builder.append()' method is called too many times.",
+        "line": 33,
+        "precode": "} else {\n\tbuilder.append(buffer, start, pos - start);",
+        "aftercode": "} else {\n\tbuilder.setLength(0);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "The 'fillBuffer(1)' method is called too many times.",
+        "line": 43,
+        "precode": "} while (fillBuffer(1));",
+        "aftercode": "} while (!fillBuffer(0))",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (!fillBuffer(0))\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "No bounds check exists for the 'pos' variable when accessing the 'buffer' array.",
+        "line": 20,
+        "precode": "case '[':\ncase ']':",
+        "aftercode": "case ':':",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "No bounds check exists for the 'pos' variable when accessing the 'buffer' array.",
+        "line": 21,
+        "precode": "case '[':\ncase ']':",
+        "aftercode": "case ',':",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "No bounds check exists for the 'pos' variable when accessing the 'buffer' array.",
+        "line": 23,
+        "precode": "case '[':\ncase ']':",
+        "aftercode": "case '\\t':",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "No bounds check exists for the 'pos' variable when accessing the 'buffer' array.",
+        "line": 24,
+        "precode": "case '[':\ncase ']':",
+        "aftercode": "case '\\f':",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "No bounds check exists for the 'pos' variable when accessing the 'buffer' array.",
+        "line": 25,
+        "precode": "case '[':\ncase ']':",
+        "aftercode": "case '\\r':",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "unchanged_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "No bounds check exists for the 'pos' variable when accessing the 'buffer' array.",
+        "line": 26,
+        "precode": "case '[':\ncase ']':",
+        "aftercode": "case '\\n':",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The 'builder.append()' method is not called when the 'builder' StringBuilder is null.",
+        "line": 33,
+        "precode": "} else {\n\tbuilder.append(buffer, start, pos - start);",
+        "aftercode": "} else {\n\treturn builder.toString();",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "The 'fillBuffer(1)' method is called too many times.",
+        "line": 43,
+        "precode": "} while (fillBuffer(1));",
+        "aftercode": "} while (!fillBuffer(0))",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (!fillBuffer(0))\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 35,
+        "reasoning": "The 'pos' variable is incremented even when the 'skipping' flag is true.",
+        "line": 28,
+        "precode": "} else if (builder == null)",
+        "aftercode": "} else {\n\t++pos;",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 36,
+        "reasoning": "The 'builder.append()' method is called too many times.",
+        "line": 33,
+        "precode": "} else {\n\tbuilder.append(buffer, start, pos - start);",
+        "aftercode": "} else {\n\tbuilder.setLength(0);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "No null check exists for the 'builder' StringBuilder before calling its methods.",
+        "line": 35,
+        "precode": "} else {\n\treturn builder.toString();",
+        "aftercode": "} else if (builder == null) return null;",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          } else if (builder == null) return null;\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (fillBuffer(1));\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "The 'fillBuffer(1)' method is called too many times.",
+        "line": 43,
+        "precode": "} while (fillBuffer(1));",
+        "aftercode": "} while (!fillBuffer(0))",
+        "candidate_code": "  private String nextLiteral() throws IOException {\n    StringBuilder builder = null;\n    do {\n      /* the index of the first character not yet appended to the builder. */\n      int start = pos;\n      while (pos < limit) {\n        int c = buffer[pos++];\n        switch (c) {\n        case '/':\n        case '\\\\':\n        case ';':\n        case '#':\n        case '=':\n          checkLenient(); // fall-through\n\n        case '{':\n        case '}':\n        case '[':\n        case ']':\n        case ':':\n        case ',':\n        case ' ':\n        case '\\t':\n        case '\\f':\n        case '\\r':\n        case '\\n':\n          pos--;\n          if (skipping) {\n            return \"skipped!\";\n          } else if (builder == null) {\n            return new String(buffer, start, pos - start);\n          } else {\n            builder.append(buffer, start, pos - start);\n            return builder.toString();\n          }\n        }\n      }\n\n      if (builder == null) {\n        builder = new StringBuilder();\n      }\n      builder.append(buffer, start, pos - start);\n    } while (!fillBuffer(0))\n\n    return builder.toString();\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The 'builder.append()' method is not called when the 'builder' StringBuilder is null.",
+        "line": 33,
+        "precode": "} else {\n\tbuilder.append(buffer, start, pos - start);",
+        "aftercode": "} else {\n\treturn builder.toString();",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

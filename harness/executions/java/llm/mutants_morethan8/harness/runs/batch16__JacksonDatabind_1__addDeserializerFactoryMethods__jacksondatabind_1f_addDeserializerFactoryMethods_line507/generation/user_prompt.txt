@@ -1,0 +1,102 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected void _addDeserializerFactoryMethods
+ 2:         (DeserializationContext ctxt, BeanDescription beanDesc, VisibilityChecker<?> vchecker,
+ 3:          AnnotationIntrospector intr, CreatorCollector creators)
+ 4:         throws JsonMappingException
+ 5:     {
+ 6:         final DeserializationConfig config = ctxt.getConfig();
+ 7:         for (AnnotatedMethod factory : beanDesc.getFactoryMethods()) {
+ 8:             boolean isCreator = intr.hasCreatorAnnotation(factory);
+ 9:             int argCount = factory.getParameterCount();
+10:             // zero-arg methods must be annotated; if so, are "default creators" [JACKSON-850]
+11:             if (argCount == 0) {
+12:                 if (isCreator) {
+13:                     creators.setDefaultCreator(factory);
+14:                 }
+15:                 continue;
+16:             }
+17:             // some single-arg factory methods (String, number) are auto-detected
+18:             if (argCount == 1) {
+19:                 AnnotatedParameter param = factory.getParameter(0);
+20:                 PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);
+21:                 String name = (pn == null) ? null : pn.getSimpleName();
+22:                 Object injectId = intr.findInjectableValueId(param);
+23: 
+24:                 if ((injectId == null) && (name == null || name.length() == 0)) { // not property based
+25:                     _handleSingleArgumentFactory(config, beanDesc, vchecker, intr, creators,
+26:                             factory, isCreator);
+27:                     // otherwise just ignored
+28:                     continue;
+29:                 }
+30:                 // fall through if there's name
+31:             } else {
+32:                 // more than 2 args, must be @JsonCreator
+33:                 if (!intr.hasCreatorAnnotation(factory)) {
+34:                     continue;
+35:                 }
+36:             }
+37:             // 1 or more args; all params must have name annotations
+38:             AnnotatedParameter nonAnnotatedParam = null;            
+39:             CreatorProperty[] properties = new CreatorProperty[argCount];
+40:             int namedCount = 0;
+41:             int injectCount = 0;            
+42:             for (int i = 0; i < argCount; ++i) {
+43:                 AnnotatedParameter param = factory.getParameter(i);
+44:                 PropertyName pn = (param == null) ? null : intr.findNameForDeserialization(param);
+45:                 String name = (pn == null) ? null : pn.getSimpleName();
+46:                 Object injectId = intr.findInjectableValueId(param);
+47:                 if (name != null && name.length() > 0) {
+48:                     ++namedCount;
+49:                     properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);
+50:                 } else if (injectId != null) {
+51:                     ++injectCount;
+52:                     properties[i] = constructCreatorProperty(ctxt, beanDesc, name, i, param, injectId);
+53:                 } else if (nonAnnotatedParam == null) {
+54:                     nonAnnotatedParam = param;
+55:                 }
+56:             }
+57: 
+58:             // Ok: if named or injectable, we have more work to do
+59:             if (isCreator || namedCount > 0 || injectCount > 0) {
+60:                 // simple case; everything covered:
+61:                 if ((namedCount + injectCount) == argCount) {
+62:                     creators.addPropertyCreator(factory, properties);
+63:                 } else if ((namedCount == 0) && ((injectCount + 1) == argCount)) {
+64:                     // [712] secondary: all but one injectable, one un-annotated (un-named)
+65:                     creators.addDelegatingCreator(factory, properties);
+66:                 } else { // otherwise, epic fail
+67:                     throw new IllegalArgumentException("Argument #"+nonAnnotatedParam.getIndex()
+68:                             +" of factory method "+factory+" has no property name annotation; must have name when multiple-paramater constructor annotated as Creator");
+69:                 }
+70:             }
+71:         }
+72:     }
+
+Then, generate exactly 24 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

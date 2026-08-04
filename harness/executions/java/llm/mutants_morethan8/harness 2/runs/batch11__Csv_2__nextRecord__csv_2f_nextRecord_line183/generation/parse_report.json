@@ -1,0 +1,33 @@
+{
+  "requested_count": 16,
+  "accepted_count": 14,
+  "rejected_count": 2,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 4,
+        "reasoning": "The method adds the content of an INVALID token to the record, which violates its contract.",
+        "line": 21,
+        "precode": "throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");",
+        "aftercode": "//throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                if (reusableToken.isReady) {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                //throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 5,
+        "reasoning": "The method adds the content of an EOF token to the record, which may not always be valid.",
+        "line": 19,
+        "precode": "if (reusableToken.isReady) {",
+        "aftercode": "//if (reusableToken.isReady) {",
+        "candidate_code": "    CSVRecord nextRecord() throws IOException {\n        CSVRecord result = null;\n        record.clear();\n        StringBuilder sb = null;\n        do {\n            reusableToken.reset();\n            lexer.nextToken(reusableToken);\n            switch (reusableToken.type) {\n            case TOKEN:\n                record.add(reusableToken.content.toString());\n                break;\n            case EORECORD:\n                record.add(reusableToken.content.toString());\n                break;\n            case EOF:\n                //if (reusableToken.isReady) { {\n                    record.add(reusableToken.content.toString());\n                }\n                break;\n            case INVALID:\n                throw new IOException(\"(line \" + getLineNumber() + \") invalid parse sequence\");\n            case COMMENT: // Ignored currently\n                if (sb == null) { // first comment for this record\n                    sb = new StringBuilder();\n                } else {\n                    sb.append(\"\\n\");\n                }\n                sb.append(reusableToken.content);\n                reusableToken.type = TOKEN; // Read another token\n                break;\n            }\n        } while (reusableToken.type == TOKEN);\n\n        if (!record.isEmpty()) {\n            recordNumber++;\n            final String comment = sb == null ? null : sb.toString();\n            result = new CSVRecord(record.toArray(new String[record.size()]), headerMap, comment, this.recordNumber);\n        }\n        return result;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

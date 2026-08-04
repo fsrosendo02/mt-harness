@@ -1,0 +1,154 @@
+{
+  "requested_count": 24,
+  "accepted_count": 11,
+  "rejected_count": 13,
+  "rejections": [
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly reading missing crcs by not updating nextMissingCrc.",
+        "line": 67,
+        "precode": "",
+        "aftercode": "nextMissingCrc += folder.numUnpackSubStreams;"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly setting hasCrc in SubStreamsInfo by not setting it for folders with crcs.",
+        "line": 61,
+        "precode": "",
+        "aftercode": "subStreamsInfo.hasCrc.set(nextCrc++, true);"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly setting crcs in SubStreamsInfo by not assigning folder crcs.",
+        "line": 63,
+        "precode": "",
+        "aftercode": "subStreamsInfo.crcs[nextCrc++] = 0;"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of correctly setting hasCrc in SubStreamsInfo by not skipping folders without crcs.",
+        "line": 64,
+        "precode": "",
+        "aftercode": "subStreamsInfo.hasCrc.set(nextCrc++, true);"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly terminating the method by not throwing an exception when nid does not equal NID.kEnd.",
+        "line": 77,
+        "precode": "",
+        "aftercode": "throw new IOException(\"Unexpected termination\");"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly setting unpackSizes by not considering all sub streams sizes.",
+        "line": 30,
+        "precode": "final long size = readUint64(header);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly initializing subStreamsInfo by not allocating space for hasCrc.",
+        "line": 20,
+        "precode": "subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams);",
+        "aftercode": "subStreamsInfo.hasCrc = null;",
+        "candidate_code": "    private void readSubStreamsInfo(final DataInput header, final Archive archive) throws IOException {\n        for (final Folder folder : archive.folders) {\n            folder.numUnpackSubStreams = 1;\n        }\n        int totalUnpackStreams = archive.folders.length;\n        \n        int nid = header.readUnsignedByte();\n        if (nid == NID.kNumUnpackStream) {\n            totalUnpackStreams = 0;\n            for (final Folder folder : archive.folders) {\n                final long numStreams = readUint64(header);\n                folder.numUnpackSubStreams = (int)numStreams;\n                totalUnpackStreams += numStreams;\n            }\n            nid = header.readUnsignedByte();\n        }\n        \n        final SubStreamsInfo subStreamsInfo = new SubStreamsInfo();\n        subStreamsInfo.unpackSizes = new long[totalUnpackStreams];\n        subStreamsInfo.hasCrc = null;\n        subStreamsInfo.crcs = new long[totalUnpackStreams];\n        \n        int nextUnpackStream = 0;\n        for (final Folder folder : archive.folders) {\n            if (folder.numUnpackSubStreams == 0) {\n                continue;\n            }\n            long sum = 0;\n            if (nid == NID.kSize) {\n                for (int i = 0; i < (folder.numUnpackSubStreams - 1); i++) {\n                    final long size = readUint64(header);\n                    subStreamsInfo.unpackSizes[nextUnpackStream++] = size;\n                    sum += size;\n                }\n            }\n            subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;\n        }\n        if (nid == NID.kSize) {\n            nid = header.readUnsignedByte();\n        }\n        \n        int numDigests = 0;\n        for (final Folder folder : archive.folders) {\n            if (folder.numUnpackSubStreams != 1 || !folder.hasCrc) {\n                numDigests += folder.numUnpackSubStreams;\n            }\n        }\n        \n        if (nid == NID.kCRC) {\n            final BitSet hasMissingCrc = readAllOrBits(header, numDigests);\n            final long[] missingCrcs = new long[numDigests];\n            for (int i = 0; i < numDigests; i++) {\n                if (hasMissingCrc.get(i)) {\n                    missingCrcs[i] = 0xffffFFFFL & Integer.reverseBytes(header.readInt());\n                }\n            }\n            int nextCrc = 0;\n            int nextMissingCrc = 0;\n            for (final Folder folder: archive.folders) {\n                if (folder.numUnpackSubStreams == 1 && folder.hasCrc) {\n                    subStreamsInfo.hasCrc.set(nextCrc, true);\n                    subStreamsInfo.crcs[nextCrc] = folder.crc;\n                    ++nextCrc;\n                } else {\n                    for (int i = 0; i < folder.numUnpackSubStreams; i++) {\n                        subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));\n                        subStreamsInfo.crcs[nextCrc] = missingCrcs[nextMissingCrc];\n                        ++nextCrc;\n                        ++nextMissingCrc;\n                    }\n                }\n            }\n            \n            nid = header.readUnsignedByte();\n        }\n        \n        if (nid != NID.kEnd) {\n            throw new IOException(\"Badly terminated SubStreamsInfo\");\n        }\n        \n        archive.subStreamsInfo = subStreamsInfo;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly initializing subStreamsInfo by not allocating space for crcs.",
+        "line": 21,
+        "precode": "subStreamsInfo.crcs = new long[totalUnpackStreams];",
+        "aftercode": "subStreamsInfo.crcs = null;",
+        "candidate_code": "    private void readSubStreamsInfo(final DataInput header, final Archive archive) throws IOException {\n        for (final Folder folder : archive.folders) {\n            folder.numUnpackSubStreams = 1;\n        }\n        int totalUnpackStreams = archive.folders.length;\n        \n        int nid = header.readUnsignedByte();\n        if (nid == NID.kNumUnpackStream) {\n            totalUnpackStreams = 0;\n            for (final Folder folder : archive.folders) {\n                final long numStreams = readUint64(header);\n                folder.numUnpackSubStreams = (int)numStreams;\n                totalUnpackStreams += numStreams;\n            }\n            nid = header.readUnsignedByte();\n        }\n        \n        final SubStreamsInfo subStreamsInfo = new SubStreamsInfo();\n        subStreamsInfo.unpackSizes = new long[totalUnpackStreams];\n        subStreamsInfo.hasCrc = new BitSet(totalUnpackStreams);\n        subStreamsInfo.crcs = null;\n        \n        int nextUnpackStream = 0;\n        for (final Folder folder : archive.folders) {\n            if (folder.numUnpackSubStreams == 0) {\n                continue;\n            }\n            long sum = 0;\n            if (nid == NID.kSize) {\n                for (int i = 0; i < (folder.numUnpackSubStreams - 1); i++) {\n                    final long size = readUint64(header);\n                    subStreamsInfo.unpackSizes[nextUnpackStream++] = size;\n                    sum += size;\n                }\n            }\n            subStreamsInfo.unpackSizes[nextUnpackStream++] = folder.getUnpackSize() - sum;\n        }\n        if (nid == NID.kSize) {\n            nid = header.readUnsignedByte();\n        }\n        \n        int numDigests = 0;\n        for (final Folder folder : archive.folders) {\n            if (folder.numUnpackSubStreams != 1 || !folder.hasCrc) {\n                numDigests += folder.numUnpackSubStreams;\n            }\n        }\n        \n        if (nid == NID.kCRC) {\n            final BitSet hasMissingCrc = readAllOrBits(header, numDigests);\n            final long[] missingCrcs = new long[numDigests];\n            for (int i = 0; i < numDigests; i++) {\n                if (hasMissingCrc.get(i)) {\n                    missingCrcs[i] = 0xffffFFFFL & Integer.reverseBytes(header.readInt());\n                }\n            }\n            int nextCrc = 0;\n            int nextMissingCrc = 0;\n            for (final Folder folder: archive.folders) {\n                if (folder.numUnpackSubStreams == 1 && folder.hasCrc) {\n                    subStreamsInfo.hasCrc.set(nextCrc, true);\n                    subStreamsInfo.crcs[nextCrc] = folder.crc;\n                    ++nextCrc;\n                } else {\n                    for (int i = 0; i < folder.numUnpackSubStreams; i++) {\n                        subStreamsInfo.hasCrc.set(nextCrc, hasMissingCrc.get(nextMissingCrc));\n                        subStreamsInfo.crcs[nextCrc] = missingCrcs[nextMissingCrc];\n                        ++nextCrc;\n                        ++nextMissingCrc;\n                    }\n                }\n            }\n            \n            nid = header.readUnsignedByte();\n        }\n        \n        if (nid != NID.kEnd) {\n            throw new IOException(\"Badly terminated SubStreamsInfo\");\n        }\n        \n        archive.subStreamsInfo = subStreamsInfo;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly setting hasCrc in SubStreamsInfo by not setting it for folders without crcs.",
+        "line": 64,
+        "precode": "",
+        "aftercode": "subStreamsInfo.hasCrc.set(nextCrc++, false);"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly setting crcs in SubStreamsInfo by not assigning folder crcs.",
+        "line": 63,
+        "precode": "",
+        "aftercode": "subStreamsInfo.crcs[nextCrc++] = -1;"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly setting hasCrc in SubStreamsInfo by not skipping folders without crcs.",
+        "line": 64,
+        "precode": "",
+        "aftercode": "subStreamsInfo.hasCrc.set(nextCrc++, true);"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly terminating the method by not throwing an exception when nid does not equal NID.kEnd.",
+        "line": 77,
+        "precode": "",
+        "aftercode": "throw new IOException(\"Unexpected termination\");"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly setting unpackSizes by not considering all sub streams sizes.",
+        "line": 30,
+        "precode": "final long size = readUint64(header);",
+        "aftercode": ""
+      }
+    }
+  ]
+}

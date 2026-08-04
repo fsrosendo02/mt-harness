@@ -1,0 +1,89 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   private void rebalance(Node<K, V> unbalanced, boolean insert) {
+ 2:     for (Node<K, V> node = unbalanced; node != null; node = node.parent) {
+ 3:       Node<K, V> left = node.left;
+ 4:       Node<K, V> right = node.right;
+ 5:       int leftHeight = left != null ? left.height : 0;
+ 6:       int rightHeight = right != null ? right.height : 0;
+ 7: 
+ 8:       int delta = leftHeight - rightHeight;
+ 9:       if (delta == -2) {
+10:         Node<K, V> rightLeft = right.left;
+11:         Node<K, V> rightRight = right.right;
+12:         int rightRightHeight = rightRight != null ? rightRight.height : 0;
+13:         int rightLeftHeight = rightLeft != null ? rightLeft.height : 0;
+14: 
+15:         int rightDelta = rightLeftHeight - rightRightHeight;
+16:         if (rightDelta == -1 || (rightDelta == 0 && !insert)) {
+17:           rotateLeft(node); // AVL right right
+18:         } else {
+19:           assert (rightDelta == 1);
+20:           rotateRight(right); // AVL right left
+21:           rotateLeft(node);
+22:         }
+23:         if (insert) {
+24:           break; // no further rotations will be necessary
+25:         }
+26: 
+27:       } else if (delta == 2) {
+28:         Node<K, V> leftLeft = left.left;
+29:         Node<K, V> leftRight = left.right;
+30:         int leftRightHeight = leftRight != null ? leftRight.height : 0;
+31:         int leftLeftHeight = leftLeft != null ? leftLeft.height : 0;
+32: 
+33:         int leftDelta = leftLeftHeight - leftRightHeight;
+34:         if (leftDelta == 1 || (leftDelta == 0 && !insert)) {
+35:           rotateRight(node); // AVL left left
+36:         } else {
+37:           assert (leftDelta == -1);
+38:           rotateLeft(left); // AVL left right
+39:           rotateRight(node);
+40:         }
+41:         if (insert) {
+42:           break; // no further rotations will be necessary
+43:         }
+44: 
+45:       } else if (delta == 0) {
+46:         node.height = leftHeight + 1; // leftHeight == rightHeight
+47:         if (insert) {
+48:           break; // the insert caused balance, so rebalancing is done!
+49:         }
+50: 
+51:       } else {
+52:         assert (delta == -1 || delta == 1);
+53:         node.height = Math.max(leftHeight, rightHeight) + 1;
+54:         if (!insert) {
+55:           break; // the height hasn't changed, so rebalancing is done!
+56:         }
+57:       }
+58:     }
+59:   }
+
+Then, generate exactly 48 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

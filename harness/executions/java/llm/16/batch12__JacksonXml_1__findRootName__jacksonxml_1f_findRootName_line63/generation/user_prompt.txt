@@ -1,0 +1,59 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     protected QName _findRootName(Class<?> rootType, MapperConfig<?> config)
+ 2:     {
+ 3:         BeanDescription beanDesc = config.introspectClassAnnotations(rootType);
+ 4:         AnnotationIntrospector intr = config.getAnnotationIntrospector();
+ 5:         AnnotatedClass ac = beanDesc.getClassInfo();
+ 6:         String localName = null;
+ 7:         String ns = null;
+ 8: 
+ 9:         PropertyName root = intr.findRootName(ac);
+10:         if (root != null) {
+11:             localName = root.getSimpleName();
+12:             ns = root.getNamespace();
+13:         }
+14:         // No answer so far? Let's just default to using simple class name
+15:         if (localName == null || localName.length() == 0) {
+16:             // Should we strip out enclosing class tho? For now, nope:
+17:             // one caveat: array simple names end with "[]"; also, "$" needs replacing
+18:             localName = StaxUtil.sanitizeXmlTypeName(rootType.getSimpleName());
+19:             return new QName("", localName);
+20:         }
+21:         // Otherwise let's see if there's namespace, too (if we are missing it)
+22:         if (ns == null || ns.length() == 0) {
+23:             ns = findNamespace(intr, ac);
+24:         }
+25:         if (ns == null) { // some QName impls barf on nulls...
+26:             ns = "";
+27:         }
+28:         return new QName(ns, localName);
+29:     }
+
+Then, generate exactly 16 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   public static boolean equals(Type a, Type b) {
+ 2:     if (a == b) {
+ 3:       // also handles (a == null && b == null)
+ 4:       return true;
+ 5: 
+ 6:     } else if (a instanceof Class) {
+ 7:       // Class already specifies equals().
+ 8:       return a.equals(b);
+ 9: 
+10:     } else if (a instanceof ParameterizedType) {
+11:       if (!(b instanceof ParameterizedType)) {
+12:         return false;
+13:       }
+14: 
+15:       // TODO: save a .clone() call
+16:       ParameterizedType pa = (ParameterizedType) a;
+17:       ParameterizedType pb = (ParameterizedType) b;
+18:       return equal(pa.getOwnerType(), pb.getOwnerType())
+19:           && pa.getRawType().equals(pb.getRawType())
+20:           && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());
+21: 
+22:     } else if (a instanceof GenericArrayType) {
+23:       if (!(b instanceof GenericArrayType)) {
+24:         return false;
+25:       }
+26: 
+27:       GenericArrayType ga = (GenericArrayType) a;
+28:       GenericArrayType gb = (GenericArrayType) b;
+29:       return equals(ga.getGenericComponentType(), gb.getGenericComponentType());
+30: 
+31:     } else if (a instanceof WildcardType) {
+32:       if (!(b instanceof WildcardType)) {
+33:         return false;
+34:       }
+35: 
+36:       WildcardType wa = (WildcardType) a;
+37:       WildcardType wb = (WildcardType) b;
+38:       return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())
+39:           && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());
+40: 
+41:     } else if (a instanceof TypeVariable) {
+42:       if (!(b instanceof TypeVariable)) {
+43:         return false;
+44:       }
+45:       TypeVariable<?> va = (TypeVariable<?>) a;
+46:       TypeVariable<?> vb = (TypeVariable<?>) b;
+47:       return va.getGenericDeclaration() == vb.getGenericDeclaration()
+48:           && va.getName().equals(vb.getName());
+49: 
+50:     } else {
+51:       // This isn't a type we support. Could be a generic array type, wildcard type, etc.
+52:       return false;
+53:     }
+54:   }
+
+Then, generate exactly 8 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

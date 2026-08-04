@@ -1,0 +1,172 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the boundary condition check for forward integration direction.",
+      "line": 6,
+      "precode": "forward = interpolator.isForward();",
+      "aftercode": "forward = !interpolator.isForward();"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the calculation of number of substeps by changing the maxCheckInterval.",
+      "line": 8,
+      "precode": "final int n  = Math.max(1, (int) Math.ceil(Math.abs(t1 - t0) / maxCheckInterval));",
+      "aftercode": "final int n  = Math.min(1, (int) Math.floor(Math.abs(t1 - t0) / maxCheckInterval));"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the calculation of substep size by changing the maxCheckInterval.",
+      "line": 9,
+      "precode": "final double h  = (t1 - t0) / n;",
+      "aftercode": "final double h  = (t1 - t0) * n;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the initialization of tb by changing the convergence value.",
+      "line": 13,
+      "precode": "double tb = t0 + (interpolator.isForward() ? convergence : -convergence);",
+      "aftercode": "double tb = t0 + (interpolator.isForward() ? -convergence : convergence);"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the sign change check by negating gb.",
+      "line": 22,
+      "precode": "if (g0Positive ^ (gb >= 0)) {",
+      "aftercode": "if (g0Positive ^ !(gb >= 0)) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the variation direction check by negating gb.",
+      "line": 26,
+      "precode": "increasing = gb >= ga;",
+      "aftercode": "increasing = !(gb >= ga);"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the absolute accuracy setting by changing the convergence value.",
+      "line": 41,
+      "precode": "solver.setAbsoluteAccuracy(convergence);",
+      "aftercode": "solver.setAbsoluteAccuracy(-convergence);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the maximal iteration count setting by changing maxIterationCount.",
+      "line": 42,
+      "precode": "solver.setMaximalIterationCount(maxIterationCount);",
+      "aftercode": "solver.setMaximalIterationCount(-maxIterationCount);"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the root finding logic by negating ta and tb.",
+      "line": 45,
+      "precode": "root = (ta <= tb) ? solver.solve(f, ta, tb) : solver.solve(f, tb, ta);",
+      "aftercode": "root = (ta >= tb) ? solver.solve(f, -ta, -tb) : solver.solve(f, -tb, -ta);"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the past event check by changing the convergence value.",
+      "line": 51,
+      "precode": "((Math.abs(root - ta) <= convergence) &&",
+      "aftercode": "((Math.abs(root - ta) > convergence) &&"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the previous event time check by changing the convergence value.",
+      "line": 52,
+      "precode": "(Math.abs(root - previousEventTime) <= convergence))) {",
+      "aftercode": "(Math.abs(root - previousEventTime) > convergence))) {"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the pending event time setting by negating root.",
+      "line": 58,
+      "precode": "pendingEventTime = root;",
+      "aftercode": "pendingEventTime = -root;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the event acceptance logic by changing convergence value.",
+      "line": 60,
+      "precode": "(Math.abs(t1 - pendingEventTime) <= convergence)) {",
+      "aftercode": "(Math.abs(t1 - pendingEventTime) > convergence)) {"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the pending event flag setting by negating it.",
+      "line": 68,
+      "precode": "pendingEvent = true;",
+      "aftercode": "pendingEvent = false;"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the no sign change condition by changing gb.",
+      "line": 72,
+      "precode": "} else {",
+      "aftercode": "} else if (g0Positive ^ (gb < 0)) {"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the ta update by negating tb.",
+      "line": 74,
+      "precode": "ta = tb;",
+      "aftercode": "ta = -tb;"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the ga update by negating gb.",
+      "line": 75,
+      "precode": "ga = gb;",
+      "aftercode": "ga = -gb;"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the pending event flag clearing by setting it to true.",
+      "line": 80,
+      "precode": "pendingEvent     = false;",
+      "aftercode": "pendingEvent     = true;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the pending event time clearing by setting it to a non-NaN value.",
+      "line": 82,
+      "precode": "pendingEventTime = Double.NaN;",
+      "aftercode": "pendingEventTime = 0.0;"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the return statement by returning true instead of false.",
+      "line": 83,
+      "precode": "return false;",
+      "aftercode": "return true;"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the exception rethrow logic by throwing a different exception.",
+      "line": 97,
+      "precode": "throw new EventException(e);",
+      "aftercode": "throw new DerivativeException(e.getMessage(), e.getCause());"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the handling of null cause by throwing a different exception.",
+      "line": 98,
+      "precode": "} else if ((cause != null) && (cause instanceof EventException)) {",
+      "aftercode": "} else if ((cause == null) || !(cause instanceof EventException)) {"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the event handling logic by not rethrowing the cause.",
+      "line": 91,
+      "precode": "throw new EventException(e);",
+      "aftercode": "return false;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the exception handling logic by removing the catch block.",
+      "line": 54,
+      "precode": "} catch (FunctionEvaluationException e) {",
+      "aftercode": ""
+    }
+  ]
+}

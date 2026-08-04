@@ -1,0 +1,116 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Mutates the check for end of stream, allowing premature EOF to pass.",
+      "line": 3,
+      "precode": "if (flags == -1) {",
+      "aftercode": "if (flags != -1) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Changes the version mask, potentially allowing unsupported versions to pass.",
+      "line": 7,
+      "precode": "if ((flags & VERSION_MASK) != SUPPORTED_VERSION) {",
+      "aftercode": "if ((flags & (VERSION_MASK + 1)) != SUPPORTED_VERSION) {"
+    },
+    {
+      "id": 3,
+      "reasoning": "Inverts the block dependency check, changing buffer allocation logic.",
+      "line": 10,
+      "precode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) == 0;",
+      "aftercode": "expectBlockDependency = (flags & BLOCK_INDEPENDENCE_MASK) != 0;"
+    },
+    {
+      "id": 4,
+      "reasoning": "Removes the block dependency buffer null check, causing potential NPE.",
+      "line": 12,
+      "precode": "if (blockDependencyBuffer == null) {",
+      "aftercode": "if (blockDependencyBuffer != null) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Inverts the block checksum expectation, altering data integrity checks.",
+      "line": 18,
+      "precode": "expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) != 0;",
+      "aftercode": "expectBlockChecksum = (flags & BLOCK_CHECKSUM_MASK) == 0;"
+    },
+    {
+      "id": 6,
+      "reasoning": "Inverts the content size expectation, changing data parsing behavior.",
+      "line": 19,
+      "precode": "expectContentSize = (flags & CONTENT_SIZE_MASK) != 0;",
+      "aftercode": "expectContentSize = (flags & CONTENT_SIZE_MASK) == 0;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Inverts the content checksum expectation, altering data validation.",
+      "line": 20,
+      "precode": "expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) != 0;",
+      "aftercode": "expectContentChecksum = (flags & CONTENT_CHECKSUM_MASK) == 0;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Allows premature EOF for BD byte, skipping critical data.",
+      "line": 23,
+      "precode": "if (bdByte == -1) { // max size is irrelevant for this implementation",
+      "aftercode": "if (bdByte != -1) { // max size is irrelevant for this implementation"
+    },
+    {
+      "id": 9,
+      "reasoning": "Changes content size byte array length, altering data reading.",
+      "line": 27,
+      "precode": "byte[] contentSize = new byte[8];",
+      "aftercode": "byte[] contentSize = new byte[16];"
+    },
+    {
+      "id": 10,
+      "reasoning": "Allows premature EOF for content size, skipping critical data.",
+      "line": 32,
+      "precode": "if (8 != skipped) {",
+      "aftercode": "if (8 == skipped) {"
+    },
+    {
+      "id": 11,
+      "reasoning": "Changes header hash read logic, potentially altering checksum validation.",
+      "line": 35,
+      "precode": "int headerHash = readOneByte();",
+      "aftercode": "int headerHash = readTwoBytes();"
+    },
+    {
+      "id": 12,
+      "reasoning": "Allows premature EOF for header hash, skipping critical data.",
+      "line": 37,
+      "precode": "if (headerHash == -1) { // partial hash of header.",
+      "aftercode": "if (headerHash != -1) { // partial hash of header."
+    },
+    {
+      "id": 13,
+      "reasoning": "Changes expected hash calculation, altering checksum validation logic.",
+      "line": 39,
+      "precode": "int expectedHash = (int) ((contentHash.getValue() >> 8) & 0xff);",
+      "aftercode": "int expectedHash = (int) ((contentHash.getValue() << 8) & 0xff);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Prevents content hash reset, potentially affecting subsequent data processing.",
+      "line": 40,
+      "precode": "contentHash.reset();",
+      "aftercode": "// contentHash.reset();"
+    },
+    {
+      "id": 15,
+      "reasoning": "Allows header checksum mismatch to pass, ignoring data integrity issues.",
+      "line": 42,
+      "precode": "if (headerHash != expectedHash) {",
+      "aftercode": "if (headerHash == expectedHash) {"
+    },
+    {
+      "id": 16,
+      "reasoning": "Changes the exception message for header checksum mismatch, altering error reporting.",
+      "line": 43,
+      "precode": "throw new IOException(\"frame header checksum mismatch.\");",
+      "aftercode": "throw new IOException(\"frame header checksum passed incorrectly.\");"
+    }
+  ]
+}

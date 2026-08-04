@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Math_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "math_1f_parse__line302",
+  "file_path": "src/main/java/org/apache/commons/math3/linear/RealMatrixFormat.java",
+  "function_name": "parse",
+  "start_line": 302,
+  "end_line": 394,
+  "mutant_id": "rej12",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 12,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: }",
+  "raw_response_path": "harness/runs/batch01__Math_1__parse__math_1f_parse_line302/generation/raw_response.txt",
+  "payload": {
+    "id": 12,
+    "reasoning": "An empty matrix is allowed, violating the requirement that the matrix must contain at least one row.",
+    "line": 77,
+    "precode": "if (matrix.isEmpty()) {",
+    "aftercode": "// if (matrix.isEmpty()) {",
+    "candidate_code": "    public RealMatrix parse(String source, ParsePosition pos) {\n        int initialIndex = pos.getIndex();\n\n        final String trimmedPrefix = prefix.trim();\n        final String trimmedSuffix = suffix.trim();\n        final String trimmedRowPrefix = rowPrefix.trim();\n        final String trimmedRowSuffix = rowSuffix.trim();\n        final String trimmedColumnSeparator = columnSeparator.trim();\n        final String trimmedRowSeparator = rowSeparator.trim();\n\n        // parse prefix\n        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n        if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {\n            return null;\n        }\n\n        // parse components\n        List<List<Number>> matrix = new ArrayList<List<Number>>();\n        List<Number> rowComponents = new ArrayList<Number>();\n        for (boolean loop = true; loop;){\n\n            if (!rowComponents.isEmpty()) {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {\n                    if (trimmedRowSuffix.length() != 0 &&\n                        !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {\n                        return null;\n                    } else {\n                        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {\n                            matrix.add(rowComponents);\n                            rowComponents = new ArrayList<Number>();\n                            continue;\n                        } else {\n                            loop = false;\n                        }\n                    }\n                }\n            } else {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                if (trimmedRowPrefix.length() != 0 &&\n                    !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {\n                    return null;\n                }\n            }\n\n            if (loop) {\n                CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n                Number component = CompositeFormat.parseNumber(source, format, pos);\n                if (component != null) {\n                    rowComponents.add(component);\n                } else {\n                    if (rowComponents.isEmpty()) {\n                        loop = false;\n                    } else {\n                        // invalid component\n                        // set index back to initial, error index should already be set\n                        pos.setIndex(initialIndex);\n                        return null;\n                    }\n                }\n            }\n\n        }\n\n        if (!rowComponents.isEmpty()) {\n            matrix.add(rowComponents);\n        }\n\n        // parse suffix\n        CompositeFormat.parseAndIgnoreWhitespace(source, pos);\n        if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {\n            return null;\n        }\n\n        // do not allow an empty matrix\n        // if (matrix.isEmpty()) { {\n            pos.setIndex(initialIndex);\n            return null;\n        }\n\n        // build vector\n        double[][] data = new double[matrix.size()][];\n        int row = 0;\n        for (List<Number> rowList : matrix) {\n            data[row] = new double[rowList.size()];\n            for (int i = 0; i < rowList.size(); i++) {\n                data[row][i] = rowList.get(i).doubleValue();\n            }\n            row++;\n        }\n        return MatrixUtils.createRealMatrix(data);\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/runs/batch01__Math_1__parse__math_1f_parse_line302/rejected/rej12.log",
+  "mutant_path": "harness/runs/batch01__Math_1__parse__math_1f_parse_line302/rejected/rej12.mutant.txt",
+  "original_path": "harness/runs/batch01__Math_1__parse__math_1f_parse_line302/rejected/original.txt"
+}

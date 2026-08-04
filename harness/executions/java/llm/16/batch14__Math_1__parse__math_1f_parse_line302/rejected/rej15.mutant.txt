@@ -1,0 +1,93 @@
+    public RealMatrix parse(String source, ParsePosition pos) {
+        int initialIndex = pos.getIndex();
+
+        final String trimmedPrefix = prefix.trim();
+        final String trimmedSuffix = suffix.trim();
+        final String trimmedRowPrefix = rowPrefix.trim();
+        final String trimmedRowSuffix = rowSuffix.trim();
+        final String trimmedColumnSeparator = columnSeparator.trim();
+        final String trimmedRowSeparator = rowSeparator.trim();
+
+        // parse prefix
+        CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+        if (!CompositeFormat.parseFixedstring(source, trimmedPrefix, pos)) {
+            return null;
+        }
+
+        // parse components
+        List<List<Number>> matrix = new ArrayList<List<Number>>();
+        List<Number> rowComponents = new ArrayList<Number>();
+        for (boolean loop = true; loop;){
+
+            if (!rowComponents.isEmpty()) {
+                CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+                if (!CompositeFormat.parseFixedstring(source, trimmedColumnSeparator, pos)) {
+                    if (trimmedRowSuffix.length() != 0 &&
+                        !CompositeFormat.parseFixedstring(source, trimmedRowSuffix, pos)) {
+                        return null;
+                    } else {
+                        CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+                        if (CompositeFormat.parseFixedstring(source, trimmedRowSeparator, pos)) {
+                            matrix.add(rowComponents);
+                            rowComponents = new ArrayList<Number>();
+                            continue;
+                        } else {
+                            loop = false;
+                        }
+                    }
+                }
+            } else {
+                CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+                // Removed
+                    !CompositeFormat.parseFixedstring(source, trimmedRowPrefix, pos)) {
+                    return null;
+                }
+            }
+
+            if (loop) {
+                CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+                Number component = CompositeFormat.parseNumber(source, format, pos);
+                if (component != null) {
+                    rowComponents.add(component);
+                } else {
+                    if (rowComponents.isEmpty()) {
+                        loop = false;
+                    } else {
+                        // invalid component
+                        // set index back to initial, error index should already be set
+                        pos.setIndex(initialIndex);
+                        return null;
+                    }
+                }
+            }
+
+        }
+
+        if (!rowComponents.isEmpty()) {
+            matrix.add(rowComponents);
+        }
+
+        // parse suffix
+        CompositeFormat.parseAndIgnoreWhitespace(source, pos);
+        if (!CompositeFormat.parseFixedstring(source, trimmedSuffix, pos)) {
+            return null;
+        }
+
+        // do not allow an empty matrix
+        if (matrix.isEmpty()) {
+            pos.setIndex(initialIndex);
+            return null;
+        }
+
+        // build vector
+        double[][] data = new double[matrix.size()][];
+        int row = 0;
+        for (List<Number> rowList : matrix) {
+            data[row] = new double[rowList.size()];
+            for (int i = 0; i < rowList.size(); i++) {
+                data[row][i] = rowList.get(i).doubleValue();
+            }
+            row++;
+        }
+        return MatrixUtils.createRealMatrix(data);
+    }

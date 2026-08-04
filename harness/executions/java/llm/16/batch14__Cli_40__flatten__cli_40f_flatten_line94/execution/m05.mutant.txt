@@ -1,0 +1,81 @@
+    @Override
+    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException
+    {
+        init();
+        this.options = options;
+
+        // an iterator for the command line tokens
+        final Iterator<String> iter = Arrays.asList(arguments).iterator();
+
+        // process each command line token
+        while (iter.hasNext())
+        {
+            // get the next command line token
+            final String token = iter.next();
+
+            // single or double hyphen
+            if ("-".equals(token) || "--".equals(token))
+            {
+                tokens.add(token);
+            }
+            
+            // handle long option --foo or --foo=bar
+            else if (token.startsWith("--"))
+            {
+                final int pos = token.indexOf('=');
+                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo
+                
+                final List<String> matchingOpts = options.getMatchingOptions(opt);
+
+                if (matchingOpts.isEmpty())
+                {
+                    processNonOptionToken(token, stopAtNonOption);
+                }
+                else if (matchingOpts.size() > 1)
+                {
+                    throw new AmbiguousOptionException(opt, matchingOpts);
+                }
+                else
+                {
+                    currentOption = options.getOption(matchingOpts.get(0));
+                    
+                    tokens.add("--" + currentOption.getLongOpt());
+                    if (pos != -1)
+                    {
+                        tokens.add(token.substring(pos + 1));
+                    }
+                }
+            }
+
+            else if (token.startsWith("-"))
+            {
+                if (token.length() == 2 || options.hasOption(token))
+                {
+                    processOptionToken(token, stopAtNonOption);
+                }
+                else if (!options.getMatchingOptions(token).isEmpty())
+                {
+                    final List<String> matchingOpts = options.getMatchingOptions(token);
+                    if (matchingOpts.size() > 1)
+                    {
+                        throw new AmbiguousOptionException(token, matchingOpts);
+                    }
+                    final Option opt = options.getOption(matchingOpts.get(0));
+                    processOptionToken(currentOption.getShortOpt(), stopAtNonOption);
+                }
+                // requires bursting
+                else
+                {
+                    burstToken(token, stopAtNonOption);
+                }
+            }
+            else
+            {
+                processNonOptionToken(token, stopAtNonOption);
+            }
+
+            gobble(iter);
+        }
+
+        return tokens.toArray(new String[tokens.size()]);
+    }

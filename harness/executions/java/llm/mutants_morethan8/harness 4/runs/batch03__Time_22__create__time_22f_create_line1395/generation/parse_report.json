@@ -1,0 +1,364 @@
+{
+  "requested_count": 40,
+  "accepted_count": 11,
+  "rejected_count": 29,
+  "rejections": [
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "The method assumes that the transitions list will always be non-empty, but does not check for it.",
+        "line": 20,
+        "precode": "trans[i] = tr.getMillis();",
+        "aftercode": "if (i >= size) { trans[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "The method assumes that the wallOffsets array will always be non-null, but does not check for it.",
+        "line": 21,
+        "precode": "wallOffsets[i] = tr.getWallOffset();",
+        "aftercode": "if (i >= size) { wallOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "The method assumes that the standardOffsets array will always be non-null, but does not check for it.",
+        "line": 22,
+        "precode": "standardOffsets[i] = tr.getStandardOffset();",
+        "aftercode": "if (i >= size) { standardOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "The method assumes that the nameKeys array will always be non-null, but does not check for it.",
+        "line": 23,
+        "precode": "nameKeys[i] = tr.getNameKey();",
+        "aftercode": "if (i >= size) { nameKeys[i] = \"\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "The method assumes that the transitions list will always contain only Transition objects, but does not check for it.",
+        "line": 14,
+        "precode": "Transition tr = (Transition)transitions.get(i);",
+        "aftercode": "if (!(transitions.get(i) instanceof Transition)) { throw new RuntimeException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 15,
+        "reasoning": "The method assumes that the tailZone's start and end recurrences will always be non-null, but does not check for it.",
+        "line": 65,
+        "precode": "if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {",
+        "aftercode": "if (tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 16,
+        "reasoning": "The method assumes that the id will always be a valid string, but does not check for it.",
+        "line": 18,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": "throw new IllegalArgumentException(\"Invalid ID\");",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(\"Invalid ID\");\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "The method assumes that the transitions list will always be non-empty, but does not check for it.",
+        "line": 20,
+        "precode": "trans[i] = tr.getMillis();",
+        "aftercode": "if (i >= size) { trans[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 18,
+        "reasoning": "The method assumes that the wallOffsets array will always be non-null, but does not check for it.",
+        "line": 21,
+        "precode": "wallOffsets[i] = tr.getWallOffset();",
+        "aftercode": "if (i >= size) { wallOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "The method assumes that the standardOffsets array will always be non-null, but does not check for it.",
+        "line": 22,
+        "precode": "standardOffsets[i] = tr.getStandardOffset();",
+        "aftercode": "if (i >= size) { standardOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "The method assumes that the nameKeys array will always be non-null, but does not check for it.",
+        "line": 23,
+        "precode": "nameKeys[i] = tr.getNameKey();",
+        "aftercode": "if (i >= size) { nameKeys[i] = \"\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "The method assumes that the id will always be a valid string, but does not check for it.",
+        "line": 18,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": "throw new IllegalArgumentException(\"Invalid ID\");",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(\"Invalid ID\");\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "The method assumes that the transitions list will always be non-empty, but does not check for it.",
+        "line": 20,
+        "precode": "trans[i] = tr.getMillis();",
+        "aftercode": "if (i >= size) { trans[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "The method assumes that the wallOffsets array will always be non-null, but does not check for it.",
+        "line": 21,
+        "precode": "wallOffsets[i] = tr.getWallOffset();",
+        "aftercode": "if (i >= size) { wallOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "The method assumes that the standardOffsets array will always be non-null, but does not check for it.",
+        "line": 22,
+        "precode": "standardOffsets[i] = tr.getStandardOffset();",
+        "aftercode": "if (i >= size) { standardOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "The method assumes that the nameKeys array will always be non-null, but does not check for it.",
+        "line": 23,
+        "precode": "nameKeys[i] = tr.getNameKey();",
+        "aftercode": "if (i >= size) { nameKeys[i] = \"\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "The method assumes that the tailZone will always be null, but does not check for it.",
+        "line": 63,
+        "precode": "if (tailZone != null) {",
+        "aftercode": "if (tailZone == null || tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone == null || tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method assumes that the tailZone's start and end recurrences will always be non-null, but does not check for it.",
+        "line": 65,
+        "precode": "if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {",
+        "aftercode": "if (tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The method assumes that the id will always be a valid string, but does not check for it.",
+        "line": 18,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": "throw new IllegalArgumentException(\"Invalid ID\");",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(\"Invalid ID\");\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 31,
+        "reasoning": "The method assumes that the transitions list will always be non-empty, but does not check for it.",
+        "line": 20,
+        "precode": "trans[i] = tr.getMillis();",
+        "aftercode": "if (i >= size) { trans[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "The method assumes that the wallOffsets array will always be non-null, but does not check for it.",
+        "line": 21,
+        "precode": "wallOffsets[i] = tr.getWallOffset();",
+        "aftercode": "if (i >= size) { wallOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 33,
+        "reasoning": "The method assumes that the standardOffsets array will always be non-null, but does not check for it.",
+        "line": 22,
+        "precode": "standardOffsets[i] = tr.getStandardOffset();",
+        "aftercode": "if (i >= size) { standardOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 34,
+        "reasoning": "The method assumes that the nameKeys array will always be non-null, but does not check for it.",
+        "line": 23,
+        "precode": "nameKeys[i] = tr.getNameKey();",
+        "aftercode": "if (i >= size) { nameKeys[i] = \"\"; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 35,
+        "reasoning": "The method assumes that the tailZone will always be null, but does not check for it.",
+        "line": 63,
+        "precode": "if (tailZone != null) {",
+        "aftercode": "if (tailZone == null || tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone == null || tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "The method assumes that the tailZone's start and end recurrences will always be non-null, but does not check for it.",
+        "line": 65,
+        "precode": "if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {",
+        "aftercode": "if (tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(id);\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence == null || tailZone.iEndRecurrence == null) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 37,
+        "reasoning": "The method assumes that the id will always be a valid string, but does not check for it.",
+        "line": 18,
+        "precode": "throw new IllegalArgumentException(id);",
+        "aftercode": "throw new IllegalArgumentException(\"Invalid ID\");",
+        "candidate_code": "        static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {\n            int size = transitions.size();\n            if (size == 0) {\n                throw new IllegalArgumentException();\n            }\n\n            long[] trans = new long[size];\n            int[] wallOffsets = new int[size];\n            int[] standardOffsets = new int[size];\n            String[] nameKeys = new String[size];\n\n            Transition last = null;\n            for (int i=0; i<size; i++) {\n                Transition tr = (Transition)transitions.get(i);\n\n                if (!tr.isTransitionFrom(last)) {\n                    throw new IllegalArgumentException(\"Invalid ID\");\n                }\n\n                trans[i] = tr.getMillis();\n                wallOffsets[i] = tr.getWallOffset();\n                standardOffsets[i] = tr.getStandardOffset();\n                nameKeys[i] = tr.getNameKey();\n\n                last = tr;\n            }\n\n            // Some timezones (Australia) have the same name key for\n            // summer and winter which messes everything up. Fix it here.\n            String[] zoneNameData = new String[5];\n            String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();\n            for (int j = 0; j < zoneStrings.length; j++) {\n                String[] set = zoneStrings[j];\n                if (set != null && set.length == 5 && id.equals(set[0])) {\n                    zoneNameData = set;\n                }\n            }\n            for (int i = 0; i < nameKeys.length - 1; i++) {\n                String curNameKey = nameKeys[i];\n                String nextNameKey = nameKeys[i + 1];\n                long curOffset = wallOffsets[i];\n                long nextOffset = wallOffsets[i + 1];\n                long curStdOffset = standardOffsets[i];\n                long nextStdOffset = standardOffsets[i + 1];\n                Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());\n                if (curOffset != nextOffset &&\n                        curStdOffset == nextStdOffset &&\n                        curNameKey.equals(nextNameKey) &&\n                        p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&\n                        curNameKey.equals(zoneNameData[2]) &&\n                        curNameKey.equals(zoneNameData[4])) {\n                    \n                    System.out.println(\"Fixing duplicate name key - \" + nextNameKey);\n                    System.out.println(\"     - \" + new DateTime(trans[i]) + \" - \" + new DateTime(trans[i + 1]));\n                    if (curOffset > nextOffset) {\n                        nameKeys[i] = (curNameKey + \"-Summer\").intern();\n                    } else if (curOffset < nextOffset) {\n                        nameKeys[i + 1] = (nextNameKey + \"-Summer\").intern();\n                        i++;\n                    }\n                }\n            }\n            if (tailZone != null) {\n                if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {\n                    System.out.println(\"Fixing duplicate recurrent name key - \" + tailZone.iStartRecurrence.getNameKey());\n                    if (tailZone.iStartRecurrence.getSaveMillis() > 0) {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence.renameAppend(\"-Summer\"),\n                            tailZone.iEndRecurrence);\n                    } else {\n                        tailZone = new DSTZone(\n                            tailZone.getID(),\n                            tailZone.iStandardOffset,\n                            tailZone.iStartRecurrence,\n                            tailZone.iEndRecurrence.renameAppend(\"-Summer\"));\n                    }\n                }\n            }\n            \n            return new PrecalculatedZone((outputID ? id : \"\"), trans, wallOffsets, standardOffsets, nameKeys, tailZone);\n        }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 38,
+        "reasoning": "The method assumes that the transitions list will always be non-empty, but does not check for it.",
+        "line": 20,
+        "precode": "trans[i] = tr.getMillis();",
+        "aftercode": "if (i >= size) { trans[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 39,
+        "reasoning": "The method assumes that the wallOffsets array will always be non-null, but does not check for it.",
+        "line": 21,
+        "precode": "wallOffsets[i] = tr.getWallOffset();",
+        "aftercode": "if (i >= size) { wallOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 40,
+        "reasoning": "The method assumes that the standardOffsets array will always be non-null, but does not check for it.",
+        "line": 22,
+        "precode": "standardOffsets[i] = tr.getStandardOffset();",
+        "aftercode": "if (i >= size) { standardOffsets[i] = -1; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

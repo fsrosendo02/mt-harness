@@ -1,0 +1,144 @@
+{
+"mutants": [
+{
+"id": 1,
+"reasoning": "Violation of normal number representation",
+"line": 4,
+"precode": "if ((n > -1023) && (n < 1024)) {",
+"aftercode": "if ((n >= -1023) && (n <= 1024)) {"
+},
+{
+"id": 2,
+"reasoning": "Violation of subnormal number representation",
+"line": 19,
+"precode": "final long bits = Double.doubleToLongBits(d);",
+"aftercode": "final long bits = Double.doubleToLongBits(Math.nextDown(d));"
+},
+{
+"id": 3,
+"reasoning": "Violation of sign preservation",
+"line": 21,
+"precode": "final long sign = bits & 0x8000000000000000L;",
+"aftercode": "final long sign = -bits & 0x8000000000000000L;"
+},
+{
+"id": 4,
+"reasoning": "Violation of exponent preservation",
+"line": 26,
+"precode": "int scaledExponent = exponent + n;",
+"aftercode": "int scaledExponent = exponent - n;"
+},
+{
+"id": 5,
+"reasoning": "Violation of mantissa preservation",
+"line": 28,
+"precode": "long mantissa = bits & 0x000fffffffffffffL;",
+"aftercode": "long mantissa = -bits & 0x000fffffffffffffL;"
+},
+{
+"id": 6,
+"reasoning": "Violation of normal number scaling up",
+"line": 31,
+"precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+"aftercode": "return Double.longBitsToDouble(sign | ((scaledExponent - n) << 52) | mantissa);"
+},
+{
+"id": 7,
+"reasoning": "Violation of subnormal number scaling up",
+"line": 34,
+"precode": "mantissa = mantissa >>> (1 - scaledExponent);",
+"aftercode": "mantissa = mantissa << (-scaledExponent - n);"
+},
+{
+"id": 8,
+"reasoning": "Violation of subnormal number scaling down",
+"line": 36,
+"precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+"aftercode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent - n));"
+},
+{
+"id": 9,
+"reasoning": "Violation of subnormal number rounding",
+"line": 38,
+"precode": "mantissa++;",
+"aftercode": "if (mostSignificantLostBit != 0) { mantissa -= n; } else { mantissa += n; }"
+},
+{
+"id": 10,
+"reasoning": "Violation of normal number scaling down",
+"line": 46,
+"precode": "return Double.longBitsToDouble(sign | mantissa);",
+"aftercode": "return Double.longBitsToDouble(sign | (mantissa >>> n));"
+},
+{
+"id": 11,
+"reasoning": "Violation of normal number scaling up",
+"line": 48,
+"precode": "if (scaledExponent < 2047) {",
+"aftercode": "if (scaledExponent >= 2047 - n) {"
+},
+{
+"id": 12,
+"reasoning": "Violation of normal number scaling down",
+"line": 50,
+"precode": "return (sign == 0L) ? 0.0 : -0.0;",
+"aftercode": "return (sign == 0L) ? n * 0.0 : n * -0.0;"
+},
+{
+"id": 13,
+"reasoning": "Violation of normal number scaling up",
+"line": 52,
+"precode": "if (n < 0)",
+"aftercode": "if (n >= 0)"
+},
+{
+"id": 14,
+"reasoning": "Violation of subnormal number scaling down",
+"line": 56,
+"precode": "while ((mantissa >>> 52) != 1)",
+"aftercode": "while (((mantissa << n) >>> 52) != 1)"
+},
+{
+"id": 15,
+"reasoning": "Violation of subnormal number scaling up",
+"line": 60,
+"precode": "++scaledExponent;",
+"aftercode": "+= n;"
+},
+{
+"id": 16,
+"reasoning": "Violation of normal number scaling down",
+"line": 62,
+"precode": "return Double.longBitsToDouble(sign | ((scaledExponent - n) << 52) | mantissa);",
+"aftercode": "return Double.longBitsToDouble(sign | (scaledExponent << 52) | mantissa);"
+},
+{
+"id": 17,
+"reasoning": "Violation of subnormal number scaling up",
+"line": 64,
+"precode": "if (scaledExponent < 2047)",
+"aftercode": "if (scaledExponent >= 2047 - n)"
+},
+{
+"id": 18,
+"reasoning": "Violation of subnormal number scaling down",
+"line": 69,
+"precode": "return Double.longBitsToDouble(sign | mantissa);",
+"aftercode": "return Double.longBitsToDouble(sign | (mantissa >>> n));"
+},
+{
+"id": 19,
+"reasoning": "Violation of normal number scaling up",
+"line": 70,
+"precode": "if (n < 0)",
+"aftercode": "if (n >= 0)"
+},
+{
+"id": 20,
+"reasoning": "Violation of subnormal number scaling down",
+"line": 75,
+"precode": "return Double.longBitsToDouble(sign | ((scaledExponent - n) << 52) | mantissa);",
+"aftercode": "return Double.longBitsToDouble(sign | (scaledExponent << 52) | mantissa);"
+}
+]
+}
