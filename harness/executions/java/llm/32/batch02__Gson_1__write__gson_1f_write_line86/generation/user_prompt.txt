@@ -1,0 +1,75 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   static void write(JsonElement element, boolean serializeNulls, JsonWriter writer)
+ 2:       throws IOException {
+ 3:     if (element == null || element.isJsonNull()) {
+ 4:       if (serializeNulls) {
+ 5:         writer.nullValue();
+ 6:       }
+ 7: 
+ 8:     } else if (element.isJsonPrimitive()) {
+ 9:       JsonPrimitive primitive = element.getAsJsonPrimitive();
+10:       if (primitive.isNumber()) {
+11:         writer.value(primitive.getAsNumber());
+12:       } else if (primitive.isBoolean()) {
+13:         writer.value(primitive.getAsBoolean());
+14:       } else {
+15:         writer.value(primitive.getAsString());
+16:       }
+17: 
+18:     } else if (element.isJsonArray()) {
+19:       writer.beginArray();
+20:       for (JsonElement e : element.getAsJsonArray()) {
+21:         /* always print null when its parent element is an array! */
+22:         if (e.isJsonNull()) {
+23:           writer.nullValue();
+24:           continue;
+25:         }
+26:         write(e, serializeNulls, writer);
+27:       }
+28:       writer.endArray();
+29: 
+30:     } else if (element.isJsonObject()) {
+31:       writer.beginObject();
+32:       for (Map.Entry<String, JsonElement> e : element.getAsJsonObject().entrySet()) {
+33:         JsonElement value = e.getValue();
+34:         if (!serializeNulls && value.isJsonNull()) {
+35:           continue;
+36:         }
+37:         writer.name(e.getKey());
+38:         write(value, serializeNulls, writer);
+39:       }
+40:       writer.endObject();
+41: 
+42:     } else {
+43:       throw new IllegalArgumentException("Couldn't write " + element.getClass());
+44:     }
+45:   }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

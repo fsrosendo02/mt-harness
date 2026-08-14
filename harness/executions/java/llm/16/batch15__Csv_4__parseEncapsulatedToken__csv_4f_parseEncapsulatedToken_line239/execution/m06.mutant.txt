@@ -1,0 +1,50 @@
+    private Token parseEncapsulatedToken(final Token token) throws IOException {
+        // save current line number in case needed for IOE
+        final long startLineNumber = getCurrentLineNumber();
+        int c;
+        while (true) {
+            c = in.read();
+
+            if (isEscape(c)) {
+                final int unescaped = readEscape();
+                if (unescaped == Constants.END_OF_STREAM) { // unexpected char after escape
+                    token.content.append((char) c).append((char) in.getLastChar());
+                } else {
+                    token.content.append((char) unescaped);
+                }
+            } else if (isQuoteChar(c)) {
+                if (!in.lookAhead()) {
+                    // double or escaped encapsulator -> add single encapsulator to token
+                    c = in.read();
+                    token.content.append((char) c);
+                } else {
+                    // token finish mark (encapsulator) reached: ignore whitespace till delimiter
+                    while (true) {
+                        c = in.read();
+                        if (isDelimiter(c)) {
+                            token.type = TOKEN;
+                            return token;
+                        } else if (isEndOfFile(c)) {
+                            token.type = EOF;
+                            token.isReady = true; // There is data at EOF
+                            return token;
+                        } else if (readEndOfLine(c)) {
+                            token.type = EORECORD;
+                            return token;
+                        } else if (!isWhitespace(c)) {
+                            // error invalid char between token and next delimiter
+                            throw new IOException("(line " + getCurrentLineNumber() +
+                                    ") invalid char between encapsulated token and delimiter");
+                        }
+                    }
+                }
+            } else if (isEndOfFile(c)) {
+                // error condition (end of file before end of token)
+                throw new IOException("(startline " + startLineNumber +
+                        ") EOF reached before encapsulated token finished");
+            } else {
+                // consume character
+                token.content.append((char) c);
+            }
+        }
+    }

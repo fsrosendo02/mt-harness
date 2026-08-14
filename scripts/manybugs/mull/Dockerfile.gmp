@@ -1,0 +1,35 @@
+# Mull toolchain candidate for the ManyBugs `gmp` family.
+#
+# GMP normally selects architecture-specific assembly. The catalog target is
+# mpz/gcdext.c, so prepare_mull_checkout.py configures this profile with
+# --disable-assembly: the C implementation must own the emitted LLVM IR or Mull
+# cannot discover mutations in the catalog target. This profile is implemented
+# but intentionally remains unvalidated until the final smoke/execution phase.
+FROM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && apt-get install -y -qq \
+      curl \
+      ca-certificates \
+      gnupg \
+      apt-transport-https \
+      clang-9 \
+      gcc \
+      g++ \
+      make \
+      m4 \
+      perl \
+      patch \
+      psmisc \
+      sqlite3 \
+    && curl -1sLf "https://dl.cloudsmith.io/public/mull-project/mull-stable/setup.deb.sh" | bash \
+    && apt-get install -y -qq mull-9 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV MULL_CC=clang-9
+ENV MULL_CFLAGS="-O1 -fexperimental-new-pass-manager -fpass-plugin=/usr/lib/mull-ir-frontend-9 -g -grecord-command-line"
+ENV MULL_LDFLAGS=""
+
+WORKDIR /experiment

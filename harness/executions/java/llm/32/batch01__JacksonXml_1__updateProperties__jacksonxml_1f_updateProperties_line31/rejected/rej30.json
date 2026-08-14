@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonXml_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksonxml_1f_updateProperties__line31_78",
+  "file_path": "src/main/java/com/fasterxml/jackson/dataformat/xml/deser/XmlBeanDeserializerModifier.java",
+  "function_name": "updateProperties",
+  "start_line": 31,
+  "end_line": 78,
+  "mutant_id": "rej30",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 30,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/executions/java/llm/32/batch01__JacksonXml_1__updateProperties__jacksonxml_1f_updateProperties_line31/generation/raw_response.txt",
+  "payload": {
+    "id": 30,
+    "reasoning": "Confuses the condition to check if a property's name needs to be updated based on 'localName'.",
+    "line": 36,
+    "precode": "if ((localName != null && localName.length() > 0) && !localName.equals(prop.getName())) {",
+    "aftercode": "if ((localName == null || localName.length() <= 0) || !localName.equals(prop.getName()))",
+    "candidate_code": "    @Override\n    public List<BeanPropertyDefinition> updateProperties(DeserializationConfig config,\n            BeanDescription beanDesc, List<BeanPropertyDefinition> propDefs)\n    {\n        final AnnotationIntrospector intr = config.getAnnotationIntrospector();\n        int changed = 0;\n        \n        for (int i = 0, propCount = propDefs.size(); i < propCount; ++i) {\n            BeanPropertyDefinition prop = propDefs.get(i);\n            AnnotatedMember acc = prop.getPrimaryMember();\n            // should not be null, but just in case:\n            if (acc == null) {\n                continue;\n            }\n            /* First: handle \"as text\"? Such properties\n             * are exposed as values of 'unnamed' fields; so one way to\n             * map them is to rename property to have name \"\"... (and\n             * hope this does not break other parts...)\n             */\n            Boolean b = AnnotationUtil.findIsTextAnnotation(intr, acc);\n            if (b != null && b.booleanValue()) {\n                // unwrapped properties will appear as 'unnamed' (empty String)\n                BeanPropertyDefinition newProp = prop.withSimpleName(_cfgNameForTextValue);\n                if (newProp != prop) {\n                    propDefs.set(i, newProp);\n                }\n                continue;\n            }\n            // second: do we need to handle wrapping (for Lists)?\n            PropertyName wrapperName = prop.getWrapperName();\n            \n            if (wrapperName != null && wrapperName != PropertyName.NO_NAME) {\n                String localName = wrapperName.getSimpleName();\n                if ((localName != null && localName.length() > 0)\n                        && !localName.equals(prop.getName())) {\n                    if ((localName == null || localName.length() <= 0) || !localName.equals(prop.getName()))// make copy-on-write as necessary\n                    if (changed == 0) {\n                        propDefs = new ArrayList<BeanPropertyDefinition>(propDefs);\n                    }\n                    ++changed;\n                    propDefs.set(i, prop.withSimpleName(localName));\n                    continue;\n                }\n                // otherwise unwrapped; needs handling but later on\n            }\n        }\n        return propDefs;\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/executions/java/llm/32/batch01__JacksonXml_1__updateProperties__jacksonxml_1f_updateProperties_line31/rejected/rej30.log",
+  "mutant_path": "harness/executions/java/llm/32/batch01__JacksonXml_1__updateProperties__jacksonxml_1f_updateProperties_line31/rejected/rej30.mutant.txt",
+  "original_path": "harness/executions/java/llm/32/batch01__JacksonXml_1__updateProperties__jacksonxml_1f_updateProperties_line31/rejected/original.txt"
+}

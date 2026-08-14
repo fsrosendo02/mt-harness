@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Request object is not checked for null before accessing its methods",
+      "line": 3,
+      "precode": "String protocol = req.url().getProtocol();",
+      "aftercode": "String protocol = \"http\";"
+    },
+    {
+      "id": 2,
+      "reasoning": "Only http & https protocols are allowed, but 'ftp' is not checked",
+      "line": 5,
+      "precode": "Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": "Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\") || protocol.equals(\"ftp\"), \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 3,
+      "reasoning": "GET requests with non-empty data are not handled correctly",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.POST && req.data().size() > 0)"
+    },
+    {
+      "id": 4,
+      "reasoning": "POST requests with empty data are not handled correctly",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "writePost(new byte[0], conn.getOutputStream());"
+    },
+    {
+      "id": 5,
+      "reasoning": "IOException is thrown for non-OK status codes, but not for OK status code",
+      "line": 22,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK) { throw new IOException(status + \" error loading URL \" + req.url().toString()); } else { System.out.println(\"OK\"); }"
+    },
+    {
+      "id": 6,
+      "reasoning": "Redirect handling is not handled correctly",
+      "line": 28,
+      "precode": "req.url(new URL(res.header(\"Location\")));",
+      "aftercode": "req.url(new URL(\"http://example.com\"));"
+    },
+    {
+      "id": 7,
+      "reasoning": "Connection is not closed after use",
+      "line": 31,
+      "precode": "",
+      "aftercode": "conn.disconnect();"
+    },
+    {
+      "id": 8,
+      "reasoning": "GZIPInputStream is used for non-GZIP content",
+      "line": 34,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()))",
+      "aftercode": "new BufferedInputStream(conn.getInputStream())"
+    },
+    {
+      "id": 9,
+      "reasoning": "Charset is not set correctly for non-OK status codes",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"UTF-8\";"
+    },
+    {
+      "id": 10,
+      "reasoning": "byteData is not set correctly for non-GZIP content",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": "res.byteData = new byte[0];"
+    },
+    {
+      "id": 11,
+      "reasoning": "executed flag is not set correctly for non-OK status codes",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": "res.executed = false;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Response object is created even if request method is POST",
+      "line": 25,
+      "precode": "Response res = new Response();",
+      "aftercode": "if (req.method() == Connection.Method.POST) return null;"
+    },
+    {
+      "id": 13,
+      "reasoning": "Request object is not updated with new URL after redirect",
+      "line": 28,
+      "precode": "",
+      "aftercode": "req.url(new URL(\"http://example.com\"));"
+    },
+    {
+      "id": 14,
+      "reasoning": "InputStream is not closed after use",
+      "line": 40,
+      "precode": "",
+      "aftercode": "inStream.close();"
+    },
+    {
+      "id": 15,
+      "reasoning": "Connection object is not closed after use",
+      "line": 11,
+      "precode": "",
+      "aftercode": "conn.disconnect();"
+    },
+    {
+      "id": 16,
+      "reasoning": "Response object is not updated with new headers after redirect",
+      "line": 29,
+      "precode": "",
+      "aftercode": "res.headers = Collections.singletonList(\"Location: http://example.com\");"
+    },
+    {
+      "id": 17,
+      "reasoning": "IOException is thrown for OK status code",
+      "line": 22,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": ""
+    },
+    {
+      "id": 18,
+      "reasoning": "Redirect handling is not handled correctly",
+      "line": 28,
+      "precode": "",
+      "aftercode": "if (res.header(\"Location\") != null) return null;"
+    },
+    {
+      "id": 19,
+      "reasoning": "GZIPInputStream is used for non-GZIP content",
+      "line": 34,
+      "precode": "new BufferedInputStream(new GZIPInputStream(conn.getInputStream()))",
+      "aftercode": ""
+    },
+    {
+      "id": 20,
+      "reasoning": "Charset is not set correctly for OK status codes",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": ""
+    },
+    {
+      "id": 21,
+      "reasoning": "byteData is not set correctly for GZIP content",
+      "line": 37,
+      "precode": "res.byteData = DataUtil.readToByteBuffer(inStream);",
+      "aftercode": ""
+    },
+    {
+      "id": 22,
+      "reasoning": "executed flag is not set correctly for OK status codes",
+      "line": 43,
+      "precode": "res.executed = true;",
+      "aftercode": ""
+    },
+    {
+      "id": 23,
+      "reasoning": "Response object is created even if request method is POST",
+      "line": 25,
+      "precode": "",
+      "aftercode": "if (req.method() == Connection.Method.POST) return null;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Request object is not updated with new URL after redirect",
+      "line": 28,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 25,
+      "reasoning": "InputStream is not closed after use",
+      "line": 40,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 26,
+      "reasoning": "Connection object is not closed after use",
+      "line": 11,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 27,
+      "reasoning": "Response object is not updated with new headers after redirect",
+      "line": 29,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 28,
+      "reasoning": "IOException is thrown for OK status code",
+      "line": 22,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "if (status != HttpURLConnection.HTTP_OK) { throw new IOException(status + \" error loading URL \" + req.url().toString()); } else { System.out.println(\"OK\"); }"
+    },
+    {
+      "id": 29,
+      "reasoning": "Redirect handling is not handled correctly",
+      "line": 28,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 30,
+      "reasoning": "GZIPInputStream is used for non-GZIP content",
+      "line": 34,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 31,
+      "reasoning": "Charset is not set correctly for OK status codes",
+      "line": 38,
+      "precode": "",
+      "aftercode": ""
+    },
+    {
+      "id": 32,
+      "reasoning": "byteData is not set correctly for GZIP content",
+      "line": 37,
+      "precode": "",
+      "aftercode": ""
+    }
+  ]
+}

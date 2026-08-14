@@ -17,14 +17,16 @@ bypassing test.sh/perl/make entirely. This script resolves test_id -> test
 script name by parsing test.sh and the project's *-run-tests.pl the same
 way ManyBugsAdapter._discover_test_ids does, then builds a direct wrapper.
 
-This has only been validated for `gzip`. Confirm the test.sh/make bug and
-the test_id -> script-name resolution before reusing for other families.
+The direct-wrapper protocol is validated for gzip and libtiff. Libtiff uses a
+separate test directory and selects the owning ELF per target (`libtiff.so`,
+`tiffcp`, `tiffcrop`, or `tiffsplit`) instead of a single project binary.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass, asdict
@@ -47,6 +49,45 @@ DEFAULT_MUTATORS = [
     "cxx_ne_to_eq",
 ]
 DEFAULT_TIMEOUT_MS = 120_000
+IMPLEMENTED_EXECUTION_PROJECTS = {"gzip", "libtiff", "lighttpd", "gmp", "python"}
+VALIDATED_EXECUTION_PROJECTS = {"gzip", "libtiff"}
+PROJECT_EXECUTION_BLOCKERS = {
+    "lighttpd": "runtime_baseline_incompatible",
+    # Controlled builds proved that fixed mpz/gcdext.c passes with GCC but
+    # fails t-gcd when compiled by Clang 9 even without the Mull plugin (O0
+    # and O1, native/generic mpn, PIC/non-PIC). Mull 9 requires LLVM/Clang 9,
+    # so executing mutants would classify compiler-induced failures as kills.
+    "gmp": "clang9_baseline_incompatible",
+}
+
+
+def binary_relpath_for_target(project: str, target_file: str) -> str:
+    if project == "gzip":
+        return "gzip"
+    if project == "libtiff":
+        tool_binaries = {
+            "tools/tiffcp.c": "tools/.libs/tiffcp",
+            "tools/tiffsplit.c": "tools/.libs/tiffsplit",
+            "tools/tiffcrop.c": "tools/.libs/tiffcrop",
+        }
+        # libtool links the library mutations into the shared object, while
+        # tools/tiffcp is only a shell wrapper. Mull must inspect the real ELF
+        # that owns the target's mutation section.
+        return tool_binaries.get(target_file, "libtiff/.libs/libtiff.so")
+    if project == "lighttpd":
+        return "src/lighttpd"
+    if project == "gmp":
+        return ".libs/libgmp.a"
+    if project == "python":
+        extension_binaries = {
+            "Modules/selectmodule.c": "select.cpython-33m.so",
+            "Modules/mathmodule.c": "math.cpython-33m.so",
+            "Modules/_json.c": "_json.cpython-33m.so",
+            "Modules/zlibmodule.c": "zlib.cpython-33m.so",
+        }
+        extension = extension_binaries.get(target_file)
+        return f"build/lib.linux-x86_64-3.3/{extension}" if extension else "python"
+    raise ValueError(f"No target binary resolver for Mull project '{project}'")
 
 
 def ts() -> str:
@@ -65,11 +106,14 @@ class TestRunReport:
     sqlite_host_path: str
 
 
-def resolve_test_script_name(container_id: str, test_id: str) -> str:
+def resolve_test_script_name(container_id: str, test_id: str, project: str = "gzip") -> str:
     """Map a ManyBugs test_id (e.g. "n1") to the underlying Autotools test
     script name (e.g. "hufts"), by parsing test.sh + the project's
     *-run-tests.pl the same way ManyBugsAdapter._discover_test_ids does.
     """
+    if project == "python":
+        return test_id
+
     test_sh = subprocess.run(
         ["docker", "exec", container_id, "cat", "/experiment/test.sh"],
         capture_output=True, text=True,
@@ -95,23 +139,65 @@ def resolve_test_script_name(container_id: str, test_id: str) -> str:
     names = re.findall(r'"([^"]+)"', tests_match.group(1))
     if run_test_n < 1 or run_test_n > len(names):
         raise ValueError(f"run_test index {run_test_n} out of range for @tests ({len(names)} entries)")
-    log_name = names[run_test_n - 1]  # e.g. "hufts.log"
+    log_name = names[run_test_n - 1]  # e.g. "hufts.log" or "tests/mpz/t-gcd"
     return log_name[:-4] if log_name.endswith(".log") else log_name
 
 
-def write_direct_wrapper(container_id: str, script_name: str, wrapper_path: str) -> None:
+def direct_wrapper_script(project: str, script_name: str) -> str:
+    if project == "gzip":
+        test_dir = "tests"
+        invocation = f"bash ./{script_name}"
+        cleanup_before = ""
+        cleanup_after = ""
+    elif project == "libtiff":
+        test_dir = "test"
+        invocation = f"./{script_name}"
+        cleanup_before = ""
+        cleanup_after = ""
+    elif project == "lighttpd":
+        test_dir = "tests"
+        invocation = f"perl ./{script_name}"
+        cleanup_before = "killall -9 lighttpd php-cgi >/dev/null 2>&1 || true\n"
+        cleanup_after = "killall -9 lighttpd php-cgi >/dev/null 2>&1 || true\n"
+    elif project == "gmp":
+        # gmp-run-tests.pl builds a selected test lazily, then executes it.
+        # Resolve that selection beforehand and invoke the prepared program
+        # directly so no Make process runs under Mull's selection environment.
+        test_dir = "."
+        invocation = f"./{script_name}"
+        cleanup_before = ""
+        cleanup_after = ""
+    elif project == "python":
+        return (
+            "#!/bin/bash\n"
+            "export PYTHONPATH=/experiment/src/build/lib.linux-x86_64-3.3\n"
+            f"bash /experiment/test.sh {script_name} dummy\n"
+            "exit $?\n"
+        )
+    else:
+        raise ValueError(f"No direct test wrapper for Mull project '{project}'")
+
+    return (
+        "#!/bin/bash\n"
+        f"cd /experiment/src/{test_dir}\n"
+        f"{cleanup_before}"
+        f"rm -f {script_name}.log out err exp k\n"
+        f"{invocation}\n"
+        "status=$?\n"
+        f"{cleanup_after}"
+        "exit $status\n"
+    )
+
+
+def write_direct_wrapper(
+    container_id: str, project: str, script_name: str, wrapper_path: str,
+) -> None:
     """Write a --test-program wrapper that invokes the Autotools test
     script directly, bypassing test.sh/gzip-run-tests.pl/make (see module
     docstring). Cleans up known stray artifacts some test scripts leave in
     tests/ (their own gt-<name>.XXXX tmpdirs self-clean via init.sh).
     """
-    script = (
-        "#!/bin/bash\n"
-        "cd /experiment/src/tests\n"
-        f"rm -f {script_name}.log out err exp k\n"
-        f"bash ./{script_name}\n"
-        "exit $?\n"
-    )
+    script = direct_wrapper_script(project, script_name)
     _exec(
         _FakeContainer(container_id),
         ["bash", "-lc", f"cat > {wrapper_path} <<'MULL_WRAPPER_EOF'\n{script}MULL_WRAPPER_EOF\nchmod +x {wrapper_path}"],
@@ -130,11 +216,59 @@ def run_mull_for_test(
     test_id: str,
     script_name: str,
     *,
+    project: str,
     timeout_ms: int,
     binary_name: str = "gzip",
 ) -> TestRunReport:
     wrapper_path = f"/tmp/mull_wrapper_{test_id}.sh"
-    write_direct_wrapper(container_id, script_name, wrapper_path)
+    if project == "libtiff":
+        # Some old libtiff Automake tests build their small driver lazily.
+        # Build that prerequisite once, outside mull-runner; doing it inside
+        # the wrapper would rebuild while mutation-selection variables are set.
+        ready = _exec(
+            _FakeContainer(container_id),
+            ["bash", "-lc", (
+                f"cd {src_dir}/test && "
+                f"if [ ! -x ./{script_name} ]; then make {script_name}; fi"
+            )],
+        )
+        if ready["exit_code"] != 0:
+            raise RuntimeError(
+                f"Could not prepare libtiff test program '{script_name}': "
+                f"{ready['output'][-1000:]}"
+            )
+    elif project == "gmp":
+        # GMP's Perl harness normally performs this make immediately before
+        # execution. Do it once before writing/running the Mull wrapper. The
+        # test executable need not contain mutations; it links against the
+        # already instrumented in-tree libgmp selected as binary_name.
+        test_path = Path(script_name)
+        test_dir = shlex.quote(str(test_path.parent))
+        test_name = shlex.quote(test_path.name)
+        ready = _exec(
+            _FakeContainer(container_id),
+            ["bash", "-lc", (
+                f"cd {shlex.quote(src_dir)}/{test_dir} && make {test_name}"
+            )],
+        )
+        if ready["exit_code"] != 0:
+            raise RuntimeError(
+                f"Could not prepare GMP test program '{script_name}': "
+                f"{ready['output'][-1000:]}"
+            )
+        # GMP is built statically because its old assembly cannot form a
+        # modern shared object. The prepared oracle executable therefore owns
+        # the embedded mutation section and is the binary Mull must inspect.
+        binary_name = script_name
+    write_direct_wrapper(container_id, project, script_name, wrapper_path)
+
+    baseline = _exec(_FakeContainer(container_id), ["bash", "-lc", wrapper_path])
+    if baseline["exit_code"] != 0:
+        raise RuntimeError(
+            f"Baseline wrapper failed for {project}/{test_id} ({script_name}); "
+            "Mull execution refused because mutant outcomes would be invalid. "
+            f"Output: {baseline['output'][-1500:]}"
+        )
 
     report_dir = "/experiment/mull_reports"
     cmd = (
@@ -177,6 +311,13 @@ def run_mull_subject(
     report_dir: Path,
     binary_name: str = "gzip",
 ) -> dict:
+    project = subject_id.split("-", 1)[0]
+    if project not in IMPLEMENTED_EXECUTION_PROJECTS:
+        raise ValueError(
+            f"Mull execution adapter is not implemented for project '{project}'. "
+            "The current test-script resolver and wrapper are gzip-specific; "
+            "refusing to run with a potentially wrong binary/test protocol."
+        )
     subject = Subject(dataset="manybugs", subject_id=subject_id, language="c")
     target = Target(
         file_path=target_file, function_name="", start_line=start_line,
@@ -191,7 +332,12 @@ def run_mull_subject(
         )
     log(f"[targets] eligible tests: {eligible_tests}")
 
-    checkout: MullCheckout = prepare_mull_checkout(subject_id)
+    resolved_binary = binary_name
+    if binary_name == "gzip" and project != "gzip":
+        resolved_binary = binary_relpath_for_target(project, target_file)
+    checkout: MullCheckout = prepare_mull_checkout(
+        subject_id, binary_relpath=resolved_binary, target_file=target_file,
+    )
     if not checkout.build_ok or not checkout.mutants_embedded:
         subprocess.run(["docker", "rm", "-f", checkout.container_id], capture_output=True, text=True)
         raise RuntimeError(f"Checkout not qualified for mull: {checkout}")
@@ -201,11 +347,13 @@ def run_mull_subject(
     try:
         write_mull_yml(checkout.container_id, checkout.source_dir, mutators)
         for test_id in eligible_tests:
-            script_name = resolve_test_script_name(checkout.container_id, test_id)
+            script_name = resolve_test_script_name(
+                checkout.container_id, test_id, project=project,
+            )
             log(f"[mull] running test_id={test_id} (script={script_name})")
             report = run_mull_for_test(
                 checkout.container_id, checkout.source_dir, test_id, script_name,
-                timeout_ms=timeout_ms, binary_name=binary_name,
+                project=project, timeout_ms=timeout_ms, binary_name=resolved_binary,
             )
             host_sqlite = report_dir / f"{target_id}__{test_id}.sqlite"
             cp = subprocess.run(
@@ -232,6 +380,9 @@ def run_mull_subject(
         "end_line": end_line,
         "eligible_tests": eligible_tests,
         "mutators": mutators,
+        "source_revision": checkout.source_revision,
+        "applied_fix_diffs": checkout.applied_fix_diffs,
+        "binary_relpath": resolved_binary,
         "reports": [asdict(r) for r in per_test_reports],
     }
 

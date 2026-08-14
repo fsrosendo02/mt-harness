@@ -1,0 +1,70 @@
+{
+  "requested_count": 32,
+  "accepted_count": 27,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the handling of n < 0 by changing subnormal number check.",
+        "line": 34,
+        "precode": "if (scaledExponent > -53) {",
+        "aftercode": "if (scaledExponent >= -53) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the handling of n < 0 by changing rounding logic.",
+        "line": 45,
+        "precode": "mantissa++;",
+        "aftercode": "if (mostSignificantLostBit != 0) { mantissa--; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the handling of scaled exponent by changing infinity check.",
+        "line": 73,
+        "precode": "if (scaledExponent < 2047) {",
+        "aftercode": "if (scaledExponent <= 2047) {",
+        "candidate_code": "    public static double scalb(final double d, final int n) {\n\n        // first simple and fast handling when 2^n can be represented using normal numbers\n        if ((n > -1023) && (n < 1024)) {\n            return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);\n        }\n\n        // handle special cases\n        if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {\n            return d;\n        }\n        if (n < -2098) {\n            return (d > 0) ? 0.0 : -0.0;\n        }\n        if (n > 2097) {\n            return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n        }\n\n        // decompose d\n        final long bits = Double.doubleToLongBits(d);\n        final long sign = bits & 0x8000000000000000L;\n        int  exponent   = ((int) (bits >>> 52)) & 0x7ff;\n        long mantissa   = bits & 0x000fffffffffffffL;\n\n        // compute scaled exponent\n        int scaledExponent = exponent + n;\n\n        if (n < 0) {\n            // we are really in the case n <= -1023\n            if (scaledExponent > 0) {\n                // both the input and the result are normal numbers, we only adjust the exponent\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else if (scaledExponent > -53) {\n                // the input is a normal number and the result is a subnormal number\n\n                // recover the hidden mantissa bit\n                mantissa = mantissa | (1L << 52);\n\n                // scales down complete mantissa, hence losing least significant bits\n                final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));\n                mantissa = mantissa >>> (1 - scaledExponent);\n                if (mostSignificantLostBit != 0) {\n                    // we need to add 1 bit to round up the result\n                    mantissa++;\n                }\n                return Double.longBitsToDouble(sign | mantissa);\n\n            } else {\n                // no need to compute the mantissa, the number scales down to 0\n                return (sign == 0L) ? 0.0 : -0.0;\n            }\n        } else {\n            // we are really in the case n >= 1024\n            if (exponent == 0) {\n\n                // the input number is subnormal, normalize it\n                while ((mantissa >>> 52) != 1) {\n                    mantissa = mantissa << 1;\n                    --scaledExponent;\n                }\n                ++scaledExponent;\n                mantissa = mantissa & 0x000fffffffffffffL;\n\n                if (scaledExponent <= 2047) {\n                    return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n                } else {\n                    return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n                }\n\n            } else if (scaledExponent < 2047) {\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else {\n                return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n            }\n        }\n\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the handling of n >= 1024 by changing exponent check.",
+        "line": 70,
+        "precode": "} else if (scaledExponent < 2047) {",
+        "aftercode": "} else if (scaledExponent <= 2047) {",
+        "candidate_code": "    public static double scalb(final double d, final int n) {\n\n        // first simple and fast handling when 2^n can be represented using normal numbers\n        if ((n > -1023) && (n < 1024)) {\n            return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);\n        }\n\n        // handle special cases\n        if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {\n            return d;\n        }\n        if (n < -2098) {\n            return (d > 0) ? 0.0 : -0.0;\n        }\n        if (n > 2097) {\n            return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n        }\n\n        // decompose d\n        final long bits = Double.doubleToLongBits(d);\n        final long sign = bits & 0x8000000000000000L;\n        int  exponent   = ((int) (bits >>> 52)) & 0x7ff;\n        long mantissa   = bits & 0x000fffffffffffffL;\n\n        // compute scaled exponent\n        int scaledExponent = exponent + n;\n\n        if (n < 0) {\n            // we are really in the case n <= -1023\n            if (scaledExponent > 0) {\n                // both the input and the result are normal numbers, we only adjust the exponent\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else if (scaledExponent > -53) {\n                // the input is a normal number and the result is a subnormal number\n\n                // recover the hidden mantissa bit\n                mantissa = mantissa | (1L << 52);\n\n                // scales down complete mantissa, hence losing least significant bits\n                final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));\n                mantissa = mantissa >>> (1 - scaledExponent);\n                if (mostSignificantLostBit != 0) {\n                    // we need to add 1 bit to round up the result\n                    mantissa++;\n                }\n                return Double.longBitsToDouble(sign | mantissa);\n\n            } else {\n                // no need to compute the mantissa, the number scales down to 0\n                return (sign == 0L) ? 0.0 : -0.0;\n            }\n        } else {\n            // we are really in the case n >= 1024\n            if (exponent == 0) {\n\n                // the input number is subnormal, normalize it\n                while ((mantissa >>> 52) != 1) {\n                    mantissa = mantissa << 1;\n                    --scaledExponent;\n                }\n                ++scaledExponent;\n                mantissa = mantissa & 0x000fffffffffffffL;\n\n                if (scaledExponent < 2047) {\n                    return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n                } else {\n                    return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n                }\n\n            } else if (scaledExponent <= 2047) {\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else {\n                return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n            }\n        }\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the handling of n >= 1024 by changing return value.",
+        "line": 76,
+        "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+        "aftercode": "return (sign != 0L) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;",
+        "candidate_code": "    public static double scalb(final double d, final int n) {\n\n        // first simple and fast handling when 2^n can be represented using normal numbers\n        if ((n > -1023) && (n < 1024)) {\n            return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);\n        }\n\n        // handle special cases\n        if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {\n            return d;\n        }\n        if (n < -2098) {\n            return (d > 0) ? 0.0 : -0.0;\n        }\n        if (n > 2097) {\n            return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n        }\n\n        // decompose d\n        final long bits = Double.doubleToLongBits(d);\n        final long sign = bits & 0x8000000000000000L;\n        int  exponent   = ((int) (bits >>> 52)) & 0x7ff;\n        long mantissa   = bits & 0x000fffffffffffffL;\n\n        // compute scaled exponent\n        int scaledExponent = exponent + n;\n\n        if (n < 0) {\n            // we are really in the case n <= -1023\n            if (scaledExponent > 0) {\n                // both the input and the result are normal numbers, we only adjust the exponent\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else if (scaledExponent > -53) {\n                // the input is a normal number and the result is a subnormal number\n\n                // recover the hidden mantissa bit\n                mantissa = mantissa | (1L << 52);\n\n                // scales down complete mantissa, hence losing least significant bits\n                final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));\n                mantissa = mantissa >>> (1 - scaledExponent);\n                if (mostSignificantLostBit != 0) {\n                    // we need to add 1 bit to round up the result\n                    mantissa++;\n                }\n                return Double.longBitsToDouble(sign | mantissa);\n\n            } else {\n                // no need to compute the mantissa, the number scales down to 0\n                return (sign == 0L) ? 0.0 : -0.0;\n            }\n        } else {\n            // we are really in the case n >= 1024\n            if (exponent == 0) {\n\n                // the input number is subnormal, normalize it\n                while ((mantissa >>> 52) != 1) {\n                    mantissa = mantissa << 1;\n                    --scaledExponent;\n                }\n                ++scaledExponent;\n                mantissa = mantissa & 0x000fffffffffffffL;\n\n                if (scaledExponent < 2047) {\n                    return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n                } else {\n                    return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;\n                }\n\n            } else if (scaledExponent < 2047) {\n                return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);\n            } else {\n                return (sign != 0L) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;\n            }\n        }\n\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    }
+  ]
+}

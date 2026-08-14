@@ -1,0 +1,110 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public void process(final WriteableCommandLine commandLine,
+ 2:                         final ListIterator arguments)
+ 3:         throws OptionException {
+ 4:         String previous = null;
+ 5: 
+ 6:         // [START process each command line token
+ 7:         while (arguments.hasNext()) {
+ 8:             // grab the next argument
+ 9:             final String arg = (String) arguments.next();
+10: 
+11:             // if we have just tried to process this instance
+12:             if (arg == previous) {
+13:                 // rollback and abort
+14:                 arguments.previous();
+15: 
+16:                 break;
+17:             }
+18: 
+19:             // remember last processed instance
+20:             previous = arg;
+21: 
+22:             final Option opt = (Option) optionMap.get(arg);
+23: 
+24:             // option found
+25:             if (opt != null) {
+26:                 arguments.previous();
+27:                 opt.process(commandLine, arguments);
+28:             }
+29:             // [START option NOT found
+30:             else {
+31:                 // it might be an anonymous argument continue search
+32:                 // [START argument may be anonymous
+33:                 if (commandLine.looksLikeOption(arg)) {
+34:                     // narrow the search
+35:                     final Collection values = optionMap.tailMap(arg).values();
+36: 
+37:                     boolean foundMemberOption = false;
+38: 
+39:                     for (Iterator i = values.iterator(); i.hasNext() && !foundMemberOption;) {
+40:                         final Option option = (Option) i.next();
+41: 
+42:                         if (option.canProcess(commandLine, arg)) {
+43:                             foundMemberOption = true;
+44:                             arguments.previous();
+45:                             option.process(commandLine, arguments);
+46:                         }
+47:                     }
+48: 
+49:                     // back track and abort this group if necessary
+50:                     if (!foundMemberOption) {
+51:                         arguments.previous();
+52: 
+53:                         return;
+54:                     }
+55:                 } // [END argument may be anonymous
+56: 
+57:                 // [START argument is NOT anonymous
+58:                 else {
+59:                     // move iterator back, current value not used
+60:                     arguments.previous();
+61: 
+62:                     // if there are no anonymous arguments then this group can't
+63:                     // process the argument
+64:                     if (anonymous.isEmpty()) {
+65:                         break;
+66:                     }
+67: 
+68:                     // TODO: why do we iterate over all anonymous arguments?
+69:                     // canProcess will always return true?
+70:                     for (final Iterator i = anonymous.iterator(); i.hasNext();) {
+71:                         final Argument argument = (Argument) i.next();
+72: 
+73:                         if (argument.canProcess(commandLine, arguments)) {
+74:                             argument.process(commandLine, arguments);
+75:                         }
+76:                     }
+77:                 } // [END argument is NOT anonymous
+78:             } // [END option NOT found
+79:         } // [END process each command line token
+80:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

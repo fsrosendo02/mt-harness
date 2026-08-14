@@ -1,0 +1,67 @@
+    private void processPaxHeader(String key, String val, Map<String, String> headers) {
+    /*
+     * The following headers are defined for Pax.
+     * atime, ctime, charset: cannot use these without changing TarArchiveEntry fields
+     * mtime
+     * comment
+     * gid, gname
+     * linkpath
+     * size
+     * uid,uname
+     * SCHILY.devminor, SCHILY.devmajor: don't have setters/getters for those
+     *
+     * GNU sparse files use additional members, we use
+     * GNU.sparse.size to detect the 0.0 and 0.1 versions and
+     * GNU.sparse.realsize for 1.0.
+     *
+     * star files use additional members of which we use
+     * SCHILY.filetype in order to detect star sparse files.
+     *
+     * If called from addExtraPaxHeader, these additional headers must be already present .
+     */
+        switch (key) {
+            case "path":
+                setName(val);
+                break;
+            case "linkpath":
+                setLinkName(val);
+                break;
+            case "gid":
+                setGroupId(Long.parseLong(val));
+                break;
+            case "gname":
+                setGroupName(val);
+                break;
+            case "uid":
+                setUserId(Long.parseLong(val));
+                break;
+            case "uname":
+                setUserName(val);
+                break;
+            case "size":
+                setSize(Long.parseLong(val));
+                break;
+            case "mtime":
+                setModTime((long) (Double.parseDouble(val) * 1000));
+                break;
+            case "SCHILY.devminor":
+                setDevMinor(Integer.parseInt(val));
+                break;
+            case "SCHILY.devmajor":
+                setDevMajor(Integer.parseInt(val));
+                break;
+            case "GNU.sparse.size":
+                fillGNUSparse0xData(headers);
+                break;
+            case "GNU.sparse.realsize":
+                // fillGNUSparse1xData(headers);
+                break;
+            case "SCHILY.filetype":
+                if ("sparse".equals(val)) {
+                    fillStarSparseData(headers);
+                }
+                break;
+            default:
+                extraPaxHeaders.put(key,val);
+        }
+    }

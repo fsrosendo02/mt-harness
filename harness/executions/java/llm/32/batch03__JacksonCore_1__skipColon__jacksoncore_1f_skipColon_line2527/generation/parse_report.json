@@ -1,0 +1,66 @@
+{
+  "requested_count": 32,
+  "accepted_count": 27,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Fails to handle tab characters",
+        "line": 25,
+        "precode": "case INT_SPACE:",
+        "aftercode": "case INT_SPACE: // fallthrough"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Incorrectly skips after colon",
+        "line": 50,
+        "precode": "// either way, found colon, skip through trailing WS",
+        "aftercode": "// either way, found colon, skip through trailing WS // skip"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 20,
+        "reasoning": "Fails to handle space in trailing whitespace",
+        "line": 60,
+        "precode": "if (i != INT_SPACE) {",
+        "aftercode": "if (i == INT_SPACE) {",
+        "candidate_code": "    private int _skipColon()\n        throws IOException, JsonParseException\n    {\n        if (_inputPtr >= _inputEnd) {\n            loadMoreGuaranteed();\n        }\n        // first fast case: we just got a colon without white space:\n        int i = _inputBuffer[_inputPtr++];\n        if (i == INT_COLON) {\n            if (_inputPtr < _inputEnd) {\n                i = _inputBuffer[_inputPtr] & 0xFF;\n                if (i > INT_SPACE && i != INT_SLASH) {\n                    ++_inputPtr;\n                    return i;\n                }\n            }\n        } else {\n            // need to skip potential leading space\n            i &= 0xFF;\n            \n            space_loop:\n            while (true) {\n                switch (i) {\n                case INT_SPACE:\n                case INT_TAB:\n                    break;\n                case INT_CR:\n                    _skipCR();\n                    break;\n                case INT_LF:\n                    _skipLF();\n                    break;\n                case INT_SLASH:\n                    _skipComment();\n                    break;\n                default:\n                    if (i < INT_SPACE) {\n                        _throwInvalidSpace(i);\n                    }\n                    break space_loop;\n                }\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                i = _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            if (i != INT_COLON) {\n                _reportUnexpectedChar(i, \"was expecting a colon to separate field name and value\");\n            }\n        }\n\n            // either way, found colon, skip through trailing WS\n        while (_inputPtr < _inputEnd || loadMore()) {\n            i = _inputBuffer[_inputPtr++] & 0xFF;\n            if (i > INT_SPACE) {\n                if (i != INT_SLASH) {\n                    return i;\n                }\n                _skipComment();\n            if (i == INT_SPACE) {\n                if (i == INT_LF) {\n                    _skipLF();\n                } else if (i == INT_CR) {\n                    _skipCR();\n                } else if (i != INT_TAB) {\n                    _throwInvalidSpace(i);\n                }\n            }\n        }\n        throw _constructError(\"Unexpected end-of-input within/between \"+_parsingContext.getTypeDesc()+\" entries\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Fails to handle slash in whitespace loop",
+        "line": 33,
+        "precode": "_skipComment();",
+        "aftercode": "// _skipComment();",
+        "candidate_code": "    private int _skipColon()\n        throws IOException, JsonParseException\n    {\n        if (_inputPtr >= _inputEnd) {\n            loadMoreGuaranteed();\n        }\n        // first fast case: we just got a colon without white space:\n        int i = _inputBuffer[_inputPtr++];\n        if (i == INT_COLON) {\n            if (_inputPtr < _inputEnd) {\n                i = _inputBuffer[_inputPtr] & 0xFF;\n                if (i > INT_SPACE && i != INT_SLASH) {\n                    ++_inputPtr;\n                    return i;\n                }\n            }\n        } else {\n            // need to skip potential leading space\n            i &= 0xFF;\n            \n            space_loop:\n            while (true) {\n                switch (i) {\n                case INT_SPACE:\n                case INT_TAB:\n                    break;\n                case INT_CR:\n                    _skipCR();\n                    break;\n                case INT_LF:\n                    _skipLF();\n                    break;\n                case INT_SLASH:\n                    // _skipComment();\n                    break;\n                default:\n                    if (i < INT_SPACE) {\n                        _throwInvalidSpace(i);\n                    }\n                    break space_loop;\n                }\n                if (_inputPtr >= _inputEnd) {\n                    loadMoreGuaranteed();\n                }\n                i = _inputBuffer[_inputPtr++] & 0xFF;\n            }\n            if (i != INT_COLON) {\n                _reportUnexpectedChar(i, \"was expecting a colon to separate field name and value\");\n            }\n        }\n\n            // either way, found colon, skip through trailing WS\n        while (_inputPtr < _inputEnd || loadMore()) {\n            i = _inputBuffer[_inputPtr++] & 0xFF;\n            if (i > INT_SPACE) {\n                if (i != INT_SLASH) {\n                    return i;\n                }\n                _skipComment();\n            } else if (i != INT_SPACE) {\n                if (i == INT_LF) {\n                    _skipLF();\n                } else if (i == INT_CR) {\n                    _skipCR();\n                } else if (i != INT_TAB) {\n                    _throwInvalidSpace(i);\n                }\n            }\n        }\n        throw _constructError(\"Unexpected end-of-input within/between \"+_parsingContext.getTypeDesc()+\" entries\");\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "Fails to handle space before colon",
+        "line": 18,
+        "precode": "// need to skip potential leading space",
+        "aftercode": "// need to skip potential leading space // skip"
+      }
+    }
+  ]
+}

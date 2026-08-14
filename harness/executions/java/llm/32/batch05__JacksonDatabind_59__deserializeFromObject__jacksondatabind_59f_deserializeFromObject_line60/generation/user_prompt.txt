@@ -1,0 +1,127 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     public Object deserializeFromObject(JsonParser p, DeserializationContext ctxt) throws IOException
+ 3:     {
+ 4:         // 30-Sep-2010, tatu: Need to allow use of @JsonCreator, so:
+ 5:         if (_propertyBasedCreator != null) { // proper @JsonCreator
+ 6:             return _deserializeUsingPropertyBased(p, ctxt);
+ 7:         }
+ 8:         if (_delegateDeserializer != null) {
+ 9:             return _valueInstantiator.createUsingDelegate(ctxt,
+10:                     _delegateDeserializer.deserialize(p, ctxt));
+11:         }
+12:         if (_beanType.isAbstract()) { // for good measure, check this too
+13:             return ctxt.handleMissingInstantiator(handledType(), p,
+14:                     "abstract type (need to add/enable type information?)");
+15:         }
+16:         boolean hasStringCreator = _valueInstantiator.canCreateFromString();
+17:         boolean hasDefaultCtor = _valueInstantiator.canCreateUsingDefault();
+18:         // and finally, verify we do have single-String arg constructor (if no @JsonCreator)
+19:         if (!hasStringCreator && !hasDefaultCtor) {
+20:             return ctxt.handleMissingInstantiator(handledType(), p,
+21:                     "Throwable needs a default contructor, a single-String-arg constructor; or explicit @JsonCreator");
+22:         }
+23:         
+24:         Object throwable = null;
+25:         Object[] pending = null;
+26:         int pendingIx = 0;
+27: 
+28:         for (; p.getCurrentToken() != JsonToken.END_OBJECT; p.nextToken()) {
+29:             String propName = p.getCurrentName();
+30:             SettableBeanProperty prop = _beanProperties.find(propName);
+31:             p.nextToken(); // to point to field value
+32: 
+33:             if (prop != null) { // normal case
+34:                 if (throwable != null) {
+35:                     prop.deserializeAndSet(p, ctxt, throwable);
+36:                     continue;
+37:                 }
+38:                 // nope; need to defer
+39:                 if (pending == null) {
+40:                     int len = _beanProperties.size();
+41:                     pending = new Object[len + len];
+42:                 }
+43:                 pending[pendingIx++] = prop;
+44:                 pending[pendingIx++] = prop.deserialize(p, ctxt);
+45:                 continue;
+46:             }
+47: 
+48:             // Maybe it's "message"?
+49:             if (PROP_NAME_MESSAGE.equals(propName)) {
+50:                 if (hasStringCreator) {
+51:                     throwable = _valueInstantiator.createFromString(ctxt, p.getText());
+52:                     // any pending values?
+53:                     if (pending != null) {
+54:                         for (int i = 0, len = pendingIx; i < len; i += 2) {
+55:                             prop = (SettableBeanProperty)pending[i];
+56:                             prop.set(throwable, pending[i+1]);
+57:                         }
+58:                         pending = null;
+59:                     }
+60:                     continue;
+61:                 }
+62:             }
+63:             // Things marked as ignorable should not be passed to any setter
+64:             if ((_ignorableProps != null) && _ignorableProps.contains(propName)) {
+65:                 p.skipChildren();
+66:                 continue;
+67:             }
+68:             if (_anySetter != null) {
+69:                 _anySetter.deserializeAndSet(p, ctxt, throwable, propName);
+70:                 continue;
+71:             }
+72:             // Unknown: let's call handler method
+73:             handleUnknownProperty(p, ctxt, throwable, propName);
+74:         }
+75:         // Sanity check: did we find "message"?
+76:         if (throwable == null) {
+77:             /* 15-Oct-2010, tatu: Can't assume missing message is an error, since it may be
+78:              *   suppressed during serialization, as per [JACKSON-388].
+79:              *   
+80:              *   Should probably allow use of default constructor, too...
+81:              */
+82:             //throw new JsonMappingException("No 'message' property found: could not deserialize "+_beanType);
+83:             if (hasStringCreator) {
+84:                 throwable = _valueInstantiator.createFromString(ctxt, null);
+85:             } else {
+86:                 throwable = _valueInstantiator.createUsingDefault(ctxt);
+87:             }
+88:             // any pending values?
+89:             if (pending != null) {
+90:                 for (int i = 0, len = pendingIx; i < len; i += 2) {
+91:                     SettableBeanProperty prop = (SettableBeanProperty)pending[i];
+92:                     prop.set(throwable, pending[i+1]);
+93:                 }
+94:             }
+95:         }
+96:         return throwable;
+97:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

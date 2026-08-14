@@ -1,0 +1,40 @@
+# Mull toolchain candidate for the ManyBugs Python 3.3 family.
+#
+# Existing LLM execution logs show a native x86_64 build and tolerate optional
+# `_ssl`/`ossaudiodev` modules being unavailable. This image supplies the core
+# build dependencies and LLVM 9 instrumentation. It remains unvalidated until
+# the final smoke/execution phase.
+FROM ubuntu:18.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && apt-get install -y -qq \
+      curl \
+      ca-certificates \
+      gnupg \
+      apt-transport-https \
+      clang-9 \
+      make \
+      patch \
+      perl \
+      psmisc \
+      sqlite3 \
+      libbz2-dev \
+      libffi-dev \
+      libgdbm-dev \
+      libncurses5-dev \
+      libreadline-dev \
+      libsqlite3-dev \
+      libssl-dev \
+      tk-dev \
+      zlib1g-dev \
+    && curl -1sLf "https://dl.cloudsmith.io/public/mull-project/mull-stable/setup.deb.sh" | bash \
+    && apt-get install -y -qq mull-9 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV MULL_CC=clang-9
+ENV MULL_CFLAGS="-O1 -fexperimental-new-pass-manager -fpass-plugin=/usr/lib/mull-ir-frontend-9 -g -grecord-command-line"
+ENV MULL_LDFLAGS=""
+
+WORKDIR /experiment

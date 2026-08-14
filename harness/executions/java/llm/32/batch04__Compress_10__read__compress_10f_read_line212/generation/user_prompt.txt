@@ -1,0 +1,110 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     @Override
+ 2:     public int read(byte[] b, int off, int len) throws IOException {
+ 3:         if (endReached)
+ 4:             return -1;
+ 5: 
+ 6:         int size = 0;
+ 7: 
+ 8:         while (len > 0) {
+ 9:             if (inf.needsInput()) {
+10:                 // Remember the current position because we may need to
+11:                 // rewind after reading too much input.
+12:                 in.mark(buf.length);
+13: 
+14:                 bufUsed = in.read(buf);
+15:                 if (bufUsed == -1)
+16:                     throw new EOFException();
+17: 
+18:                 inf.setInput(buf, 0, bufUsed);
+19:             }
+20: 
+21:             int ret;
+22:             try {
+23:                 ret = inf.inflate(b, off, len);
+24:             } catch (DataFormatException e) {
+25:                 throw new IOException("Gzip-compressed data is corrupt");
+26:             }
+27: 
+28:             crc.update(b, off, ret);
+29:             memberSize += ret;
+30:             off += ret;
+31:             len -= ret;
+32:             size += ret;
+33:             count(ret);
+34: 
+35:             if (inf.finished()) {
+36:                 // We may have read too many bytes. Rewind the read
+37:                 // position to match the actual amount used.
+38:                 //
+39:                 // NOTE: The "if" is there just in case. Since we used
+40:                 // in.mark earler, it should always skip enough.
+41:                 in.reset();
+42: 
+43:                 int skipAmount = bufUsed - inf.getRemaining();
+44:                 if (in.skip(skipAmount) != skipAmount)
+45:                     throw new IOException();
+46: 
+47:                 bufUsed = 0;
+48: 
+49:                 DataInputStream inData = new DataInputStream(in);
+50: 
+51:                 // CRC32
+52:                 long crcStored = 0;
+53:                 for (int i = 0; i < 4; ++i)
+54:                     crcStored |= (long)inData.readUnsignedByte() << (i * 8);
+55: 
+56:                 if (crcStored != crc.getValue())
+57:                     throw new IOException("Gzip-compressed data is corrupt "
+58:                                           + "(CRC32 error)");
+59: 
+60:                 // Uncompressed size modulo 2^32 (ISIZE in the spec)
+61:                 int isize = 0;
+62:                 for (int i = 0; i < 4; ++i)
+63:                     isize |= inData.readUnsignedByte() << (i * 8);
+64: 
+65:                 if (isize != memberSize)
+66:                     throw new IOException("Gzip-compressed data is corrupt"
+67:                                           + "(uncompressed size mismatch)");
+68: 
+69:                 // See if this is the end of the file.
+70:                 if (!decompressConcatenated || !init(false)) {
+71:                     inf.end();
+72:                     inf = null;
+73:                     endReached = true;
+74:                     return size == 0 ? -1 : size;
+75:                 }
+76:             }
+77:         }
+78: 
+79:         return size;
+80:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

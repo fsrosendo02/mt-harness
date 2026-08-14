@@ -1,0 +1,90 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static String random(int count, int start, int end, boolean letters, boolean numbers,
+ 2:                                 char[] chars, Random random) {
+ 3:         if (count == 0) {
+ 4:             return "";
+ 5:         } else if (count < 0) {
+ 6:             throw new IllegalArgumentException("Requested random string length " + count + " is less than 0.");
+ 7:         }
+ 8:         if ((start == 0) && (end == 0)) {
+ 9:             end = 'z' + 1;
+10:             start = ' ';
+11:             if (!letters && !numbers) {
+12:                 start = 0;
+13:                 end = Integer.MAX_VALUE;
+14:             }
+15:         }
+16: 
+17:         char[] buffer = new char[count];
+18:         int gap = end - start;
+19: 
+20:         while (count-- != 0) {
+21:             char ch;
+22:             if (chars == null) {
+23:                 ch = (char) (random.nextInt(gap) + start);
+24:             } else {
+25:                 ch = chars[random.nextInt(gap) + start];
+26:             }
+27:             if ((letters && Character.isLetter(ch))
+28:                 || (numbers && Character.isDigit(ch))
+29:                 || (!letters && !numbers)) 
+30:             {
+31:                 if(ch >= 56320 && ch <= 57343) {
+32:                     if(count == 0) {
+33:                         count++;
+34:                     } else {
+35:                         // low surrogate, insert high surrogate after putting it in
+36:                         buffer[count] = ch;
+37:                         count--;
+38:                         buffer[count] = (char) (55296 + random.nextInt(128));
+39:                     }
+40:                 } else if(ch >= 55296 && ch <= 56191) {
+41:                     if(count == 0) {
+42:                         count++;
+43:                     } else {
+44:                         // high surrogate, insert low surrogate before putting it in
+45:                         buffer[count] = (char) (56320 + random.nextInt(128));
+46:                         count--;
+47:                         buffer[count] = ch;
+48:                     }
+49:                 } else if(ch >= 56192 && ch <= 56319) {
+50:                     // private high surrogate, no effing clue, so skip it
+51:                     count++;
+52:                 } else {
+53:                     buffer[count] = ch;
+54:                 }
+55:             } else {
+56:                 count++;
+57:             }
+58:         }
+59:         return new String(buffer);
+60:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

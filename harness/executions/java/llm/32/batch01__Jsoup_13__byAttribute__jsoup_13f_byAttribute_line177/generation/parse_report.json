@@ -1,0 +1,55 @@
+{
+  "requested_count": 32,
+  "accepted_count": 28,
+  "rejected_count": 4,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 2,
+        "reasoning": "The original code checks if the content queue is empty before processing. This mutant removes that check, potentially leading to an unexpected behavior if the content queue is indeed empty.",
+        "line": 7,
+        "precode": "if (cq.isEmpty()) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 13,
+        "reasoning": "The original code evaluates whether the key starts with '^' to decide on a specific evaluator type. This mutant incorrectly uses 'v=' as an operator.",
+        "line": 8,
+        "precode": "if (key.startsWith(\"^\"))",
+        "aftercode": "if (key.equals(\"v=\")",
+        "candidate_code": "    private void byAttribute() {\n        TokenQueue cq = new TokenQueue(tq.chompBalanced('[', ']')); // content queue\n        String key = cq.consumeToAny(\"=\", \"!=\", \"^=\", \"$=\", \"*=\", \"~=\"); // eq, not, start, end, contain, match, (no val)\n        Validate.notEmpty(key);\n        cq.consumeWhitespace();\n\n        if (cq.isEmpty()) {\n            if (key.equals(\"v=\")\n                evals.add(new Evaluator.AttributeStarting(key.substring(1)));\n            else\n                evals.add(new Evaluator.Attribute(key));\n        } else {\n            if (cq.matchChomp(\"=\"))\n                evals.add(new Evaluator.AttributeWithValue(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"!=\"))\n                evals.add(new Evaluator.AttributeWithValueNot(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"^=\"))\n                evals.add(new Evaluator.AttributeWithValueStarting(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"$=\"))\n                evals.add(new Evaluator.AttributeWithValueEnding(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"*=\"))\n                evals.add(new Evaluator.AttributeWithValueContaining(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"~=\"))\n                evals.add(new Evaluator.AttributeWithValueMatching(key, Pattern.compile(cq.remainder())));\n            else\n                throw new Selector.SelectorParseException(\"Could not parse attribute query '%s': unexpected token at '%s'\", query, cq.remainder());\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_change",
+      "payload": {
+        "id": 28,
+        "reasoning": "The original code uses 'substring(1)' to remove the '^' from a starting-with match. This mutant incorrectly removes one character.",
+        "line": 9,
+        "precode": "evals.add(new Evaluator.AttributeStarting(key.substring(1)));",
+        "aftercode": "evals.add(new Evaluator.AttributeStarting(key.substring(1)));"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "The original code throws an exception on unhandled operators. This mutant replaces the throw statement with a no-operation.",
+        "line": 31,
+        "precode": "throw new Selector.SelectorParseException(\"Could not parse attribute query '%s': unexpected token at '%s'\", query, cq.remainder());",
+        "aftercode": "// No operation here",
+        "candidate_code": "    private void byAttribute() {\n        TokenQueue cq = new TokenQueue(tq.chompBalanced('[', ']')); // content queue\n        String key = cq.consumeToAny(\"=\", \"!=\", \"^=\", \"$=\", \"*=\", \"~=\"); // eq, not, start, end, contain, match, (no val)\n        Validate.notEmpty(key);\n        cq.consumeWhitespace();\n\n        if (cq.isEmpty()) {\n            if (key.startsWith(\"^\"))\n                evals.add(new Evaluator.AttributeStarting(key.substring(1)));\n            else\n                evals.add(new Evaluator.Attribute(key));\n        } else {\n            if (cq.matchChomp(\"=\"))\n                evals.add(new Evaluator.AttributeWithValue(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"!=\"))\n                evals.add(new Evaluator.AttributeWithValueNot(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"^=\"))\n                evals.add(new Evaluator.AttributeWithValueStarting(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"$=\"))\n                evals.add(new Evaluator.AttributeWithValueEnding(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"*=\"))\n                evals.add(new Evaluator.AttributeWithValueContaining(key, cq.remainder()));\n\n            else if (cq.matchChomp(\"~=\"))\n                evals.add(new Evaluator.AttributeWithValueMatching(key, Pattern.compile(cq.remainder())));\n            else\n                // No operation here\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

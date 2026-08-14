@@ -31,6 +31,7 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
@@ -41,7 +42,23 @@ MULL_DIR = Path(__file__).resolve().parent
 IMAGE_REGISTRY = "prosyslab/manybugs"
 PLATFORM = "linux/amd64"
 TOOLCHAIN_IMAGE_PREFIX = "manybugs-mull"
+TOOLCHAIN_IMAGE_VERSIONS = {
+    # v2 adds GCC and uses a native GCC build followed by selective
+    # Clang/Mull recompilation of the catalog target.
+    "gmp": "hybrid-v2",
+}
 CONTAINER_SOURCE_DIR = "/experiment"
+
+PYTHON_CORE_TARGETS = {
+    "Python/peephole.c": "Python/peephole.o",
+    "Modules/signalmodule.c": "Modules/signalmodule.o",
+}
+PYTHON_EXTENSION_TARGETS = {
+    "Modules/selectmodule.c": ("select.cpython-33m.so", ""),
+    "Modules/mathmodule.c": ("math.cpython-33m.so", "-lm"),
+    "Modules/_json.c": ("_json.cpython-33m.so", ""),
+    "Modules/zlibmodule.c": ("zlib.cpython-33m.so", "-lz"),
+}
 
 
 def ts() -> str:
@@ -73,6 +90,8 @@ class MullCheckout:
     build_log_tail: str
     mutants_embedded: bool
     binary_path: str
+    source_revision: str
+    applied_fix_diffs: int
 
 
 def _run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
@@ -94,7 +113,8 @@ def build_toolchain_image(project: str, *, force_rebuild: bool = False) -> str:
             f"mull_baseline_plan.md Fase 1 (re-verify glibc/arch per family, "
             f"don't assume the gzip recipe applies)."
         )
-    tag = f"{TOOLCHAIN_IMAGE_PREFIX}:{project}"
+    version = TOOLCHAIN_IMAGE_VERSIONS.get(project)
+    tag = f"{TOOLCHAIN_IMAGE_PREFIX}:{project}-{version}" if version else f"{TOOLCHAIN_IMAGE_PREFIX}:{project}"
 
     client = _docker_client()
     if not force_rebuild:
@@ -114,7 +134,7 @@ def build_toolchain_image(project: str, *, force_rebuild: bool = False) -> str:
     return tag
 
 
-def extract_scenario_source(subject_id: str, dest_dir: Path) -> str:
+def extract_scenario_source(subject_id: str, dest_dir: Path) -> tuple[str, int]:
     """Extract /experiment from prosyslab/manybugs:<subject_id> into dest_dir.
 
     Mirrors ManyBugsAdapter.checkout_subject's docker cp mechanism.
@@ -124,9 +144,19 @@ def extract_scenario_source(subject_id: str, dest_dir: Path) -> str:
 
     log(f"[checkout] pulling {image_name}")
     try:
-        client.images.pull(image_name, platform=PLATFORM)
-    except TypeError:
-        client.images.pull(image_name)
+        try:
+            client.images.pull(image_name, platform=PLATFORM)
+        except TypeError:
+            client.images.pull(image_name)
+    except docker.errors.APIError as exc:
+        # ManyBugs images are immutable scenario snapshots. A transient Docker
+        # Hub outage must not block a rerun when the exact tagged image is
+        # already cached locally, but absence of that image remains fatal.
+        try:
+            client.images.get(image_name)
+        except docker.errors.ImageNotFound:
+            raise exc
+        log(f"[checkout] registry pull failed; reusing cached {image_name}")
 
     log(f"[checkout] extracting /experiment from {image_name}")
     try:
@@ -138,10 +168,41 @@ def extract_scenario_source(subject_id: str, dest_dir: Path) -> str:
         result = _run(["docker", "cp", f"{container.id}:/experiment", str(dest_dir / "experiment")])
         if result.returncode != 0:
             raise RuntimeError(f"docker cp out failed: {result.stderr}")
+        applied_fix_diffs = apply_manybugs_fix_diffs(dest_dir / "experiment")
     finally:
         container.remove(force=True)
 
-    return image_name
+    return image_name, applied_fix_diffs
+
+
+def apply_manybugs_fix_diffs(experiment_dir: Path) -> int:
+    """Bring extracted ManyBugs sources to the fixed revision.
+
+    Gzip/lighttpd images store buggy sources in ``src`` and fixes under
+    ``diffs/**/*-diff``. Libtiff has no such directory and is already fixed.
+    Failing or already-applied patches are errors: silently building the buggy
+    revision invalidates every mutation outcome and coupling calculation.
+    """
+    diffs_dir = experiment_dir / "diffs"
+    if not diffs_dir.exists():
+        return 0
+    diff_paths = sorted(path for path in diffs_dir.rglob("*-diff") if path.is_file())
+    for diff_path in diff_paths:
+        relative = diff_path.relative_to(diffs_dir)
+        target = experiment_dir / "src" / str(relative).removesuffix("-diff")
+        if not target.exists():
+            raise RuntimeError(f"ManyBugs fix target does not exist: {target}")
+        result = _run([
+            "patch", str(target), "-i", str(diff_path), "--forward", "--batch", "--silent",
+        ])
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Could not apply ManyBugs fix {relative} to {target}: "
+                f"{result.stdout}{result.stderr}"
+            )
+    if diff_paths:
+        log(f"[checkout] applied {len(diff_paths)} ManyBugs fix diff(s)")
+    return len(diff_paths)
 
 
 def build_instrumented_binary(
@@ -152,6 +213,10 @@ def build_instrumented_binary(
     make_jobs: int = 2,
     cflags_at_configure_time: bool = False,
     post_configure_patch: str | None = None,
+    configure_args: tuple[str, ...] = (),
+    pre_configure_command: str | None = None,
+    selective_source_relpath: str | None = None,
+    selective_profile: str | None = None,
 ) -> MullCheckout:
     """Start a container from *toolchain_image*, copy the extracted source
     in, and build it with the mull-instrumented flags baked into the image.
@@ -192,17 +257,43 @@ def build_instrumented_binary(
 
         src_dir = f"{CONTAINER_SOURCE_DIR}/src"
 
-        if cflags_at_configure_time:
-            log("[build] configure (CC=clang-9, mull CFLAGS/LDFLAGS baked in at "
+        if pre_configure_command:
+            log(f"[build] pre-configure cleanup: {pre_configure_command}")
+            cleanup = _exec(
+                container, ["bash", "-lc", f"cd {src_dir} && {pre_configure_command}"]
+            )
+            if cleanup["exit_code"] != 0:
+                raise RuntimeError(
+                    f"Pre-configure cleanup failed: {cleanup['output'][-2000:]}"
+                )
+
+        extra_configure = " ".join(configure_args)
+        if selective_source_relpath:
+            log("[build] configure native GCC build; Mull will instrument only "
+                f"{selective_source_relpath}")
+            native_link = (
+                " LINKFORSHARED='-Xlinker -export-dynamic -no-pie'"
+                if selective_profile == "python" else ""
+            )
+            configure_cmd = (
+                f"cd {src_dir} && ./configure CC=gcc CXX=g++"
+                f"{native_link} {extra_configure}"
+            )
+        elif cflags_at_configure_time:
+            log("[build] configure (CC/CXX=clang-9, mull C/CXX flags baked in at "
                 "configure time — this project recompiles on demand during tests)")
             configure_cmd = (
-                f'cd {src_dir} && ./configure CC=clang-9 CFLAGS="$MULL_CFLAGS" LDFLAGS="$MULL_LDFLAGS"'
+                f'cd {src_dir} && ./configure CC=clang-9 CXX=clang++-9 '
+                f'CFLAGS="$MULL_CFLAGS" CXXFLAGS="$MULL_CFLAGS" '
+                f'LDFLAGS="$MULL_LDFLAGS" {extra_configure}'
             )
         else:
             log("[build] configure (CC=clang-9, no CFLAGS at configure time — "
                 "flags are supplied to `make` below as command-line args)")
-            configure_cmd = f"cd {src_dir} && ./configure CC=clang-9"
+            configure_cmd = f"cd {src_dir} && ./configure CC=clang-9 {extra_configure}"
         cfg = _exec(container, ["bash", "-lc", configure_cmd])
+        if cfg["exit_code"] != 0:
+            raise RuntimeError(f"configure failed: {cfg['output'][-3000:]}")
 
         if post_configure_patch:
             log(f"[build] applying post-configure patch: {post_configure_patch}")
@@ -210,12 +301,85 @@ def build_instrumented_binary(
             if patch["exit_code"] != 0:
                 log(f"[build] WARNING: post-configure patch failed: {patch['output'][-500:]}")
 
-        log(f"[build] make -j{make_jobs} with mull-instrumented CFLAGS/LDFLAGS "
-            "(passed as make arguments, not env vars)")
-        build_cmd = (
-            f"cd {src_dir} && make -j{make_jobs} CC=clang-9 "
-            f'CFLAGS="$MULL_CFLAGS" LDFLAGS="$MULL_LDFLAGS"'
-        )
+        if selective_source_relpath and selective_profile == "gmp":
+            source = Path(selective_source_relpath)
+            if source.suffix != ".c" or source.is_absolute() or ".." in source.parts:
+                raise ValueError(
+                    f"Invalid selective C source path: {selective_source_relpath!r}"
+                )
+            object_dir = source.parent.as_posix()
+            object_name = f"{source.stem}.lo"
+            log(f"[build] native make -j{make_jobs}, then selective Mull "
+                f"instrumentation of {selective_source_relpath}")
+            # Build GMP and its old assembly with GCC. Then remove and rebuild
+            # just the libtool object owning the catalog target with Clang/Mull,
+            # and relink libgmp. This keeps the runtime-compatible native mpn
+            # layer while placing .mull_mutants only in the target under study.
+            build_cmd = (
+                f"cd {src_dir} && make -j{make_jobs} CC=gcc CXX=g++ && "
+                f"rm -f {object_dir}/{object_name} {object_dir}/{source.stem}.o "
+                f"{object_dir}/.libs/{source.stem}.o && "
+                f"make -C {object_dir} {object_name} CC=clang-9 "
+                f'CFLAGS="$MULL_CFLAGS -fPIC" && '
+                f"rm -f .libs/libgmp.a libgmp.la .libs/libgmp.la && "
+                f"make -j{make_jobs} libgmp.la CC=gcc CXX=g++"
+            )
+        elif selective_source_relpath and selective_profile == "python":
+            source = Path(selective_source_relpath)
+            source_name = source.as_posix()
+            if source_name not in PYTHON_CORE_TARGETS and source_name not in PYTHON_EXTENSION_TARGETS:
+                raise ValueError(
+                    f"No selective Python build profile for {source_name}; "
+                    "refusing an unvalidated target"
+                )
+            log(f"[build] native Python make -j{make_jobs}, then selective Mull "
+                f"instrumentation of {selective_source_relpath}")
+            # Python 3.3 treats _ssl/_hashlib as optional and completes the
+            # native core without them on modern OpenSSL. Do not invoke the
+            # fragile sharedmods/setup.py passes at all: build the interpreter,
+            # then compile and link the selected extension directly.
+            native_core = (
+                f"cd {src_dir} && make -j{make_jobs} python CC=gcc CXX=g++ "
+                f"LINKFORSHARED='-Xlinker -export-dynamic -no-pie'"
+            )
+            compile_flags = (
+                "-DNDEBUG -g -fwrapv -O1 -Wall -Wstrict-prototypes "
+                "$MULL_CFLAGS -I. -IInclude -I./Include"
+            )
+            if source_name in PYTHON_CORE_TARGETS:
+                object_path = PYTHON_CORE_TARGETS[source_name]
+                build_cmd = (
+                    f"{native_core} && "
+                    f"clang-9 -c {compile_flags} -DPy_BUILD_CORE "
+                    f"{source_name} -o {object_path} && "
+                    f"rm -f libpython3.3m.a python && "
+                    f"make -j{make_jobs} python CC=gcc CXX=g++ "
+                    f"LINKFORSHARED='-Xlinker -export-dynamic -no-pie'"
+                )
+            else:
+                extension_name, extension_libs = PYTHON_EXTENSION_TARGETS[source_name]
+                build_cmd = (
+                    f"{native_core} && "
+                    f"CC=gcc LDSHARED='gcc -pthread -shared' "
+                    f"./python -E setup.py build && "
+                    f"obj=/tmp/mull_{source.stem}.o && "
+                    f"extdir=build/lib.linux-x86_64-3.3 && mkdir -p \"$extdir\" && "
+                    f"for h in md5 sha1 sha256 sha512; do "
+                    f"gcc -shared -fPIC -I. -IInclude -I./Include "
+                    f"Modules/${{h}}module.c -o \"$extdir/_${{h}}.cpython-33m.so\" || exit; "
+                    f"done && "
+                    f"so=$extdir/{extension_name} && "
+                    f"clang-9 -c {compile_flags} -fPIC {source_name} -o \"$obj\" && "
+                    f"clang-9 -shared \"$obj\" {extension_libs} -o \"$so\""
+                )
+        else:
+            log(f"[build] make -j{make_jobs} with mull-instrumented CFLAGS/LDFLAGS "
+                "(passed as make arguments, not env vars)")
+            build_cmd = (
+                f"cd {src_dir} && make -j{make_jobs} CC=clang-9 CXX=clang++-9 "
+                f'CFLAGS="$MULL_CFLAGS" CXXFLAGS="$MULL_CFLAGS" '
+                f'LDFLAGS="$MULL_LDFLAGS"'
+            )
         build = _exec(container, ["bash", "-lc", build_cmd])
         build_ok = build["exit_code"] == 0
         tail = "\n".join(build["output"].splitlines()[-15:])
@@ -247,6 +411,8 @@ def build_instrumented_binary(
             build_log_tail=tail,
             mutants_embedded=mutants_embedded,
             binary_path=binary_path,
+            source_revision="fixed",
+            applied_fix_diffs=0,  # filled by caller
         )
     except Exception:
         container.remove(force=True)
@@ -271,8 +437,25 @@ def _exec(container, cmd: list[str]) -> dict:
 # --binary-relpath explicitly rather than silently guessing.
 DEFAULT_BINARY_RELPATH = {
     "gzip": "gzip",
-    "lighttpd": "lighttpd",
-    "libtiff": "tools/tiffcp",
+    "lighttpd": "src/lighttpd",
+    "libtiff": "libtiff/.libs/libtiff.so",
+    "gmp": ".libs/libgmp.a",
+    "python": "python",
+}
+
+CONFIGURE_ARGS = {
+    # The old GMP assembly cannot be linked into a shared object by Ubuntu
+    # 18.04's modern linker (protected-symbol R_X86_64_PC32 relocation).
+    # Static linkage also lets each oracle executable carry exactly the
+    # selectively instrumented target object inspected by mull-runner.
+    "gmp": ("--disable-shared", "--enable-static"),
+}
+
+PRE_CONFIGURE_COMMANDS = {
+    # ManyBugs GMP is extracted with a configure result for the original GCC
+    # environment. Reconfiguring it in place fails and previously went
+    # unnoticed, leaving an inconsistent mixture of native/generic objects.
+    "gmp": "make distclean",
 }
 
 # Projects where test scripts trigger on-demand recompilation (bare `make
@@ -309,6 +492,10 @@ POST_CONFIGURE_PATCH = {
 DEFAULT_MAKE_JOBS = {
     "gzip": 2,
     "lighttpd": 1,
+    # Python 3.3's top-level oldsharedmods/sharedmods targets race under -j2:
+    # one setup.py invocation can remove selectmodule.o while the other still
+    # expects it, ending with "selectmodule.o: No such file or directory".
+    "python": 1,
 }
 
 
@@ -320,9 +507,13 @@ def prepare_mull_checkout(
     force_rebuild_toolchain: bool = False,
     binary_relpath: str | None = None,
     make_jobs: int | None = None,
+    target_file: str | None = None,
 ) -> MullCheckout:
     project = project or _project_from_subject_id(subject_id)
-    workdir = workdir or Path(f".mull_checkout_{subject_id}")
+    # A repeated failed/smoke run must not copy /experiment into an existing
+    # /experiment and silently create experiment/experiment. Explicit
+    # --workdir remains available for manual inspection/reuse.
+    workdir = workdir or Path(tempfile.mkdtemp(prefix=f"mull_checkout_{subject_id}_"))
     if binary_relpath is None:
         binary_relpath = DEFAULT_BINARY_RELPATH.get(project)
         if binary_relpath is None:
@@ -333,7 +524,7 @@ def prepare_mull_checkout(
         make_jobs = DEFAULT_MAKE_JOBS.get(project, 2)
 
     toolchain_image = build_toolchain_image(project, force_rebuild=force_rebuild_toolchain)
-    scenario_image = extract_scenario_source(subject_id, workdir)
+    scenario_image, applied_fix_diffs = extract_scenario_source(subject_id, workdir)
     checkout = build_instrumented_binary(
         toolchain_image,
         workdir,
@@ -341,10 +532,15 @@ def prepare_mull_checkout(
         make_jobs=make_jobs,
         cflags_at_configure_time=project in CFLAGS_AT_CONFIGURE_TIME,
         post_configure_patch=POST_CONFIGURE_PATCH.get(project),
+        configure_args=CONFIGURE_ARGS.get(project, ()),
+        pre_configure_command=PRE_CONFIGURE_COMMANDS.get(project),
+        selective_source_relpath=target_file if project in {"gmp", "python"} else None,
+        selective_profile=project if project in {"gmp", "python"} else None,
     )
     checkout.subject_id = subject_id
     checkout.project = project
     checkout.scenario_image = scenario_image
+    checkout.applied_fix_diffs = applied_fix_diffs
     return checkout
 
 
@@ -356,6 +552,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--force-rebuild-toolchain", action="store_true")
     parser.add_argument("--binary-relpath", help="e.g. src/lighttpd — required if --project has no default")
     parser.add_argument("--make-jobs", type=int, help="Overrides the per-project default (gzip=2, lighttpd=1)")
+    parser.add_argument(
+        "--target-file",
+        help="Catalog source path; required by selective profiles such as GMP",
+    )
     return parser.parse_args()
 
 
@@ -368,6 +568,7 @@ def main() -> int:
         force_rebuild_toolchain=args.force_rebuild_toolchain,
         binary_relpath=args.binary_relpath,
         make_jobs=args.make_jobs,
+        target_file=args.target_file,
     )
     print(json.dumps(asdict(checkout), indent=2))
     if not checkout.build_ok or not checkout.mutants_embedded:

@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates error handling by throwing an exception for non-200 status codes without redirect.",
+      "line": 18,
+      "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+      "aftercode": "throw new IOException(\"Unexpected status code: \" + status);"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates protocol check by not supporting any other protocols than http and https.",
+      "line": 3,
+      "precode": "String protocol = req.url().getProtocol();",
+      "aftercode": "Validate.isTrue(false, \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates GET request handling by attempting to serialize a query string which does not exist.",
+      "line": 8,
+      "precode": "if (req.method() == Connection.Method.GET && req.data().size() > 0)",
+      "aftercode": "if (req.method() == Connection.Method.POST && req.data().size() > 0);"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates POST request handling by not writing data to the output stream.",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "if (req.method() == Connection.Method.POST) {}"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates response handling by not closing the input stream properly.",
+      "line": 37,
+      "precode": "InputStream inStream = null;",
+      "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {}"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates response handling by not checking the content type for charset determination.",
+      "line": 38,
+      "precode": "res.charset = DataUtil.getCharsetFromContentType(res.contentType);",
+      "aftercode": "res.charset = \"UTF-8\"; // default charset"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates error handling by not providing a meaningful exception message for non-200 status codes.",
+      "line": 23,
+      "precode": "throw new IOException(status + \" error loading URL \" + req.url().toString());",
+      "aftercode": "throw new IOException(\"Request failed with status: \" + status);"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates redirect handling by not updating the request URL after a successful redirection.",
+      "line": 29,
+      "precode": "req.url(new URL(res.header(\"Location\") ));",
+      "aftercode": ""
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates protocol check by allowing any other protocols than http and https.",
+      "line": 4,
+      "precode": "Validate.isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");",
+      "aftercode": "Validate.isTrue(false, \"Only http & https protocols supported\");"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates error handling by not throwing an exception for non-200 status codes.",
+      "line": 18,
+      "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+      "aftercode": "// no action on non-200 status"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req == null) throw new IllegalArgumentException(\"Request must not be null\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates request data handling by not checking if the request data is empty for a POST request.",
+      "line": 12,
+      "precode": "conn.connect();",
+      "aftercode": "if (req.method() == Connection.Method.POST && req.data().isEmpty()) return new Response(); conn.connect();"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates request data handling by not checking if the request data is empty for a POST request.",
+      "line": 13,
+      "precode": "writePost(req.data(), conn.getOutputStream());",
+      "aftercode": "if (req.method() == Connection.Method.POST && req.data().isEmpty()) return new Response(); writePost(req.data(), conn.getOutputStream());"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates response handling by not closing the input stream properly.",
+      "line": 37,
+      "precode": "InputStream inStream = null;",
+      "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {} finally { if (inStream != null) inStream.close(); }"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates response handling by not closing the input stream properly.",
+      "line": 39,
+      "precode": "",
+      "aftercode": "InputStream inStream = null; try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) { res.byteData = DataUtil.readToByteBuffer(inStream); } finally { if (inStream != null) inStream.close(); }"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates error handling by not throwing an exception for non-200 status codes.",
+      "line": 18,
+      "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+      "aftercode": "// no action on non-200 status"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates redirect handling by not updating the request URL after a failed redirection.",
+      "line": 29,
+      "precode": "req.url(new URL(res.header(\"Location\") ));",
+      "aftercode": ""
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates response handling by not closing the input stream properly.",
+      "line": 37,
+      "precode": "InputStream inStream = null;",
+      "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {} finally { if (inStream != null) inStream.close(); }"
+    },
+    {
+      "id": 25,
+      "reasoning": "Violates response handling by not closing the input stream properly.",
+      "line": 39,
+      "precode": "",
+      "aftercode": "InputStream inStream = null; try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) { res.byteData = DataUtil.readToByteBuffer(inStream); } finally { if (inStream != null) inStream.close(); }"
+    },
+    {
+      "id": 26,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 27,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 28,
+      "reasoning": "Violates error handling by not throwing an exception for non-200 status codes.",
+      "line": 18,
+      "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+      "aftercode": "// no action on non-200 status"
+    },
+    {
+      "id": 29,
+      "reasoning": "Violates redirect handling by not updating the request URL after a successful redirection.",
+      "line": 29,
+      "precode": "req.url(new URL(res.header(\"Location\") ));",
+      "aftercode": ""
+    },
+    {
+      "id": 30,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 31,
+      "reasoning": "Violates method call by not validating the request before creating a connection.",
+      "line": 10,
+      "precode": "HttpURLConnection conn = createConnection(req);",
+      "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);"
+    },
+    {
+      "id": 32,
+      "reasoning": "Violates response handling by not closing the input stream properly.",
+      "line": 37,
+      "precode": "InputStream inStream = null;",
+      "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {} finally { if (inStream != null) inStream.close(); }"
+    }
+  ]
+}

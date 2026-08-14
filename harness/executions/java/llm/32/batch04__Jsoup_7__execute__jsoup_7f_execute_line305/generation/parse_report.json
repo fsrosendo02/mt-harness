@@ -1,0 +1,265 @@
+{
+  "requested_count": 32,
+  "accepted_count": 11,
+  "rejected_count": 21,
+  "rejections": [
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates POST request handling by not writing data to the output stream.",
+        "line": 13,
+        "precode": "writePost(req.data(), conn.getOutputStream());",
+        "aftercode": "if (req.method() == Connection.Method.POST) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates response handling by not closing the input stream properly.",
+        "line": 37,
+        "precode": "InputStream inStream = null;",
+        "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {}",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates redirect handling by not updating the request URL after a successful redirection.",
+        "line": 29,
+        "precode": "req.url(new URL(res.header(\"Location\") ));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates error handling by not throwing an exception for non-200 status codes.",
+        "line": 18,
+        "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+        "aftercode": "// no action on non-200 status",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            // no action on non-200 status {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates response handling by not closing the input stream properly.",
+        "line": 37,
+        "precode": "InputStream inStream = null;",
+        "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {} finally { if (inStream != null) inStream.close(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates response handling by not closing the input stream properly.",
+        "line": 39,
+        "precode": "",
+        "aftercode": "InputStream inStream = null; try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) { res.byteData = DataUtil.readToByteBuffer(inStream); } finally { if (inStream != null) inStream.close(); }"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates error handling by not throwing an exception for non-200 status codes.",
+        "line": 18,
+        "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+        "aftercode": "// no action on non-200 status",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            // no action on non-200 status {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates redirect handling by not updating the request URL after a failed redirection.",
+        "line": 29,
+        "precode": "req.url(new URL(res.header(\"Location\") ));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates response handling by not closing the input stream properly.",
+        "line": 37,
+        "precode": "InputStream inStream = null;",
+        "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {} finally { if (inStream != null) inStream.close(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates response handling by not closing the input stream properly.",
+        "line": 39,
+        "precode": "",
+        "aftercode": "InputStream inStream = null; try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) { res.byteData = DataUtil.readToByteBuffer(inStream); } finally { if (inStream != null) inStream.close(); }"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates error handling by not throwing an exception for non-200 status codes.",
+        "line": 18,
+        "precode": "if (status != HttpURLConnection.HTTP_OK) {",
+        "aftercode": "// no action on non-200 status",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            // no action on non-200 status {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates redirect handling by not updating the request URL after a successful redirection.",
+        "line": 29,
+        "precode": "req.url(new URL(res.header(\"Location\") ));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.url() == null) throw new IllegalArgumentException(\"Request URL must be set\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates method call by not validating the request before creating a connection.",
+        "line": 10,
+        "precode": "HttpURLConnection conn = createConnection(req);",
+        "aftercode": "if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);",
+        "candidate_code": "        static Response execute(Connection.Request req) throws IOException {\n            Validate.notNull(req, \"Request must not be null\");\n            String protocol = req.url().getProtocol();\n            Validate\n                .isTrue(protocol.equals(\"http\") || protocol.equals(\"https\"), \"Only http & https protocols supported\");\n\n            // set up the request for execution\n            if (req.method() == Connection.Method.GET && req.data().size() > 0)\n                serialiseRequestUrl(req); // appends query string\n            if (req.method() == null) throw new IllegalArgumentException(\"Request method must be specified\"); HttpURLConnection conn = createConnection(req);\n            conn.connect();\n            if (req.method() == Connection.Method.POST)\n                writePost(req.data(), conn.getOutputStream());          \n\n            // todo: error handling options, allow user to get !200 without exception\n            int status = conn.getResponseCode();\n            boolean needsRedirect = false;\n            if (status != HttpURLConnection.HTTP_OK) {\n                // java url connection will follow redirects on same protocol, but not switch between http & https, so do that here\n                if (status == HttpURLConnection.HTTP_MOVED_TEMP || status == HttpURLConnection.HTTP_MOVED_PERM || status == HttpURLConnection.HTTP_SEE_OTHER)\n                    needsRedirect = true;\n                else\n                    throw new IOException(status + \" error loading URL \" + req.url().toString());\n            }\n            Response res = new Response();\n            res.setupFromConnection(conn);\n            if (needsRedirect) {\n                req.url(new URL(res.header(\"Location\")));\n                return execute(req);\n            }\n\n            InputStream inStream = null;\n            try {\n                inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ?\n                        new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) :\n                        new BufferedInputStream(conn.getInputStream());\n                res.byteData = DataUtil.readToByteBuffer(inStream);\n                res.charset = DataUtil.getCharsetFromContentType(res.contentType); // may be null, readInputStream deals with it\n            } finally {\n                if (inStream != null) inStream.close();\n            }\n\n            res.executed = true;\n            return res;\n        }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates response handling by not closing the input stream properly.",
+        "line": 37,
+        "precode": "InputStream inStream = null;",
+        "aftercode": "try (InputStream inStream = res.hasHeader(\"Content-Encoding\") && res.header(\"Content-Encoding\").equalsIgnoreCase(\"gzip\") ? new BufferedInputStream(new GZIPInputStream(conn.getInputStream())) : new BufferedInputStream(conn.getInputStream())) {} finally { if (inStream != null) inStream.close(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

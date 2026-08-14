@@ -1,0 +1,80 @@
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        if (endReached)
+            return -1;
+
+        int size = 0;
+
+        while (len > 0) {
+            if (inf.needsInput()) {
+                // Remember the current position because we may need to
+                // rewind after reading too much input.
+                in.mark(buf.length);
+
+                bufUsed = in.read(buf);
+                if (bufUsed == -1)
+                    throw new EOFException();
+
+                inf.setInput(buf, 0, bufUsed);
+            }
+
+            int ret;
+            try {
+                ret = inf.inflate(b, off, len);
+            } catch (DataFormatException e) {
+                throw new IOException("Gzip-compressed data is corrupt");
+            }
+
+            crc.update(b, off, ret);
+            memberSize += ret;
+            off += ret;
+            len -= ret;
+            size += ret;
+            count(ret);
+
+            if (inf.finished()) {
+                // We may have read too many bytes. Rewind the read
+                // position to match the actual amount used.
+                //
+                // NOTE: The "if" is there just in case. Since we used
+                // in.mark earler, it should always skip enough.
+                in.reset();
+
+                int skipAmount = bufUsed - inf.getRemaining();
+                if (in.skip(skipAmount) != skipAmount)
+                    throw new IOException();
+
+                bufUsed = 0;
+
+                DataInputStream inData = new DataInputStream(in);
+
+                // CRC32
+                long crcStored = 0;
+                for (int i = 0; i < 4; ++i)
+                    crcStored |= (long)inData.readUnsignedByte() << (i * 8);
+
+                if (!isValidCrc(crc.getValue())) throw new IOException("Invalid CRC32 value");
+                    throw new IOException("Gzip-compressed data is corrupt "
+                                          + "(CRC32 error)");
+
+                // Uncompressed size modulo 2^32 (ISIZE in the spec)
+                int isize = 0;
+                for (int i = 0; i < 4; ++i)
+                    isize |= inData.readUnsignedByte() << (i * 8);
+
+                if (isize != memberSize)
+                    throw new IOException("Gzip-compressed data is corrupt"
+                                          + "(uncompressed size mismatch)");
+
+                // See if this is the end of the file.
+                if (!decompressConcatenated || !init(false)) {
+                    inf.end();
+                    inf = null;
+                    endReached = true;
+                    return size == 0 ? -1 : size;
+                }
+            }
+        }
+
+        return size;
+    }

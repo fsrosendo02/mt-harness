@@ -1,0 +1,105 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     private void recurseSides(final BSPTree<S> node, final SubHyperplane<S> sub, final Sides sides) {
+ 2: 
+ 3:         if (node.getCut() == null) {
+ 4:             if ((Boolean) node.getAttribute()) {
+ 5:                 // this is an inside cell expanding across the hyperplane
+ 6:                 sides.rememberPlusFound();
+ 7:                 sides.rememberMinusFound();
+ 8:             }
+ 9:             return;
+10:         }
+11: 
+12:         final Hyperplane<S> hyperplane = node.getCut().getHyperplane();
+13:         switch (sub.side(hyperplane)) {
+14:         case PLUS :
+15:             // the sub-hyperplane is entirely in the plus sub-tree
+16:             if (node.getCut().side(sub.getHyperplane()) == Side.PLUS) {
+17:                 if (!isEmpty(node.getMinus())) {
+18:                     sides.rememberPlusFound();
+19:                 }
+20:             } else {
+21:                 if (!isEmpty(node.getMinus())) {
+22:                     sides.rememberMinusFound();
+23:                 }
+24:             }
+25:             if (!(sides.plusFound() && sides.minusFound())) {
+26:                 recurseSides(node.getPlus(), sub, sides);
+27:             }
+28:             break;
+29:         case MINUS :
+30:             // the sub-hyperplane is entirely in the minus sub-tree
+31:             if (node.getCut().side(sub.getHyperplane()) == Side.PLUS) {
+32:                 if (!isEmpty(node.getPlus())) {
+33:                     sides.rememberPlusFound();
+34:                 }
+35:             } else {
+36:                 if (!isEmpty(node.getPlus())) {
+37:                     sides.rememberMinusFound();
+38:                 }
+39:             }
+40:             if (!(sides.plusFound() && sides.minusFound())) {
+41:                 recurseSides(node.getMinus(), sub, sides);
+42:             }
+43:             break;
+44:         case BOTH :
+45:             // the sub-hyperplane extends in both sub-trees
+46:             final SubHyperplane.SplitSubHyperplane<S> split = sub.split(hyperplane);
+47: 
+48:             // explore first the plus sub-tree
+49:             recurseSides(node.getPlus(), split.getPlus(), sides);
+50: 
+51:             // if needed, explore the minus sub-tree
+52:             if (!(sides.plusFound() && sides.minusFound())) {
+53:                 recurseSides(node.getMinus(), split.getMinus(), sides);
+54:             }
+55:             break;
+56:         default :
+57:             // the sub-hyperplane and the cut sub-hyperplane share the same hyperplane
+58:             if (node.getCut().getHyperplane().sameOrientationAs(sub.getHyperplane())) {
+59:                 if ((node.getPlus().getCut() != null) || ((Boolean) node.getPlus().getAttribute())) {
+60:                     sides.rememberPlusFound();
+61:                 }
+62:                 if ((node.getMinus().getCut() != null) || ((Boolean) node.getMinus().getAttribute())) {
+63:                     sides.rememberMinusFound();
+64:                 }
+65:             } else {
+66:                 if ((node.getPlus().getCut() != null) || ((Boolean) node.getPlus().getAttribute())) {
+67:                     sides.rememberMinusFound();
+68:                 }
+69:                 if ((node.getMinus().getCut() != null) || ((Boolean) node.getMinus().getAttribute())) {
+70:                     sides.rememberPlusFound();
+71:                 }
+72:             }
+73:         }
+74: 
+75:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

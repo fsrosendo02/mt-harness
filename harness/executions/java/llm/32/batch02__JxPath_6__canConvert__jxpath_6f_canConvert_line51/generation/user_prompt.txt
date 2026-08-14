@@ -1,0 +1,128 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public boolean canConvert(Object object, final Class toType) {
+ 2:         if (object == null) {
+ 3:             return true;
+ 4:         }
+ 5:         final Class useType = TypeUtils.wrapPrimitive(toType);
+ 6:         Class fromType = object.getClass();
+ 7: 
+ 8:         if (useType.isAssignableFrom(fromType)) {
+ 9:             return true;
+10:         }
+11: 
+12:         if (useType == String.class) {
+13:             return true;
+14:         }
+15: 
+16:         if (object instanceof Boolean) {
+17:             if (Number.class.isAssignableFrom(useType)
+18:                     || "java.util.concurrent.atomic.AtomicBoolean"
+19:                             .equals(useType.getName())) {
+20:                 return true;
+21:             }
+22:         }
+23:         if (object instanceof Number) {
+24:             if (Number.class.isAssignableFrom(useType) || useType == Boolean.class) {
+25:                 return true;
+26:             }
+27:         }
+28:         if (object instanceof String) {
+29:             if (useType == Boolean.class
+30:                 || useType == Character.class
+31:                 || useType == Byte.class
+32:                 || useType == Short.class
+33:                 || useType == Integer.class
+34:                 || useType == Long.class
+35:                 || useType == Float.class
+36:                 || useType == Double.class) {
+37:                 return true;
+38:             }
+39:         }
+40:         if (fromType.isArray()) {
+41:             // Collection -> array
+42:             if (useType.isArray()) {
+43:                 Class cType = useType.getComponentType();
+44:                 int length = Array.getLength(object);
+45:                 for (int i = 0; i < length; i++) {
+46:                     Object value = Array.get(object, i);
+47:                     if (!canConvert(value, cType)) {
+48:                         return false;
+49:                     }
+50:                 }
+51:                 return true;
+52:             }
+53:             if (Collection.class.isAssignableFrom(useType)) {
+54:                 return canCreateCollection(useType);
+55:             }
+56:             if (Array.getLength(object) > 0) {
+57:                 Object value = Array.get(object, 0);
+58:                 return canConvert(value, useType);
+59:             }
+60:             return canConvert("", useType);
+61:         }
+62:         if (object instanceof Collection) {
+63:             // Collection -> array
+64:             if (useType.isArray()) {
+65:                 Class cType = useType.getComponentType();
+66:                 Iterator it = ((Collection) object).iterator();
+67:                 while (it.hasNext()) {
+68:                     Object value = it.next();
+69:                     if (!canConvert(value, cType)) {
+70:                         return false;
+71:                     }
+72:                 }
+73:                 return true;
+74:             }
+75:             if (Collection.class.isAssignableFrom(useType)) {
+76:                 return canCreateCollection(useType);
+77:             }
+78:             if (((Collection) object).size() > 0) {
+79:                 Object value;
+80:                 if (object instanceof List) {
+81:                     value = ((List) object).get(0);
+82:                 }
+83:                 else {
+84:                     Iterator it = ((Collection) object).iterator();
+85:                     value = it.next();
+86:                 }
+87:                 return canConvert(value, useType);
+88:             }
+89:             return canConvert("", useType);
+90:         }
+91:         if (object instanceof NodeSet) {
+92:             return canConvert(((NodeSet) object).getValues(), useType);
+93:         }
+94:         if (object instanceof Pointer) {
+95:             return canConvert(((Pointer) object).getValue(), useType);
+96:         }
+97:         return ConvertUtils.lookup(useType) != null;
+98:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

@@ -1,0 +1,324 @@
+{
+  "requested_count": 32,
+  "accepted_count": 6,
+  "rejected_count": 26,
+  "rejections": [
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 22,
+        "precode": "if (JarArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for ZIP or TAR signatures.",
+        "line": 23,
+        "precode": "if (ArArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 24,
+        "precode": "if (CpioArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for ZIP or TAR signatures.",
+        "line": 25,
+        "precode": "if (ArjArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for ZIP or TAR signatures.",
+        "line": 26,
+        "precode": "if (SevenZFile.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for ZIP or TAR signatures.",
+        "line": 27,
+        "precode": "if (CpioArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for ZIP or TAR signatures.",
+        "line": 28,
+        "precode": "if (ArjArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for ZIP or TAR signatures.",
+        "line": 30,
+        "precode": "if (SevenZFile.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 20,
+        "precode": "if (ZipArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 22,
+        "precode": "if (JarArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 23,
+        "precode": "if (ArArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 24,
+        "precode": "if (CpioArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 25,
+        "precode": "if (ArjArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 26,
+        "precode": "if (SevenZFile.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 27,
+        "precode": "if (CpioArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 28,
+        "precode": "if (ArjArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 30,
+        "precode": "if (SevenZFile.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        if (TarArchiveInputStream.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 31,
+        "precode": "if (CpioArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 32,
+        "precode": "if (ArjArchiveInputStream.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 33,
+        "precode": "if (SevenZFile.matches(signature, signatureLength)) {",
+        "aftercode": "if (TarArchiveInputStream.matches(signature, signatureLength)) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 34,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 35,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 36,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 37,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 48,
+        "precode": "",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly identifying archive types by not checking for JAR or TAR signatures.",
+        "line": 49,
+        "precode": "",
+        "aftercode": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "requested_count": 32,
+  "accepted_count": 23,
+  "rejected_count": 9,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "Equality of objects is incorrectly checked using reference equality.",
+        "line": 3,
+        "precode": "// also handles (a == null && b == null)",
+        "aftercode": "if (a == null || b == null) { return false; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 10,
+        "reasoning": "Instanceof checks are inverted, leading to incorrect object classification and comparison.",
+        "line": 6,
+        "precode": "else if (a instanceof Class) {",
+        "aftercode": "else if (!(a instanceof Class)) {",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    else if (!(a instanceof Class)) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "Generic array type equality check does not consider the component types.",
+        "line": 29,
+        "precode": "equals(ga.getGenericComponentType(), gb.getGenericComponentType())",
+        "aftercode": "!equals(ga.getGenericComponentType(), gb.getGenericComponentType())",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    } else if (a instanceof Class) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      !equals(ga.getGenericComponentType(), gb.getGenericComponentType())\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Wildcard type bounds are not compared correctly, leading to false positives.",
+        "line": 38,
+        "precode": "Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())",
+        "aftercode": "!Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    } else if (a instanceof Class) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      !Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Type variable equality is incorrectly determined by generic declaration comparison only.",
+        "line": 47,
+        "precode": "va.getGenericDeclaration() == vb.getGenericDeclaration()",
+        "aftercode": "va.getGenericDeclaration().equals(vb.getGenericDeclaration())",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    } else if (a instanceof Class) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      va.getGenericDeclaration().equals(vb.getGenericDeclaration())\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The method incorrectly returns true when comparing a TypeVariable to an unsupported type.",
+        "line": 52,
+        "precode": "return false;",
+        "aftercode": "return true;",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    } else if (a instanceof Class) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return true;\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 30,
+        "reasoning": "Instanceof checks are inverted, leading to incorrect object classification and comparison.",
+        "line": 6,
+        "precode": "else if (a instanceof Class) {",
+        "aftercode": "else if (!(a instanceof Class)) {",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    else if (!(a instanceof Class)) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "ParameterizedType instances are incorrectly compared using reference equality.",
+        "line": 16,
+        "precode": "ParameterizedType pa = (ParameterizedType) a;",
+        "aftercode": "Object pa = a;",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    } else if (a instanceof Class) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      Object pa = a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (!(b instanceof GenericArrayType)) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Comparison of generic array types fails to consider the component type.",
+        "line": 26,
+        "precode": "if (!(b instanceof GenericArrayType)) {",
+        "aftercode": "if (b instanceof GenericArrayType) {",
+        "candidate_code": "  public static boolean equals(Type a, Type b) {\n    if (a == b) {\n      // also handles (a == null && b == null)\n      return true;\n\n    } else if (a instanceof Class) {\n      // Class already specifies equals().\n      return a.equals(b);\n\n    } else if (a instanceof ParameterizedType) {\n      if (!(b instanceof ParameterizedType)) {\n        return false;\n      }\n\n      // TODO: save a .clone() call\n      ParameterizedType pa = (ParameterizedType) a;\n      ParameterizedType pb = (ParameterizedType) b;\n      return equal(pa.getOwnerType(), pb.getOwnerType())\n          && pa.getRawType().equals(pb.getRawType())\n          && Arrays.equals(pa.getActualTypeArguments(), pb.getActualTypeArguments());\n\n    } else if (a instanceof GenericArrayType) {\n      if (b instanceof GenericArrayType) {\n        return false;\n      }\n\n      GenericArrayType ga = (GenericArrayType) a;\n      GenericArrayType gb = (GenericArrayType) b;\n      return equals(ga.getGenericComponentType(), gb.getGenericComponentType());\n\n    } else if (a instanceof WildcardType) {\n      if (!(b instanceof WildcardType)) {\n        return false;\n      }\n\n      WildcardType wa = (WildcardType) a;\n      WildcardType wb = (WildcardType) b;\n      return Arrays.equals(wa.getUpperBounds(), wb.getUpperBounds())\n          && Arrays.equals(wa.getLowerBounds(), wb.getLowerBounds());\n\n    } else if (a instanceof TypeVariable) {\n      if (!(b instanceof TypeVariable)) {\n        return false;\n      }\n      TypeVariable<?> va = (TypeVariable<?>) a;\n      TypeVariable<?> vb = (TypeVariable<?>) b;\n      return va.getGenericDeclaration() == vb.getGenericDeclaration()\n          && va.getName().equals(vb.getName());\n\n    } else {\n      // This isn't a type we support. Could be a generic array type, wildcard type, etc.\n      return false;\n    }\n  }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

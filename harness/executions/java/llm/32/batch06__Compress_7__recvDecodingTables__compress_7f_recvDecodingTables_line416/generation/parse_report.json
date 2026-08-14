@@ -1,0 +1,477 @@
+{
+  "requested_count": 32,
+  "accepted_count": 12,
+  "rejected_count": 37,
+  "rejections": [
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 12,
+        "precode": "if (bsGetBit()) {",
+        "aftercode": "// if (false) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            // if (false) { {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the correctness of the output",
+        "line": 14,
+        "precode": "inUse[i] = true;",
+        "aftercode": "inUse[i] = false;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            inUse[i] = false;\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 29,
+        "precode": "if (bsGetBit()) {",
+        "aftercode": "// if (false) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    // if (false) { {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 39,
+        "precode": "for (int v = nGroups; --v >= 0;) {",
+        "aftercode": "// for (int v = -1; --v >= 0;) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        // for (int v = -1; --v >= 0;) { {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 50,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "// while (false) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            // while (false) { {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 68,
+        "precode": "for (int i = 0; i < alphaSize; i++) {",
+        "aftercode": "// for (int i = -1; i < alphaSize; i++) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            // for (int i = -1; i < alphaSize; i++) { {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 72,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "// while (false) {",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                // while (false) { {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 75,
+        "precode": "len_t[i] = (char) curr;",
+        "aftercode": "len_t[i] = null;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = null;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 76,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 78,
+        "precode": "final char[][] len = dataShadow.temp_charArray2d;",
+        "aftercode": "final char[][] len = null;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = null;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the correctness of the output",
+        "line": 80,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 90,
+        "precode": "for (int i = 0; i < nSelectors; i++) {",
+        "aftercode": "// for (int i = -1; i < nSelectors; i++) {",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the correctness of the output",
+        "line": 92,
+        "precode": "selectorMtf[i] = (byte) j;",
+        "aftercode": "selectorMtf[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) -1;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 95,
+        "precode": "pos[v] = tmp;",
+        "aftercode": "pos[v] = (byte) -1;",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the correctness of the output",
+        "line": 96,
+        "precode": "selector[i] = tmp;",
+        "aftercode": "selector[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = (byte) -1;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 97,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the correctness of the output",
+        "line": 104,
+        "precode": "if (bsGetBit()) {",
+        "aftercode": "// if (false) {",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 124,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "// while (false) {",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the correctness of the output",
+        "line": 125,
+        "precode": "selectorMtf[i] = (byte) j;",
+        "aftercode": "selectorMtf[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) -1;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 128,
+        "precode": "pos[v] = tmp;",
+        "aftercode": "pos[v] = (byte) -1;",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 33,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 33,
+        "reasoning": "Violates the correctness of the output",
+        "line": 129,
+        "precode": "selector[i] = tmp;",
+        "aftercode": "selector[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = (byte) -1;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 34,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 34,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 130,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 35,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 35,
+        "reasoning": "Violates the correctness of the output",
+        "line": 140,
+        "precode": "if (bsGetBit()) {",
+        "aftercode": "// if (false) {",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 36,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 36,
+        "reasoning": "Violates the correctness of the output",
+        "line": 142,
+        "precode": "selectorMtf[i] = (byte) j;",
+        "aftercode": "selectorMtf[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) -1;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 37,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 37,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 145,
+        "precode": "pos[v] = tmp;",
+        "aftercode": "pos[v] = (byte) -1;",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 38,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 38,
+        "reasoning": "Violates the correctness of the output",
+        "line": 146,
+        "precode": "selector[i] = tmp;",
+        "aftercode": "selector[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = (byte) -1;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 39,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 39,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 147,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 40,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 40,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 158,
+        "precode": "while (bsGetBit()) {",
+        "aftercode": "// while (false) {",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 41,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 41,
+        "reasoning": "Violates the correctness of the output",
+        "line": 159,
+        "precode": "selectorMtf[i] = (byte) j;",
+        "aftercode": "selectorMtf[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) -1;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 42,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 42,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 162,
+        "precode": "pos[v] = tmp;",
+        "aftercode": "pos[v] = (byte) -1;",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 43,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 43,
+        "reasoning": "Violates the correctness of the output",
+        "line": 163,
+        "precode": "selector[i] = tmp;",
+        "aftercode": "selector[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = (byte) -1;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 44,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 44,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 164,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 45,
+      "reason": "ambiguous_precode_match",
+      "payload": {
+        "id": 45,
+        "reasoning": "Violates the correctness of the output",
+        "line": 174,
+        "precode": "if (bsGetBit()) {",
+        "aftercode": "// if (false) {",
+        "resolution_reason": "ambiguous_precode_match"
+      }
+    },
+    {
+      "index": 46,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 46,
+        "reasoning": "Violates the correctness of the output",
+        "line": 176,
+        "precode": "selectorMtf[i] = (byte) j;",
+        "aftercode": "selectorMtf[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) -1;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 47,
+      "reason": "precode_not_found",
+      "payload": {
+        "id": 47,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 179,
+        "precode": "pos[v] = tmp;",
+        "aftercode": "pos[v] = (byte) -1;",
+        "resolution_reason": "precode_not_found"
+      }
+    },
+    {
+      "index": 48,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 48,
+        "reasoning": "Violates the correctness of the output",
+        "line": 180,
+        "precode": "selector[i] = tmp;",
+        "aftercode": "selector[i] = (byte) -1;",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = (byte) -1;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        createHuffmanDecodingTables(alphaSize, nGroups);\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 49,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 49,
+        "reasoning": "Violates the completeness of the input data",
+        "line": 181,
+        "precode": "createHuffmanDecodingTables(alphaSize, nGroups);",
+        "aftercode": "// createHuffmanDecodingTables();",
+        "candidate_code": "    private void recvDecodingTables() throws IOException {\n        final Data dataShadow = this.data;\n        final boolean[] inUse = dataShadow.inUse;\n        final byte[] pos = dataShadow.recvDecodingTables_pos;\n        final byte[] selector = dataShadow.selector;\n        final byte[] selectorMtf = dataShadow.selectorMtf;\n\n        int inUse16 = 0;\n\n        /* Receive the mapping table */\n        for (int i = 0; i < 16; i++) {\n            if (bsGetBit()) {\n                inUse16 |= 1 << i;\n            }\n        }\n\n        for (int i = 256; --i >= 0;) {\n            inUse[i] = false;\n        }\n\n        for (int i = 0; i < 16; i++) {\n            if ((inUse16 & (1 << i)) != 0) {\n                final int i16 = i << 4;\n                for (int j = 0; j < 16; j++) {\n                    if (bsGetBit()) {\n                        inUse[i16 + j] = true;\n                    }\n                }\n            }\n        }\n\n        makeMaps();\n        final int alphaSize = this.nInUse + 2;\n\n        /* Now the selectors */\n        final int nGroups = bsR(3);\n        final int nSelectors = bsR(15);\n\n        for (int i = 0; i < nSelectors; i++) {\n            int j = 0;\n            while (bsGetBit()) {\n                j++;\n            }\n            selectorMtf[i] = (byte) j;\n        }\n\n        /* Undo the MTF values for the selectors. */\n        for (int v = nGroups; --v >= 0;) {\n            pos[v] = (byte) v;\n        }\n\n        for (int i = 0; i < nSelectors; i++) {\n            int v = selectorMtf[i] & 0xff;\n            final byte tmp = pos[v];\n            while (v > 0) {\n                // nearly all times v is zero, 4 in most other cases\n                pos[v] = pos[v - 1];\n                v--;\n            }\n            pos[0] = tmp;\n            selector[i] = tmp;\n        }\n\n        final char[][] len = dataShadow.temp_charArray2d;\n\n        /* Now the coding tables */\n        for (int t = 0; t < nGroups; t++) {\n            int curr = bsR(5);\n            final char[] len_t = len[t];\n            for (int i = 0; i < alphaSize; i++) {\n                while (bsGetBit()) {\n                    curr += bsGetBit() ? -1 : 1;\n                }\n                len_t[i] = (char) curr;\n            }\n        }\n\n        // finally create the Huffman tables\n        // createHuffmanDecodingTables();\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    }
+  ]
+}

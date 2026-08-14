@@ -1,0 +1,107 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:     public static double scalb(final double d, final int n) {
+ 2: 
+ 3:         // first simple and fast handling when 2^n can be represented using normal numbers
+ 4:         if ((n > -1023) && (n < 1024)) {
+ 5:             return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);
+ 6:         }
+ 7: 
+ 8:         // handle special cases
+ 9:         if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {
+10:             return d;
+11:         }
+12:         if (n < -2098) {
+13:             return (d > 0) ? 0.0 : -0.0;
+14:         }
+15:         if (n > 2097) {
+16:             return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+17:         }
+18: 
+19:         // decompose d
+20:         final long bits = Double.doubleToLongBits(d);
+21:         final long sign = bits & 0x8000000000000000L;
+22:         int  exponent   = ((int) (bits >>> 52)) & 0x7ff;
+23:         long mantissa   = bits & 0x000fffffffffffffL;
+24: 
+25:         // compute scaled exponent
+26:         int scaledExponent = exponent + n;
+27: 
+28:         if (n < 0) {
+29:             // we are really in the case n <= -1023
+30:             if (scaledExponent > 0) {
+31:                 // both the input and the result are normal numbers, we only adjust the exponent
+32:                 return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);
+33:             } else if (scaledExponent > -53) {
+34:                 // the input is a normal number and the result is a subnormal number
+35: 
+36:                 // recover the hidden mantissa bit
+37:                 mantissa = mantissa | (1L << 52);
+38: 
+39:                 // scales down complete mantissa, hence losing least significant bits
+40:                 final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));
+41:                 mantissa = mantissa >>> (1 - scaledExponent);
+42:                 if (mostSignificantLostBit != 0) {
+43:                     // we need to add 1 bit to round up the result
+44:                     mantissa++;
+45:                 }
+46:                 return Double.longBitsToDouble(sign | mantissa);
+47: 
+48:             } else {
+49:                 // no need to compute the mantissa, the number scales down to 0
+50:                 return (sign == 0L) ? 0.0 : -0.0;
+51:             }
+52:         } else {
+53:             // we are really in the case n >= 1024
+54:             if (exponent == 0) {
+55: 
+56:                 // the input number is subnormal, normalize it
+57:                 while ((mantissa >>> 52) != 1) {
+58:                     mantissa = mantissa << 1;
+59:                     --scaledExponent;
+60:                 }
+61:                 ++scaledExponent;
+62:                 mantissa = mantissa & 0x000fffffffffffffL;
+63: 
+64:                 if (scaledExponent < 2047) {
+65:                     return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);
+66:                 } else {
+67:                     return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+68:                 }
+69: 
+70:             } else if (scaledExponent < 2047) {
+71:                 return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);
+72:             } else {
+73:                 return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+74:             }
+75:         }
+76: 
+77:     }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

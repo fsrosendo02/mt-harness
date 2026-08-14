@@ -1,0 +1,286 @@
+{
+  "requested_count": 32,
+  "accepted_count": 7,
+  "rejected_count": 25,
+  "rejections": [
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "The mutation removes the check for `_filteredProps` and `provider.getActiveView()`, potentially using all properties even if filtering is not applicable.",
+        "line": 15,
+        "precode": "if (_filteredProps != null && provider.getActiveView() != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 4,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 4,
+        "reasoning": "The mutation incorrectly sets the attribute flag without checking if it's necessary.",
+        "line": 30,
+        "precode": "xgen.setNextIsAttribute(true);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 7,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 7,
+        "reasoning": "The mutation does not check for `cdata` before setting the CDATA flag, which could lead to a NullPointerException.",
+        "line": 52,
+        "precode": "xgen.setNextIsCData(true);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The mutation removes the check for `attrCount` before setting the attribute flag, potentially causing incorrect serialization.",
+        "line": 31,
+        "precode": "if (attrCount > 0) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 9,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 9,
+        "reasoning": "The mutation does not reset the unwrapping state after serialization, leading to incorrect behavior in subsequent properties.",
+        "line": 47,
+        "precode": "xgen.setNextIsUnwrapped(true);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The mutation removes the check for `textIndex` before setting the unwrapping state, potentially causing incorrect behavior in subsequent properties.",
+        "line": 45,
+        "precode": "if (i == textIndex) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 11,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 11,
+        "reasoning": "The mutation does not check for `cdata` before setting the CDATA flag in some cases, which could lead to incorrect serialization.",
+        "line": 53,
+        "precode": "filter.serializeAsField(bean, xgen, provider, prop);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The mutation does not check for `_anyGetterWriter` before calling `getAndSerialize`, potentially causing a NullPointerException.",
+        "line": 60,
+        "precode": "if (_anyGetterWriter != null) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "The mutation does not reset the attribute flag after serializing any properties, potentially causing incorrect behavior in subsequent attributes.",
+        "line": 64,
+        "precode": "_anyGetterWriter.getAndSerialize(bean, xgen, provider);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 15,
+        "reasoning": "The mutation catches every exception without distinguishing between them, which may obscure the actual cause of an error.",
+        "line": 66,
+        "precode": "catch (Exception e) {",
+        "aftercode": "catch (RuntimeException e) {",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[i]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        catch (RuntimeException e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 16,
+        "reasoning": "The mutation does not check if `i` is equal to the length of `props` before setting the reference name, which could lead to an ArrayIndexOutOfBoundsException.",
+        "line": 71,
+        "precode": "mapE.prependPath(new JsonMappingException.Reference(bean, name));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The mutation does not reset the next name after serialization, potentially causing incorrect behavior in subsequent properties.",
+        "line": 48,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 18,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 18,
+        "reasoning": "The mutation does not check if the current property is an attribute before setting the next attribute state, potentially causing incorrect serialization.",
+        "line": 42,
+        "precode": "xgen.setNextIsAttribute(false);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 21,
+        "reasoning": "The mutation does not reset the CDATA flag after serialization, potentially causing incorrect behavior in subsequent properties.",
+        "line": 56,
+        "precode": "filter.serializeAsField(bean, xgen, provider, prop);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 22,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 22,
+        "reasoning": "The mutation does not check if `attrCount` is greater than 0 before setting the attribute flag, potentially causing incorrect serialization.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The mutation does not reset the unwrapping state after serialization, potentially causing incorrect behavior in subsequent properties.",
+        "line": 46,
+        "precode": "xgen.setNextIsUnwrapped(true);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 24,
+        "reasoning": "The mutation does not check if `textIndex` is equal to the current index before setting the unwrapping state, potentially causing incorrect behavior in subsequent properties.",
+        "line": 45,
+        "precode": "if (i == textIndex) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The mutation does not check for `cdata` before setting the CDATA flag in some cases, which could lead to incorrect serialization.",
+        "line": 52,
+        "precode": "xgen.setNextIsCData(true);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 26,
+        "reasoning": "The mutation does not check if `attrCount` is greater than 0 before setting the attribute flag, potentially causing incorrect serialization.",
+        "line": 31,
+        "precode": "if (attrCount > 0) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "The mutation does not reset the next name after serialization, potentially causing incorrect behavior in subsequent properties.",
+        "line": 48,
+        "precode": "xgen.setNextName(xmlNames[i]);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The mutation does not check if `i` is equal to the length of `props` before setting the reference name, which could lead to an ArrayIndexOutOfBoundsException.",
+        "line": 71,
+        "precode": "mapE.prependPath(new JsonMappingException.Reference(bean, name));",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The mutation does not check if `cdata` is null before accessing its elements, which could lead to a NullPointerException.",
+        "line": 51,
+        "precode": "if ((cdata != null) && cdata.get(i)) {",
+        "aftercode": "if (cdata != null && cdata.get(i)) {",
+        "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[i]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if (cdata != null && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 30,
+        "reasoning": "The mutation does not reset the CDATA flag after serialization, potentially causing incorrect behavior in subsequent properties.",
+        "line": 56,
+        "precode": "filter.serializeAsField(bean, xgen, provider, prop);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 31,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 31,
+        "reasoning": "The mutation does not check if `attrCount` is greater than 0 before setting the attribute flag, potentially causing incorrect serialization.",
+        "line": 42,
+        "precode": "if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "The mutation does not reset the unwrapping state after serialization, potentially causing incorrect behavior in subsequent properties.",
+        "line": 46,
+        "precode": "xgen.setNextIsUnwrapped(true);",
+        "aftercode": ""
+      }
+    }
+  ]
+}

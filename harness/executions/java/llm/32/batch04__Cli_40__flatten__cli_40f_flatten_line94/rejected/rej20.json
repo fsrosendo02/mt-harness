@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Cli_40",
+  "language": "java",
+  "version": "f",
+  "target_id": "cli_40f_flatten__line94_174",
+  "file_path": "src/main/java/org/apache/commons/cli/PosixParser.java",
+  "function_name": "flatten",
+  "start_line": 94,
+  "end_line": 174,
+  "mutant_id": "rej20",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 20,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/executions/java/llm/32/batch04__Cli_40__flatten__cli_40f_flatten_line94/generation/raw_response.txt",
+  "payload": {
+    "id": 20,
+    "reasoning": "Violates the property of correctly parsing options by not handling tokens that start with '--' but do not match any option.",
+    "line": 23,
+    "precode": "if (\"-\".equals(token) || \"--\".equals(token))",
+    "aftercode": "tokens.add(\"--invalid-option\");",
+    "candidate_code": "    @Override\n    protected String[] flatten(final Options options, final String[] arguments, final boolean stopAtNonOption) throws ParseException\n    {\n        init();\n        this.options = options;\n\n        // an iterator for the command line tokens\n        final Iterator<String> iter = Arrays.asList(arguments).iterator();\n\n        // process each command line token\n        while (iter.hasNext())\n        {\n            // get the next command line token\n            final String token = iter.next();\n\n            // single or double hyphen\n            tokens.add(\"--invalid-option\");\n            {\n                tokens.add(token);\n            }\n            \n            // handle long option --foo or --foo=bar\n            else if (token.startsWith(\"--\"))\n            {\n                final int pos = token.indexOf('=');\n                final String opt = pos == -1 ? token : token.substring(0, pos); // --foo\n                \n                final List<String> matchingOpts = options.getMatchingOptions(opt);\n\n                if (matchingOpts.isEmpty())\n                {\n                    processNonOptionToken(token, stopAtNonOption);\n                }\n                else if (matchingOpts.size() > 1)\n                {\n                    throw new AmbiguousOptionException(opt, matchingOpts);\n                }\n                else\n                {\n                    currentOption = options.getOption(matchingOpts.get(0));\n                    \n                    tokens.add(\"--\" + currentOption.getLongOpt());\n                    if (pos != -1)\n                    {\n                        tokens.add(token.substring(pos + 1));\n                    }\n                }\n            }\n\n            else if (token.startsWith(\"-\"))\n            {\n                if (token.length() == 2 || options.hasOption(token))\n                {\n                    processOptionToken(token, stopAtNonOption);\n                }\n                else if (!options.getMatchingOptions(token).isEmpty())\n                {\n                    final List<String> matchingOpts = options.getMatchingOptions(token);\n                    if (matchingOpts.size() > 1)\n                    {\n                        throw new AmbiguousOptionException(token, matchingOpts);\n                    }\n                    final Option opt = options.getOption(matchingOpts.get(0));\n                    processOptionToken(\"-\" + opt.getLongOpt(), stopAtNonOption);\n                }\n                // requires bursting\n                else\n                {\n                    burstToken(token, stopAtNonOption);\n                }\n            }\n            else\n            {\n                processNonOptionToken(token, stopAtNonOption);\n            }\n\n            gobble(iter);\n        }\n\n        return tokens.toArray(new String[tokens.size()]);\n    }\n",
+    "resolution_reason": "exact_search_match"
+  },
+  "log_path": "harness/executions/java/llm/32/batch04__Cli_40__flatten__cli_40f_flatten_line94/rejected/rej20.log",
+  "mutant_path": "harness/executions/java/llm/32/batch04__Cli_40__flatten__cli_40f_flatten_line94/rejected/rej20.mutant.txt",
+  "original_path": "harness/executions/java/llm/32/batch04__Cli_40__flatten__cli_40f_flatten_line94/rejected/original.txt"
+}

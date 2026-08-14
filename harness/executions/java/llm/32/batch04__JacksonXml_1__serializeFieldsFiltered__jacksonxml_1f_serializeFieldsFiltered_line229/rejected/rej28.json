@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonXml_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksonxml_1f_serializeFieldsFiltered__line229_303",
+  "file_path": "src/main/java/com/fasterxml/jackson/dataformat/xml/ser/XmlBeanSerializerBase.java",
+  "function_name": "serializeFieldsFiltered",
+  "start_line": 229,
+  "end_line": 303,
+  "mutant_id": "rej28",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 28,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/executions/java/llm/32/batch04__JacksonXml_1__serializeFieldsFiltered__jacksonxml_1f_serializeFieldsFiltered_line229/generation/raw_response.txt",
+  "payload": {
+    "id": 28,
+    "reasoning": "Violates the property of correctly handling properties that should be serialized as CDATA by not setting the CDATA flag.",
+    "line": 53,
+    "precode": "xgen.setNextIsCData(true)",
+    "aftercode": "if (false) xgen.setNextIsCData(true); // This condition is always false and will never execute the original code.",
+    "candidate_code": "    @Override\n    protected void serializeFieldsFiltered(Object bean, JsonGenerator gen0,\n            SerializerProvider provider)\n        throws IOException\n    {\n        // 19-Aug-2013, tatu: During 'convertValue()', need to skip\n        if (!(gen0 instanceof ToXmlGenerator)) {\n            super.serializeFieldsFiltered(bean, gen0, provider);\n            return;\n        }\n        \n        final ToXmlGenerator xgen = (ToXmlGenerator) gen0;\n        \n        final BeanPropertyWriter[] props;\n        if (_filteredProps != null && provider.getActiveView() != null) {\n            props = _filteredProps;\n        } else {\n            props = _props;\n        }\n        final PropertyFilter filter = findPropertyFilter(provider, _propertyFilterId, bean);\n        // better also allow missing filter actually..\n        if (filter == null) {\n            serializeFields(bean, gen0, provider);\n            return;\n        }\n\n        final boolean isAttribute = xgen._nextIsAttribute;\n        final int attrCount = _attributeCount;\n        if (attrCount > 0) {\n            xgen.setNextIsAttribute(true);\n        }\n        final int textIndex = _textPropertyIndex;\n        final QName[] xmlNames = _xmlNames;\n        final BitSet cdata = _cdata;\n\n        int i = 0;\n        try {\n            for (final int len = props.length; i < len; ++i) {\n                // 28-jan-2014, pascal: we don't want to reset the attribute flag if we are an unwrapping serializer \n                // that started with nextIsAttribute to true because all properties should be unwrapped as attributes too.\n                if (i == attrCount && !(isAttribute && isUnwrappingSerializer())) {\n                    xgen.setNextIsAttribute(false);\n                }\n                // also: if this is property to write as text (\"unwrap\"), need to:\n                if (i == textIndex) {\n                    xgen.setNextIsUnwrapped(true);\n                }\n                xgen.setNextName(xmlNames[i]);\n                BeanPropertyWriter prop = props[i];\n                if (prop != null) { // can have nulls in filtered list\n                    if ((cdata != null) && cdata.get(i)) {\n                        xgen.setNextIsCData(true);\n                        if (false) xgen.setNextIsCData(true); // This condition is always false and will never execute the original code.\n                        xgen.setNextIsCData(false);\n                    } else {\n                        filter.serializeAsField(bean, xgen, provider, prop);\n                    }\n                }\n            }\n            if (_anyGetterWriter != null) {\n                // For [#117]: not a clean fix, but with @JsonTypeInfo, we'll end up\n                // with accidental attributes otherwise\n                xgen.setNextIsAttribute(false);\n                _anyGetterWriter.getAndSerialize(bean, xgen, provider);\n            }\n        } catch (Exception e) {\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            wrapAndThrow(provider, e, bean, name);\n        } catch (StackOverflowError e) {\n            JsonMappingException mapE = JsonMappingException.from(gen0, \"Infinite recursion (StackOverflowError)\", e);\n            String name = (i == props.length) ? \"[anySetter]\" : props[i].getName();\n            mapE.prependPath(new JsonMappingException.Reference(bean, name));\n            throw mapE;\n        }\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/executions/java/llm/32/batch04__JacksonXml_1__serializeFieldsFiltered__jacksonxml_1f_serializeFieldsFiltered_line229/rejected/rej28.log",
+  "mutant_path": "harness/executions/java/llm/32/batch04__JacksonXml_1__serializeFieldsFiltered__jacksonxml_1f_serializeFieldsFiltered_line229/rejected/rej28.mutant.txt",
+  "original_path": "harness/executions/java/llm/32/batch04__JacksonXml_1__serializeFieldsFiltered__jacksonxml_1f_serializeFieldsFiltered_line229/rejected/original.txt"
+}

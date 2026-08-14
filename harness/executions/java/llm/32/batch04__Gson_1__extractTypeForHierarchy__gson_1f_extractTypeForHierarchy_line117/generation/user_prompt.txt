@@ -1,0 +1,67 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:   private static Type extractTypeForHierarchy(Type parentType, TypeVariable<?> typeToEvaluate) {
+ 2:     Class<?> rawParentType = null;
+ 3:     if (parentType instanceof Class<?>) {
+ 4:       rawParentType = (Class<?>) parentType;
+ 5:     } else if (parentType instanceof ParameterizedType) {
+ 6:       ParameterizedType parentTypeAsPT = (ParameterizedType) parentType;
+ 7:       rawParentType = (Class<?>) parentTypeAsPT.getRawType();
+ 8:     } else {
+ 9:       return null;
+10:     }
+11: 
+12:     Type superClass = rawParentType.getGenericSuperclass();
+13:     if (superClass instanceof ParameterizedType
+14:         && ((ParameterizedType) superClass).getRawType() == typeToEvaluate.getGenericDeclaration()) {
+15:       // Evaluate type on this type
+16:       TypeVariable<?>[] classTypeVariables =
+17:           ((Class<?>) ((ParameterizedType) superClass).getRawType()).getTypeParameters();
+18:       int indexOfActualTypeArgument = getIndex(classTypeVariables, typeToEvaluate);
+19: 
+20:       Type[] actualTypeArguments = null;
+21:       if (parentType instanceof Class<?>) {
+22:         actualTypeArguments = ((ParameterizedType) superClass).getActualTypeArguments();
+23:       } else if (parentType instanceof ParameterizedType) {
+24:         actualTypeArguments = ((ParameterizedType) parentType).getActualTypeArguments();
+25:       } else {
+26:         return null;
+27:       }
+28: 
+29:       return actualTypeArguments[indexOfActualTypeArgument];
+30:     }
+31: 
+32:     Type searchedType = null;
+33:     if (superClass != null) {
+34:       searchedType = extractTypeForHierarchy(superClass, typeToEvaluate);
+35:     }
+36:     return searchedType;
+37:   }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

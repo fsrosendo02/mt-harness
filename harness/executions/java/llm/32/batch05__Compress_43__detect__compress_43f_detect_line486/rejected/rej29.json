@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Compress_43",
+  "language": "java",
+  "version": "f",
+  "target_id": "compress_43f_detect__line486_564",
+  "file_path": "src/main/java/org/apache/commons/compress/archivers/ArchiveStreamFactory.java",
+  "function_name": "detect",
+  "start_line": 486,
+  "end_line": 564,
+  "mutant_id": "rej29",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 29,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/executions/java/llm/32/batch05__Compress_43__detect__compress_43f_detect_line486/generation/raw_response.txt",
+  "payload": {
+    "id": 29,
+    "reasoning": "The method uses a byte array to store the dump signature, but it does not check if the array is large enough.",
+    "line": 35,
+    "precode": "final byte[] dumpsig = new byte[DUMP_SIGNATURE_SIZE];",
+    "aftercode": "final byte[] dumpsig = new byte[1024];",
+    "candidate_code": "    public static String detect(InputStream in) throws ArchiveException {\n        if (in == null) {\n            throw new IllegalArgumentException(\"Stream must not be null.\");\n        }\n\n        if (!in.markSupported()) {\n            throw new IllegalArgumentException(\"Mark is not supported.\");\n        }\n\n        final byte[] signature = new byte[SIGNATURE_SIZE];\n        in.mark(signature.length);\n        int signatureLength = -1;\n        try {\n            signatureLength = IOUtils.readFully(in, signature);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading signature.\", e);\n        }\n\n        if (ZipArchiveInputStream.matches(signature, signatureLength)) {\n            return ZIP;\n        } else if (JarArchiveInputStream.matches(signature, signatureLength)) {\n            return JAR;\n        } else if (ArArchiveInputStream.matches(signature, signatureLength)) {\n            return AR;\n        } else if (CpioArchiveInputStream.matches(signature, signatureLength)) {\n            return CPIO;\n        } else if (ArjArchiveInputStream.matches(signature, signatureLength)) {\n            return ARJ;\n        } else if (SevenZFile.matches(signature, signatureLength)) {\n            return SEVEN_Z;\n        }\n\n        // Dump needs a bigger buffer to check the signature;\n        final byte[] dumpsig = new byte[1024];\n        in.mark(dumpsig.length);\n        try {\n            signatureLength = IOUtils.readFully(in, dumpsig);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading dump signature\", e);\n        }\n        if (DumpArchiveInputStream.matches(dumpsig, signatureLength)) {\n            return DUMP;\n        }\n\n        // Tar needs an even bigger buffer to check the signature; read the first block\n        final byte[] tarHeader = new byte[TAR_HEADER_SIZE];\n        in.mark(tarHeader.length);\n        try {\n            signatureLength = IOUtils.readFully(in, tarHeader);\n            in.reset();\n        } catch (IOException e) {\n            throw new ArchiveException(\"IOException while reading tar signature\", e);\n        }\n        if (TarArchiveInputStream.matches(tarHeader, signatureLength)) {\n            return TAR;\n        }\n\n        // COMPRESS-117 - improve auto-recognition\n        if (signatureLength >= TAR_HEADER_SIZE) {\n            TarArchiveInputStream tais = null;\n            try {\n                tais = new TarArchiveInputStream(new ByteArrayInputStream(tarHeader));\n                // COMPRESS-191 - verify the header checksum\n                if (tais.getNextTarEntry().isCheckSumOK()) {\n                    return TAR;\n                }\n            } catch (final Exception e) { // NOPMD // NOSONAR\n                // can generate IllegalArgumentException as well\n                // as IOException\n                // autodetection, simply not a TAR\n                // ignored\n            } finally {\n                IOUtils.closeQuietly(tais);\n            }\n        }\n        throw new ArchiveException(\"No Archiver found for the stream signature\");\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/executions/java/llm/32/batch05__Compress_43__detect__compress_43f_detect_line486/rejected/rej29.log",
+  "mutant_path": "harness/executions/java/llm/32/batch05__Compress_43__detect__compress_43f_detect_line486/rejected/rej29.mutant.txt",
+  "original_path": "harness/executions/java/llm/32/batch05__Compress_43__detect__compress_43f_detect_line486/rejected/original.txt"
+}

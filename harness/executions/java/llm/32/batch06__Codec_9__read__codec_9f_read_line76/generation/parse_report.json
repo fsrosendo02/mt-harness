@@ -1,0 +1,175 @@
+{
+  "requested_count": 32,
+  "accepted_count": 3,
+  "rejected_count": 14,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violation of negative offset and length values",
+        "line": 4,
+        "precode": "else if (offset < 0 || len < 0) {",
+        "aftercode": "else if (offset >= 0 && len >= 0) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        else if (offset >= 0 && len >= 0) {\n            throw new IndexOutOfBoundsException();\n        } else if (offset > b.length || offset + len > b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violation of out-of-bounds access",
+        "line": 6,
+        "precode": "else if (offset > b.length || offset + len > b.length) {",
+        "aftercode": "else if (offset <= b.length && offset + len <= b.length) {",
+        "candidate_code": "    public int read(byte b[], int offset, int len) throws IOException {\n        if (b == null) {\n            throw new NullPointerException();\n        } else if (offset < 0 || len < 0) {\n            throw new IndexOutOfBoundsException();\n        else if (offset <= b.length && offset + len <= b.length) {\n            throw new IndexOutOfBoundsException();\n        } else if (len == 0) {\n            return 0;\n        } else {\n            int readLen = 0;\n            /*\n             Rationale for while-loop on (readLen == 0):\n             -----\n             Base32.readResults() usually returns > 0 or EOF (-1).  In the\n             rare case where it returns 0, we just keep trying.\n\n             This is essentially an undocumented contract for InputStream\n             implementors that want their code to work properly with\n             java.io.InputStreamReader, since the latter hates it when\n             InputStream.read(byte[]) returns a zero.  Unfortunately our\n             readResults() call must return 0 if a large amount of the data\n             being decoded was non-base32, so this while-loop enables proper\n             interop with InputStreamReader for that scenario.\n             -----\n             This is a fix for CODEC-101\n            */\n            while (readLen == 0) {\n                if (!baseNCodec.hasData()) {\n                    byte[] buf = new byte[doEncode ? 4096 : 8192];\n                    int c = in.read(buf);\n                    if (doEncode) {\n                        baseNCodec.encode(buf, 0, c);\n                    } else {\n                        baseNCodec.decode(buf, 0, c);\n                    }\n                }\n                readLen = baseNCodec.readResults(b, offset, len);\n            }\n            return readLen;\n        }\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violation of zero-sized read",
+        "line": 9,
+        "precode": "else if (len == 0) {",
+        "aftercode": "else if (len > 0) {",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violation of non-deterministic behavior in InputStreamReader",
+        "line": 36,
+        "precode": "baseNCodec.decode(buf, 0, c);",
+        "aftercode": "if (randomBoolean) { baseNCodec.decode(buf, 0, c); } else { baseNCodec.encode(buf, 0, c); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violation of unreachable code",
+        "line": 41,
+        "precode": "return readLen;",
+        "aftercode": "if (readLen > 0) { return readLen; } else { return 0; }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violation of missing null pointer check",
+        "line": 30,
+        "precode": "byte[] buf = new byte[doEncode ? 4096 : 8192];",
+        "aftercode": "if (buf != null) { byte[] buf = new byte[doEncode ? 4096 : 8192]; } else { throw new NullPointerException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violation of uninitialized variable",
+        "line": 30,
+        "precode": "byte[] buf = new byte[doEncode ? 4096 : 8192];",
+        "aftercode": "if (buf != null) { buf = new byte[doEncode ? 4096 : 8192]; } else { throw new NullPointerException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violation of missing type check",
+        "line": 33,
+        "precode": "baseNCodec.encode(buf, 0, c);",
+        "aftercode": "if (baseNCodec instanceof Base64) { baseNCodec.encode(buf, 0, c); } else { throw new ClassCastException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violation of missing boundary check",
+        "line": 38,
+        "precode": "readLen = baseNCodec.readResults(b, offset, len);",
+        "aftercode": "if (len > 0) { readLen = baseNCodec.readResults(b, offset, len); } else { throw new IndexOutOfBoundsException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violation of missing input parameter check",
+        "line": 40,
+        "precode": "return readLen;",
+        "aftercode": "if (readLen > 0) { return readLen; } else { throw new IllegalArgumentException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violation of missing output parameter check",
+        "line": 29,
+        "precode": "int c = in.read(buf);",
+        "aftercode": "if (c > 0) { int c = in.read(buf); } else { throw new IllegalArgumentException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violation of missing method call check",
+        "line": 34,
+        "precode": "baseNCodec.decode(buf, 0, c);",
+        "aftercode": "if (baseNCodec.canDecode()) { baseNCodec.decode(buf, 0, c); } else { throw new IllegalStateException(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violation of missing return statement",
+        "line": 42,
+        "precode": "",
+        "aftercode": "return readLen;"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_precode",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violation of unreachable code after return statement",
+        "line": 43,
+        "precode": "",
+        "aftercode": ""
+      }
+    }
+  ]
+}

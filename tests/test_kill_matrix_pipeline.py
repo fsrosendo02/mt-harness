@@ -22,8 +22,10 @@ class StructuredOutcomeAdapter(BenchmarkAdapter):
             return False, "synthetic build failure"
         return True, "synthetic build success"
 
-    def test(self, workdir: str) -> tuple[bool, str]:
-        test_run = self.test_target(workdir, [])
+    def test(
+        self, workdir: str, eligible_tests: list[str] | None = None,
+    ) -> tuple[bool, str]:
+        test_run = self.test_target(workdir, eligible_tests or [])
         return test_run.success, test_run.log
 
     def test_target(self, workdir: str, eligible_tests: list[str]) -> TestRunResult:

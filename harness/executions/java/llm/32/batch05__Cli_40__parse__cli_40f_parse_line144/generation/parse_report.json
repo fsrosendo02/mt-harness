@@ -1,0 +1,253 @@
+{
+  "requested_count": 32,
+  "accepted_count": 11,
+  "rejected_count": 21,
+  "rejections": [
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 2,
+        "reasoning": "The groups are not properly cleared before parsing.",
+        "line": 10,
+        "precode": "for (final OptionGroup group : options.getOptionGroups())",
+        "aftercode": "for (int i = 0; i < options.getOptionGroups().size(); ++i) { final OptionGroup group = options.getOptionGroups().get(i);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 3,
+        "reasoning": "The options are not initialized before parsing.",
+        "line": 17,
+        "precode": "setOptions(options);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 8,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 8,
+        "reasoning": "The option value is not properly processed.",
+        "line": 66,
+        "precode": "processOption(t, iterator);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 10,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 10,
+        "reasoning": "The remaining tokens are not properly processed.",
+        "line": 82,
+        "precode": "if (eatTheRest)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 12,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 12,
+        "reasoning": "The properties are not properly processed.",
+        "line": 97,
+        "precode": "processProperties(properties);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 13,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 13,
+        "reasoning": "The required options are not checked.",
+        "line": 99,
+        "precode": "checkRequiredOptions();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "The options are cleared incorrectly.",
+        "line": 5,
+        "precode": "for (final Option opt : options.helpOptions())",
+        "aftercode": "for (int i = 0; i < options.helpOptions().size(); ++i) { final Option opt = options.helpOptions().get(i);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 16,
+        "reasoning": "The groups are cleared incorrectly.",
+        "line": 11,
+        "precode": "for (final OptionGroup group : options.getOptionGroups())",
+        "aftercode": "for (int i = 0; i < options.getOptionGroups().size(); ++i) { final OptionGroup group = options.getOptionGroups().get(i);",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 17,
+        "reasoning": "The command line is not properly initialized.",
+        "line": 19,
+        "precode": "cmd = new CommandLine();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 20,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 20,
+        "reasoning": "The iterator is not properly initialized.",
+        "line": 30,
+        "precode": "final ListIterator<String> iterator = tokenList.listIterator();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 21,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 21,
+        "reasoning": "The double-dash is not properly handled.",
+        "line": 38,
+        "precode": "if (\"--\".equals(t))",
+        "aftercode": "if (!\"--\".equals(t))",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (!\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 22,
+        "reasoning": "The single dash is not properly handled.",
+        "line": 44,
+        "precode": "else if (-\".equals(t))",
+        "aftercode": "else if (true)",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (true)\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 23,
+        "reasoning": "The option value is not properly processed.",
+        "line": 66,
+        "precode": "processOption(t, iterator);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 24,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 24,
+        "reasoning": "The argument value is not properly added to the command line.",
+        "line": 73,
+        "precode": "cmd.addArg(t);",
+        "aftercode": "options.addOption(new Option(\"-a\", \"help\"));",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                options.addOption(new Option(\"-a\", \"help\"));\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 25,
+        "reasoning": "The remaining tokens are not properly processed.",
+        "line": 82,
+        "precode": "if (eatTheRest)",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 26,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 26,
+        "reasoning": "The double-dash is added multiple times.",
+        "line": 88,
+        "precode": "if (!\"--\".equals(str))",
+        "aftercode": "if (true)",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (true)\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 27,
+        "reasoning": "The properties are not properly processed.",
+        "line": 97,
+        "precode": "processProperties(properties);",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 28,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 28,
+        "reasoning": "The required options are not checked.",
+        "line": 99,
+        "precode": "checkRequiredOptions();",
+        "aftercode": ""
+      }
+    },
+    {
+      "index": 29,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 29,
+        "reasoning": "The command line is not properly returned.",
+        "line": 100,
+        "precode": "return cmd;",
+        "aftercode": "return null;",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return null;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 31,
+        "reasoning": "The flattened token list is not properly created.",
+        "line": 28,
+        "precode": "final List<String> tokenList = Arrays.asList(flatten(getOptions(), arguments, stopAtNonOption));",
+        "aftercode": "final List<String> tokenList = new ArrayList<>();",
+        "candidate_code": "    public CommandLine parse(final Options options, String[] arguments, final Properties properties, final boolean stopAtNonOption)\n            throws ParseException\n    {\n        // clear out the data in options in case it's been used before (CLI-71)\n        for (final Option opt : options.helpOptions())\n        {\n            opt.clearValues();\n        }\n        \n        // clear the data from the groups\n        for (final OptionGroup group : options.getOptionGroups())\n        {\n            group.setSelected(null);\n        }        \n\n        // initialise members\n        setOptions(options);\n\n        cmd = new CommandLine();\n\n        boolean eatTheRest = false;\n\n        if (arguments == null)\n        {\n            arguments = new String[0];\n        }\n\n        final List<String> tokenList = new ArrayList<>();\n\n        final ListIterator<String> iterator = tokenList.listIterator();\n\n        // process each flattened token\n        while (iterator.hasNext())\n        {\n            final String t = iterator.next();\n\n            // the value is the double-dash\n            if (\"--\".equals(t))\n            {\n                eatTheRest = true;\n            }\n\n            // the value is a single dash\n            else if (\"-\".equals(t))\n            {\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n                else\n                {\n                    cmd.addArg(t);\n                }\n            }\n\n            // the value is an option\n            else if (t.startsWith(\"-\"))\n            {\n                if (stopAtNonOption && !getOptions().hasOption(t))\n                {\n                    eatTheRest = true;\n                    cmd.addArg(t);\n                }\n                else\n                {\n                    processOption(t, iterator);\n                }\n            }\n\n            // the value is an argument\n            else\n            {\n                cmd.addArg(t);\n\n                if (stopAtNonOption)\n                {\n                    eatTheRest = true;\n                }\n            }\n\n            // eat the remaining tokens\n            if (eatTheRest)\n            {\n                while (iterator.hasNext())\n                {\n                    final String str = iterator.next();\n\n                    // ensure only one double-dash is added\n                    if (!\"--\".equals(str))\n                    {\n                        cmd.addArg(str);\n                    }\n                }\n            }\n        }\n\n        processProperties(properties);\n        checkRequiredOptions();\n\n        return cmd;\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "missing_or_invalid_aftercode",
+      "payload": {
+        "id": 32,
+        "reasoning": "The iterator is not properly initialized.",
+        "line": 30,
+        "precode": "final ListIterator<String> iterator = tokenList.listIterator();",
+        "aftercode": ""
+      }
+    }
+  ]
+}

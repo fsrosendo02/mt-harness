@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "JacksonDatabind_96",
+  "language": "java",
+  "version": "f",
+  "target_id": "jacksondatabind_96f__idFrom__line66_115",
+  "file_path": "src/main/java/com/fasterxml/jackson/databind/jsontype/impl/ClassNameIdResolver.java",
+  "function_name": "_idFrom",
+  "start_line": 66,
+  "end_line": 115,
+  "mutant_id": "rej27",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 27,
+  "rejection_reason": "duplicate_mutant",
+  "raw_response_path": "harness/executions/java/llm/32/batch05__JacksonDatabind_96__idFrom__jacksondatabind_96f_idFrom_line66/generation/raw_response.txt",
+  "payload": {
+    "id": 27,
+    "reasoning": "Raw class usage is incorrect",
+    "line": 45,
+    "precode": "str = cls.getName();",
+    "aftercode": "str = Enum.class.getName();",
+    "candidate_code": "    protected String _idFrom(Object value, Class<?> cls, TypeFactory typeFactory)\n    {\n        // Need to ensure that \"enum subtypes\" work too\n        if (Enum.class.isAssignableFrom(cls)) {\n            if (!cls.isEnum()) { // means that it's sub-class of base enum, so:\n                cls = cls.getSuperclass();\n            }\n        }\n        String str = cls.getName();\n        if (str.startsWith(JAVA_UTIL_PKG)) {\n            // 25-Jan-2009, tatu: There are some internal classes that we cannot access as is.\n            //     We need better mechanism; for now this has to do...\n\n            // Enum sets and maps are problematic since we MUST know type of\n            // contained enums, to be able to deserialize.\n            // In addition, EnumSet is not a concrete type either\n            if (value instanceof EnumSet<?>) { // Regular- and JumboEnumSet...\n                Class<?> enumClass = ClassUtil.findEnumType((EnumSet<?>) value);\n                // not optimal: but EnumSet is not a customizable type so this is sort of ok\n               str = typeFactory.constructCollectionType(EnumSet.class, enumClass).toCanonical();\n            } else if (value instanceof EnumMap<?,?>) {\n                Class<?> enumClass = ClassUtil.findEnumType((EnumMap<?,?>) value);\n                Class<?> valueClass = Object.class;\n                // not optimal: but EnumMap is not a customizable type so this is sort of ok\n                str = typeFactory.constructMapType(EnumMap.class, enumClass, valueClass).toCanonical();\n            }\n            // 10-Jan-2018, tatu: Up until 2.9.4 we used to have other conversions for `Collections.xxx()`\n            //    and `Arrays.asList(...)`; but it was changed to be handled on receiving end instead\n        } else if (str.indexOf('$') >= 0) {\n            /* Other special handling may be needed for inner classes,\n             * The best way to handle would be to find 'hidden' constructor; pass parent\n             * value etc (which is actually done for non-anonymous static classes!),\n             * but that is just not possible due to various things. So, we will instead\n             * try to generalize type into something we will be more likely to be able\n             * construct.\n             */\n            Class<?> outer = ClassUtil.getOuterClass(cls);\n            if (outer != null) {\n                // one more check: let's actually not worry if the declared static type is\n                // non-static as well; if so, deserializer does have a chance at figuring it all out.\n                Class<?> staticType = _baseType.getRawClass();\n                if (ClassUtil.getOuterClass(staticType) == null) {\n                    // Is this always correct? Seems like it should be...\n                    cls = _baseType.getRawClass();\n                    str = Enum.class.getName();\n                }\n            }\n        }\n        return str;\n    }\n",
+    "resolution_reason": "exact_line_match"
+  },
+  "log_path": "harness/executions/java/llm/32/batch05__JacksonDatabind_96__idFrom__jacksondatabind_96f_idFrom_line66/rejected/rej27.log",
+  "mutant_path": "harness/executions/java/llm/32/batch05__JacksonDatabind_96__idFrom__jacksondatabind_96f_idFrom_line66/rejected/rej27.mutant.txt",
+  "original_path": "harness/executions/java/llm/32/batch05__JacksonDatabind_96__idFrom__jacksondatabind_96f_idFrom_line66/rejected/original.txt"
+}

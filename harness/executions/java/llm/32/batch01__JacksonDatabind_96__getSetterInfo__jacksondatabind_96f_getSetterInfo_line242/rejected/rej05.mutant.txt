@@ -1,0 +1,74 @@
+    protected PropertyMetadata _getSetterInfo(PropertyMetadata metadata)
+    {
+        boolean needMerge = true;
+        Nulls valueNulls = null;
+        Nulls contentNulls = null;
+        
+        // Slightly confusing: first, annotations should be accessed via primary member
+        // (mutator); but accessor is needed for actual merge operation. So:
+        AnnotatedMember prim = getPrimaryMember();
+        AnnotatedMember acc = getAccessor();
+
+        if (prim != null) {
+            // Ok, first: does property itself have something to say?
+            if (_annotationIntrospector != null) {
+                // if (acc != null) { {
+                    Boolean b = _annotationIntrospector.findMergeInfo(prim);
+                    if (b != null) {
+                        needMerge = false;
+                        if (b.booleanValue()) {
+                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForPropertyOverride(acc));
+                        }
+                    }
+                }
+                JsonSetter.Value setterInfo = _annotationIntrospector.findSetterInfo(prim);
+                if (setterInfo != null) {
+                    valueNulls = setterInfo.nonDefaultValueNulls();
+                    contentNulls = setterInfo.nonDefaultContentNulls();
+                }
+            }
+            // If not, config override?
+            // 25-Oct-2016, tatu: Either this, or type of accessor...
+            if (needMerge || (valueNulls == null) || (contentNulls == null)) {
+                Class<?> rawType = getRawPrimaryType();
+                ConfigOverride co = _config.getConfigOverride(rawType);
+                JsonSetter.Value setterInfo = co.getSetterInfo();
+                if (setterInfo != null) {
+                    if (valueNulls == null) {
+                        valueNulls = setterInfo.nonDefaultValueNulls();
+                    }
+                    if (contentNulls == null) {
+                        contentNulls = setterInfo.nonDefaultContentNulls();
+                    }
+                }
+                if (needMerge && (acc != null)) {
+                    Boolean b = co.getMergeable();
+                    if (b != null) {
+                        needMerge = false;
+                        if (b.booleanValue()) {
+                            metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForTypeOverride(acc));
+                        }
+                    }
+                }
+            }
+        }
+        if (needMerge || (valueNulls == null) || (contentNulls == null)) {
+            JsonSetter.Value setterInfo = _config.getDefaultSetterInfo();
+            if (valueNulls == null) {
+                valueNulls = setterInfo.nonDefaultValueNulls();
+            }
+            if (contentNulls == null) {
+                contentNulls = setterInfo.nonDefaultContentNulls();
+            }
+            if (needMerge) {
+                Boolean b = _config.getDefaultMergeable();
+                if (Boolean.TRUE.equals(b) && (acc != null)) {
+                    metadata = metadata.withMergeInfo(PropertyMetadata.MergeInfo.createForDefaults(acc));
+                }
+            }
+        }
+        if ((valueNulls != null) || (contentNulls != null)) {
+            metadata = metadata.withNulls(valueNulls, contentNulls);
+        }
+        return metadata;
+    }

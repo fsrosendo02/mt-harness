@@ -1,0 +1,29 @@
+{
+  "dataset": "defects4j",
+  "subject_id": "Mockito_1",
+  "language": "java",
+  "version": "f",
+  "target_id": "mockito_1f_visitJumpInsn__line856_945",
+  "file_path": "cglib-and-asm/src/org/mockito/asm/MethodWriter.java",
+  "function_name": "visitJumpInsn",
+  "start_line": 856,
+  "end_line": 945,
+  "mutant_id": "rej08",
+  "mutant_source": "llm_rejected",
+  "artifact_type": "rejected_candidate",
+  "rejection_index": 8,
+  "rejection_reason": "non_executable_structural_change: unmatched closing delimiter: )",
+  "raw_response_path": "harness/executions/java/llm/32/batch03__Mockito_1__visitJumpInsn__mockito_1f_visitJumpInsn_line856/generation/raw_response.txt",
+  "payload": {
+    "id": 8,
+    "reasoning": "Fails to handle GOTO_W for backward jumps with large offsets",
+    "line": 41,
+    "precode": "if (label.position - code.length < Short.MIN_VALUE)",
+    "aftercode": "if (label.position - code.length <= Short.MIN_VALUE)",
+    "candidate_code": "    public void visitJumpInsn(final int opcode, final Label label) {\n        Label nextInsn = null;\n        // Label currentBlock = this.currentBlock;\n        if (currentBlock != null) {\n            if (compute == FRAMES) {\n                currentBlock.frame.execute(opcode, 0, null, null);\n                // 'label' is the target of a jump instruction\n                label.getFirst().status |= Label.TARGET;\n                // adds 'label' as a successor of this basic block\n                addSuccessor(Edge.NORMAL, label);\n                if (opcode != Opcodes.GOTO) {\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                }\n            } else {\n                if (opcode == Opcodes.JSR) {\n                    if ((label.status & Label.SUBROUTINE) == 0) {\n                        label.status |= Label.SUBROUTINE;\n                        ++subroutines;\n                    }\n                    currentBlock.status |= Label.JSR;\n                    addSuccessor(stackSize + 1, label);\n                    // creates a Label for the next basic block\n                    nextInsn = new Label();\n                    /*\n                     * note that, by construction in this method, a JSR block\n                     * has at least two successors in the control flow graph:\n                     * the first one leads the next instruction after the JSR,\n                     * while the second one leads to the JSR target.\n                     */\n                } else {\n                    // updates current stack size (max stack size unchanged\n                    // because stack size variation always negative in this\n                    // case)\n                    stackSize += Frame.SIZE[opcode];\n                    addSuccessor(stackSize, label);\n                }\n            }\n        }\n        // adds the instruction to the bytecode of the method\n        if (label.position - code.length <= Short.MIN_VALUE)\n                && label.position - code.length < Short.MIN_VALUE)\n        {\n            /*\n             * case of a backward jump with an offset < -32768. In this case we\n             * automatically replace GOTO with GOTO_W, JSR with JSR_W and IFxxx\n             * <l> with IFNOTxxx <l'> GOTO_W <l>, where IFNOTxxx is the\n             * \"opposite\" opcode of IFxxx (i.e., IFNE for IFEQ) and where <l'>\n             * designates the instruction just after the GOTO_W.\n             */\n            if (opcode == Opcodes.GOTO) {\n                code.putByte(200); // GOTO_W\n            } else if (opcode == Opcodes.JSR) {\n                code.putByte(201); // JSR_W\n            } else {\n                // if the IF instruction is transformed into IFNOT GOTO_W the\n                // next instruction becomes the target of the IFNOT instruction\n                if (nextInsn != null) {\n                    nextInsn.status |= Label.TARGET;\n                }\n                code.putByte(opcode <= 166\n                        ? ((opcode + 1) ^ 1) - 1\n                        : opcode ^ 1);\n                code.putShort(8); // jump offset\n                code.putByte(200); // GOTO_W\n            }\n            label.put(this, code, code.length - 1, true);\n        } else {\n            /*\n             * case of a backward jump with an offset >= -32768, or of a forward\n             * jump with, of course, an unknown offset. In these cases we store\n             * the offset in 2 bytes (which will be increased in\n             * resizeInstructions, if needed).\n             */\n            code.putByte(opcode);\n            label.put(this, code, code.length - 1, false);\n        }\n        if (currentBlock != null) {\n            if (nextInsn != null) {\n                // if the jump instruction is not a GOTO, the next instruction\n                // is also a successor of this instruction. Calling visitLabel\n                // adds the label of this next instruction as a successor of the\n                // current block, and starts a new basic block\n                visitLabel(nextInsn);\n            }\n            if (opcode == Opcodes.GOTO) {\n                noSuccessor();\n            }\n        }\n    }\n",
+    "resolution_reason": "line_fallback"
+  },
+  "log_path": "harness/executions/java/llm/32/batch03__Mockito_1__visitJumpInsn__mockito_1f_visitJumpInsn_line856/rejected/rej08.log",
+  "mutant_path": "harness/executions/java/llm/32/batch03__Mockito_1__visitJumpInsn__mockito_1f_visitJumpInsn_line856/rejected/rej08.mutant.txt",
+  "original_path": "harness/executions/java/llm/32/batch03__Mockito_1__visitJumpInsn__mockito_1f_visitJumpInsn_line856/rejected/original.txt"
+}

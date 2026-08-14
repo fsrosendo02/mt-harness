@@ -1,0 +1,90 @@
+    public void visitJumpInsn(final int opcode, final Label label) {
+        Label nextInsn = null;
+        // Label currentBlock = this.currentBlock;
+        if (currentBlock != null) {
+            if (compute == FRAMES) {
+                currentBlock.frame.execute(opcode, 0, null, null);
+                // 'label' is the target of a jump instruction
+                label.getFirst().status |= Label.TARGET;
+                // adds 'label' as a successor of this basic block
+                addSuccessor(Edge.NORMAL, label);
+                if (opcode != Opcodes.GOTO) {
+                    // creates a Label for the next basic block
+                    nextInsn = new Label();
+                }
+            } else {
+                if (opcode == Opcodes.JSR) {
+                    if ((label.status & Label.SUBROUTINE) == 0) {
+                        label.status |= Label.SUBROUTINE;
+                        ++subroutines;
+                    }
+                    currentBlock.status |= Label.JSR;
+                    addSuccessor(stackSize + 1, label);
+                    // creates a Label for the next basic block
+                    nextInsn = new Label();
+                    /*
+                     * note that, by construction in this method, a JSR block
+                     * has at least two successors in the control flow graph:
+                     * the first one leads the next instruction after the JSR,
+                     * while the second one leads to the JSR target.
+                     */
+                } else {
+                    // updates current stack size (max stack size unchanged
+                    // because stack size variation always negative in this
+                    // case)
+                    stackSize += Frame.SIZE[opcode];
+                    addSuccessor(stackSize, label);
+                }
+            }
+        }
+        // adds the instruction to the bytecode of the method
+        if ((label.status & Label.RESOLVED) != 0
+                && label.position - code.length < Short.MIN_VALUE)
+        {
+            /*
+             * case of a backward jump with an offset < -32768. In this case we
+             * automatically replace GOTO with GOTO_W, JSR with JSR_W and IFxxx
+             * <l> with IFNOTxxx <l'> GOTO_W <l>, where IFNOTxxx is the
+             * "opposite" opcode of IFxxx (i.e., IFNE for IFEQ) and where <l'>
+             * designates the instruction just after the GOTO_W.
+             */
+            if (opcode == Opcodes.GOTO) {
+                code.putByte(200); // GOTO_W
+            } else if (opcode == Opcodes.JSR) {
+                code.putByte(201); // JSR_W
+            } else {
+                // if the IF instruction is transformed into IFNOT GOTO_W the
+                // next instruction becomes the target of the IFNOT instruction
+                if (nextInsn != null) {
+                    nextInsn.status |= Label.TARGET;
+                }
+                code.putByte(opcode <= 166
+                        ? ((opcode + 1) ^ 1) - 1
+                        : opcode ^ 1);
+                code.putShort(8); // jump offset
+                code.putByte(200); // GOTO_W
+            }
+            label.put(this, code, code.length - 1, true);
+        } else {
+            /*
+             * case of a backward jump with an offset >= -32768, or of a forward
+             * jump with, of course, an unknown offset. In these cases we store
+             * the offset in 2 bytes (which will be increased in
+             * resizeInstructions, if needed).
+             */
+            code.putByte(opcode);
+            // label.put(this, code, code.length - 1, true); // commented out
+        }
+        if (currentBlock != null) {
+            if (nextInsn != null) {
+                // if the jump instruction is not a GOTO, the next instruction
+                // is also a successor of this instruction. Calling visitLabel
+                // adds the label of this next instruction as a successor of the
+                // current block, and starts a new basic block
+                visitLabel(nextInsn);
+            }
+            if (opcode == Opcodes.GOTO) {
+                noSuccessor();
+            }
+        }
+    }

@@ -1,0 +1,415 @@
+{
+  "requested_count": 32,
+  "accepted_count": 0,
+  "rejected_count": 32,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 1,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map == null && label != null) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null && label != null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 2,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "// lineage.push(map);",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        // lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 3,
+        "reasoning": "Violates the property of correctly printing map keys and values by omitting the key-value pair printout for non-null childValue.",
+        "line": 34,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (childValue instanceof List || !lineage.contains(childValue)) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof List || !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 4,
+        "reasoning": "Violates the property of correctly printing map keys and values by incorrectly handling debug output.",
+        "line": 51,
+        "precode": "if (debug && childValue != null) {",
+        "aftercode": "if (!debug || childValue == null) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (!debug || childValue == null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 5,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly managing lineage stack entries.",
+        "line": 60,
+        "precode": "lineage.pop();",
+        "aftercode": "// lineage.pop();",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        // lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 6,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map != null || label == null) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map != null || label == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 7,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "lineage.push(new ArrayList<>());",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(new ArrayList<>());\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 8,
+        "reasoning": "Violates the property of correctly printing map keys and values by omitting the key-value pair printout for non-null childValue.",
+        "line": 34,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (childValue == null || lineage.contains(childValue)) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue == null || lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 9,
+        "reasoning": "Violates the property of correctly printing map keys and values by incorrectly handling debug output.",
+        "line": 51,
+        "precode": "if (debug && childValue != null) {",
+        "aftercode": "if (debug || childValue == null) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug || childValue == null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 10,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly managing lineage stack entries.",
+        "line": 60,
+        "precode": "lineage.pop();",
+        "aftercode": "lineage = new ArrayStack<>();",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage = new ArrayStack<>();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 11,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map != null && label == null) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map != null && label == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 12,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "lineage.push(new HashMap<>());",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(new HashMap<>());\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 13,
+        "reasoning": "Violates the property of correctly printing map keys and values by omitting the key-value pair printout for non-null childValue.",
+        "line": 34,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (!childValue instanceof Map || lineage.contains(childValue)) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (!childValue instanceof Map || lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 14,
+        "reasoning": "Violates the property of correctly printing map keys and values by incorrectly handling debug output.",
+        "line": 51,
+        "precode": "if (debug && childValue != null) {",
+        "aftercode": "if (!debug || childValue == null) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (!debug || childValue == null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 15,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly managing lineage stack entries.",
+        "line": 60,
+        "precode": "lineage.pop();",
+        "aftercode": "while (true) { lineage.pop(); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 16,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map != null && label == null || lineage.size() > 10) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map != null && label == null || lineage.size() > 10) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 17,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "if (lineage.size() % 2 == 0) { lineage.push(map); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 18,
+        "reasoning": "Violates the property of correctly printing map keys and values by omitting the key-value pair printout for non-null childValue.",
+        "line": 34,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (!childValue instanceof Map || lineage.size() > 10) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (!childValue instanceof Map || lineage.size() > 10) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 19,
+        "reasoning": "Violates the property of correctly printing map keys and values by incorrectly handling debug output.",
+        "line": 51,
+        "precode": "if (debug && childValue != null) {",
+        "aftercode": "if (!debug || lineage.size() > 10) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (!debug || lineage.size() > 10) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 20,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly managing lineage stack entries.",
+        "line": 60,
+        "precode": "lineage.pop();",
+        "aftercode": "while (true) { lineage.push(map); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 21,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map != null && label == null || lineage.size() % 2 == 0) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map != null && label == null || lineage.size() % 2 == 0) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 22,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "if (lineage.size() % 3 == 0) { lineage.push(map); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 23,
+        "reasoning": "Violates the property of correctly printing map keys and values by omitting the key-value pair printout for non-null childValue.",
+        "line": 34,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (!childValue instanceof Map || lineage.size() % 2 == 0) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (!childValue instanceof Map || lineage.size() % 2 == 0) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 24,
+        "reasoning": "Violates the property of correctly printing map keys and values by incorrectly handling debug output.",
+        "line": 51,
+        "precode": "if (debug && childValue != null) {",
+        "aftercode": "if (!debug || lineage.size() % 2 == 0) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (!debug || lineage.size() % 2 == 0) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 25,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly managing lineage stack entries.",
+        "line": 60,
+        "precode": "lineage.pop();",
+        "aftercode": "while (true) { if (lineage.size() % 2 == 0) { lineage.pop(); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 26,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map != null && label == null || lineage.size() > 20) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map != null && label == null || lineage.size() > 20) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 27,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "if (lineage.size() < 10) { lineage.push(map); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 28,
+        "reasoning": "Violates the property of correctly printing map keys and values by omitting the key-value pair printout for non-null childValue.",
+        "line": 34,
+        "precode": "if (childValue instanceof Map && !lineage.contains(childValue)) {",
+        "aftercode": "if (!childValue instanceof Map || lineage.size() < 10) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (!childValue instanceof Map || lineage.size() < 10) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 29,
+        "reasoning": "Violates the property of correctly printing map keys and values by incorrectly handling debug output.",
+        "line": 51,
+        "precode": "if (debug && childValue != null) {",
+        "aftercode": "if (!debug || lineage.size() < 10) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map == null) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (!debug || lineage.size() < 10) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 30,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly managing lineage stack entries.",
+        "line": 60,
+        "precode": "lineage.pop();",
+        "aftercode": "while (true) { if (lineage.size() < 10) { lineage.pop(); } }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {",
+      "payload": {
+        "id": 31,
+        "reasoning": "Violates the property of correctly handling null values in nested maps by not printing anything for a null map.",
+        "line": 6,
+        "precode": "if (map == null) {",
+        "aftercode": "if (map != null && label == null || lineage.size() % 3 == 0) {",
+        "candidate_code": "    @SuppressWarnings(\"deprecation\")\n    private static void verbosePrintInternal(final PrintStream out, final Object label, final Map<?, ?> map,\n                                             final ArrayStack<Map<?, ?>> lineage, final boolean debug) {\n        printIndent(out, lineage.size());\n\n        if (map != null && label == null || lineage.size() % 3 == 0) {\n            if (label != null) {\n                out.print(label);\n                out.print(\" = \");\n            }\n            out.println(\"null\");\n            return;\n        }\n        if (label != null) {\n            out.print(label);\n            out.println(\" = \");\n        }\n\n        printIndent(out, lineage.size());\n        out.println(\"{\");\n\n        lineage.push(map);\n\n        for (final Map.Entry<?, ?> entry : map.entrySet()) {\n            final Object childKey = entry.getKey();\n            final Object childValue = entry.getValue();\n            if (childValue instanceof Map && !lineage.contains(childValue)) {\n                verbosePrintInternal(\n                    out,\n                    childKey == null ? \"null\" : childKey,\n                    (Map<?, ?>) childValue,\n                    lineage,\n                    debug);\n            } else {\n                printIndent(out, lineage.size());\n                out.print(childKey);\n                out.print(\" = \");\n\n                final int lineageIndex = lineage.indexOf(childValue);\n                if (lineageIndex == -1) {\n                    out.print(childValue);\n                } else if (lineage.size() - 1 == lineageIndex) {\n                    out.print(\"(this Map)\");\n                } else {\n                    out.print(\n                        \"(ancestor[\"\n                            + (lineage.size() - 1 - lineageIndex - 1)\n                            + \"] Map)\");\n                }\n\n                if (debug && childValue != null) {\n                    out.print(' ');\n                    out.println(childValue.getClass().getName());\n                } else {\n                    out.println();\n                }\n            }\n        }\n\n        lineage.pop();\n\n        printIndent(out, lineage.size());\n        out.println(debug ? \"} \" + map.getClass().getName() : \"}\");\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: block_structure_change",
+      "payload": {
+        "id": 32,
+        "reasoning": "Violates the property of correctly handling nested maps by not properly pushing and popping lineage stack entries.",
+        "line": 22,
+        "precode": "lineage.push(map);",
+        "aftercode": "if (lineage.size() % 4 == 0) { lineage.push(map); }",
+        "resolution_reason": "non_executable_structural_change: block_structure_change"
+      }
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "Violates the handling of normal numbers by changing the exponent range.",
+      "line": 4,
+      "precode": "if ((n > -1023) && (n < 1024)) {",
+      "aftercode": "if ((n > -1022) && (n < 1025)) {"
+    },
+    {
+      "id": 2,
+      "reasoning": "Violates the fast handling of 2^n by changing the exponent calculation.",
+      "line": 5,
+      "precode": "return d * Double.longBitsToDouble(((long) (n + 1023)) << 52);",
+      "aftercode": "return d * Double.longBitsToDouble(((long) (n + 1024)) << 52);"
+    },
+    {
+      "id": 3,
+      "reasoning": "Violates the handling of special cases by changing NaN check.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isFinite(d) || Double.isInfinite(d) || (d == 0)) {"
+    },
+    {
+      "id": 4,
+      "reasoning": "Violates the handling of special cases by changing negative infinity check.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isNaN(d) || Double.isFinite(d) || (d == 0)) {"
+    },
+    {
+      "id": 5,
+      "reasoning": "Violates the handling of special cases by changing zero check.",
+      "line": 9,
+      "precode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d == 0)) {",
+      "aftercode": "if (Double.isNaN(d) || Double.isInfinite(d) || (d != 0)) {"
+    },
+    {
+      "id": 6,
+      "reasoning": "Violates the handling of n < -2098 by changing the return value.",
+      "line": 13,
+      "precode": "return (d > 0) ? 0.0 : -0.0;",
+      "aftercode": "return (d > 0) ? -0.0 : 0.0;"
+    },
+    {
+      "id": 7,
+      "reasoning": "Violates the handling of n > 2097 by changing the return value.",
+      "line": 16,
+      "precode": "return (d > 0) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (d > 0) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 8,
+      "reasoning": "Violates the decomposition of d by changing sign extraction.",
+      "line": 21,
+      "precode": "final long sign = bits & 0x8000000000000000L;",
+      "aftercode": "final long sign = bits & 0x7fffffffffffffffL;"
+    },
+    {
+      "id": 9,
+      "reasoning": "Violates the decomposition of d by changing exponent extraction.",
+      "line": 22,
+      "precode": "int  exponent   = ((int) (bits >>> 52)) & 0x7ff;",
+      "aftercode": "int  exponent   = ((int) (bits >>> 53)) & 0x7ff;"
+    },
+    {
+      "id": 10,
+      "reasoning": "Violates the decomposition of d by changing mantissa extraction.",
+      "line": 23,
+      "precode": "long mantissa   = bits & 0x000fffffffffffffL;",
+      "aftercode": "long mantissa   = bits & 0xfffffffffffffffeL;"
+    },
+    {
+      "id": 11,
+      "reasoning": "Violates the computation of scaled exponent by changing addition.",
+      "line": 26,
+      "precode": "int scaledExponent = exponent + n;",
+      "aftercode": "int scaledExponent = exponent - n;"
+    },
+    {
+      "id": 12,
+      "reasoning": "Violates the handling of n < 0 by changing exponent check.",
+      "line": 30,
+      "precode": "if (scaledExponent > 0) {",
+      "aftercode": "if (scaledExponent >= 0) {"
+    },
+    {
+      "id": 13,
+      "reasoning": "Violates the handling of n < 0 by changing subnormal number check.",
+      "line": 33,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) (scaledExponent - 1)) << 52) | mantissa);"
+    },
+    {
+      "id": 14,
+      "reasoning": "Violates the handling of n < 0 by changing subnormal number check.",
+      "line": 34,
+      "precode": "if (scaledExponent > -53) {",
+      "aftercode": "if (scaledExponent >= -53) {"
+    },
+    {
+      "id": 15,
+      "reasoning": "Violates the handling of n < 0 by changing mantissa recovery.",
+      "line": 37,
+      "precode": "mantissa = mantissa | (1L << 52);",
+      "aftercode": "mantissa = mantissa & ~(1L << 52);"
+    },
+    {
+      "id": 16,
+      "reasoning": "Violates the handling of n < 0 by changing bit shifting.",
+      "line": 41,
+      "precode": "final long mostSignificantLostBit = mantissa & (1L << (-scaledExponent));",
+      "aftercode": "final long mostSignificantLostBit = mantissa & (1L << -(scaledExponent + 1));"
+    },
+    {
+      "id": 17,
+      "reasoning": "Violates the handling of n < 0 by changing rounding logic.",
+      "line": 45,
+      "precode": "mantissa++;",
+      "aftercode": "if (mostSignificantLostBit != 0) { mantissa--; }"
+    },
+    {
+      "id": 18,
+      "reasoning": "Violates the handling of n < 0 by changing return value.",
+      "line": 50,
+      "precode": "return (sign == 0L) ? 0.0 : -0.0;",
+      "aftercode": "return (sign != 0L) ? 0.0 : -0.0;"
+    },
+    {
+      "id": 19,
+      "reasoning": "Violates the handling of n >= 1024 by changing exponent check.",
+      "line": 54,
+      "precode": "if (exponent == 0) {",
+      "aftercode": "if (exponent != 0) {"
+    },
+    {
+      "id": 20,
+      "reasoning": "Violates the normalization of subnormal numbers by changing loop condition.",
+      "line": 57,
+      "precode": "while ((mantissa >>> 52) != 1) {",
+      "aftercode": "while ((mantissa >>> 53) != 1) {"
+    },
+    {
+      "id": 21,
+      "reasoning": "Violates the normalization of subnormal numbers by changing shift operation.",
+      "line": 58,
+      "precode": "mantissa = mantissa << 1;",
+      "aftercode": "mantissa = mantissa >> 1;"
+    },
+    {
+      "id": 22,
+      "reasoning": "Violates the normalization of subnormal numbers by changing exponent decrement.",
+      "line": 59,
+      "precode": "--scaledExponent;",
+      "aftercode": "++scaledExponent;"
+    },
+    {
+      "id": 23,
+      "reasoning": "Violates the normalization of subnormal numbers by changing mantissa masking.",
+      "line": 62,
+      "precode": "mantissa = mantissa & 0x000fffffffffffffL;",
+      "aftercode": "mantissa = mantissa | 0x8000000000000000L;"
+    },
+    {
+      "id": 24,
+      "reasoning": "Violates the handling of scaled exponent by changing infinity check.",
+      "line": 64,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 25,
+      "reasoning": "Violates the handling of scaled exponent by changing infinity return value.",
+      "line": 67,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign != 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;"
+    },
+    {
+      "id": 26,
+      "reasoning": "Violates the handling of scaled exponent by changing normal number return.",
+      "line": 71,
+      "precode": "return Double.longBitsToDouble(sign | (((long) scaledExponent) << 52) | mantissa);",
+      "aftercode": "return Double.longBitsToDouble(sign | (((long) (scaledExponent - 1)) << 52) | mantissa);"
+    },
+    {
+      "id": 27,
+      "reasoning": "Violates the handling of scaled exponent by changing infinity check.",
+      "line": 73,
+      "precode": "if (scaledExponent < 2047) {",
+      "aftercode": "if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 28,
+      "reasoning": "Violates the handling of scaled exponent by changing infinity return value.",
+      "line": 76,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign != 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;"
+    },
+    {
+      "id": 29,
+      "reasoning": "Violates the handling of n >= 1024 by changing exponent check.",
+      "line": 70,
+      "precode": "} else if (scaledExponent < 2047) {",
+      "aftercode": "} else if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 30,
+      "reasoning": "Violates the handling of n >= 1024 by changing return value.",
+      "line": 76,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign != 0L) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;"
+    },
+    {
+      "id": 31,
+      "reasoning": "Violates the handling of n >= 1024 by changing exponent check.",
+      "line": 70,
+      "precode": "} else if (scaledExponent < 2047) {",
+      "aftercode": "} else if (scaledExponent <= 2047) {"
+    },
+    {
+      "id": 32,
+      "reasoning": "Violates the handling of n >= 1024 by changing return value.",
+      "line": 76,
+      "precode": "return (sign == 0L) ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;",
+      "aftercode": "return (sign != 0L) ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;"
+    }
+  ]
+}

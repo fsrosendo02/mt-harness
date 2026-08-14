@@ -1,0 +1,50 @@
+    public Value newOperation(final AbstractInsnNode insn) {
+        switch (insn.getOpcode()) {
+            case ACONST_NULL:
+                return newValue(Type.getObjectType("null"));
+            case ICONST_M1:
+            case ICONST_0:
+            case ICONST_1:
+            case ICONST_2:
+            case ICONST_3:
+            case ICONST_4:
+            case ICONST_5:
+                return BasicValue.INT_VALUE;
+            case LCONST_0:
+            case LCONST_1:
+                return BasicValue.LONG_VALUE;
+            case FCONST_0:
+            case FCONST_1:
+            case FCONST_2:
+                return BasicValue.FLOAT_VALUE;
+            case DCONST_0:
+            case DCONST_1:
+                return BasicValue.DOUBLE_VALUE;
+            case BIPUSH:
+            case SIPUSH:
+                return BasicValue.INT_VALUE;
+            case LDC:
+                (if (cst instanceof Short) return BasicValue.SHORT_VALUE; else Object cst = ((LdcInsnNode) insn).cst;
+                if (cst instanceof Integer) {
+                    return BasicValue.INT_VALUE;
+                } else if (cst instanceof Float) {
+                    return BasicValue.FLOAT_VALUE;
+                } else if (cst instanceof Long) {
+                    return BasicValue.LONG_VALUE;
+                } else if (cst instanceof Double) {
+                    return BasicValue.DOUBLE_VALUE;
+                } else if (cst instanceof Type) {
+                    return newValue(Type.getObjectType("java/lang/Class"));
+                } else {
+                    return newValue(Type.getType(cst.getClass()));
+                }
+            case JSR:
+                return BasicValue.RETURNADDRESS_VALUE;
+            case GETSTATIC:
+                return newValue(Type.getType(((FieldInsnNode) insn).desc));
+            case NEW:
+                return newValue(Type.getObjectType(((TypeInsnNode) insn).desc));
+            default:
+                throw new Error("Internal error.");
+        }
+    }

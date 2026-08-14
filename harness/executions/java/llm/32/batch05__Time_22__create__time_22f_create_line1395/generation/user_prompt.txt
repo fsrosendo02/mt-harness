@@ -1,0 +1,113 @@
+Return valid JSON only. Do not include markdown fences. Do not include any text outside the JSON.
+
+You are an expert in software mutation testing.
+
+Below is a Java method. Before generating mutants, reason briefly about
+its behavior: identify the key computational properties and boundary
+conditions that a test should verify.
+
+Method:
+ 1:         static PrecalculatedZone create(String id, boolean outputID, ArrayList transitions, DSTZone tailZone) {
+ 2:             int size = transitions.size();
+ 3:             if (size == 0) {
+ 4:                 throw new IllegalArgumentException();
+ 5:             }
+ 6: 
+ 7:             long[] trans = new long[size];
+ 8:             int[] wallOffsets = new int[size];
+ 9:             int[] standardOffsets = new int[size];
+10:             String[] nameKeys = new String[size];
+11: 
+12:             Transition last = null;
+13:             for (int i=0; i<size; i++) {
+14:                 Transition tr = (Transition)transitions.get(i);
+15: 
+16:                 if (!tr.isTransitionFrom(last)) {
+17:                     throw new IllegalArgumentException(id);
+18:                 }
+19: 
+20:                 trans[i] = tr.getMillis();
+21:                 wallOffsets[i] = tr.getWallOffset();
+22:                 standardOffsets[i] = tr.getStandardOffset();
+23:                 nameKeys[i] = tr.getNameKey();
+24: 
+25:                 last = tr;
+26:             }
+27: 
+28:             // Some timezones (Australia) have the same name key for
+29:             // summer and winter which messes everything up. Fix it here.
+30:             String[] zoneNameData = new String[5];
+31:             String[][] zoneStrings = new DateFormatSymbols(Locale.ENGLISH).getZoneStrings();
+32:             for (int j = 0; j < zoneStrings.length; j++) {
+33:                 String[] set = zoneStrings[j];
+34:                 if (set != null && set.length == 5 && id.equals(set[0])) {
+35:                     zoneNameData = set;
+36:                 }
+37:             }
+38:             for (int i = 0; i < nameKeys.length - 1; i++) {
+39:                 String curNameKey = nameKeys[i];
+40:                 String nextNameKey = nameKeys[i + 1];
+41:                 long curOffset = wallOffsets[i];
+42:                 long nextOffset = wallOffsets[i + 1];
+43:                 long curStdOffset = standardOffsets[i];
+44:                 long nextStdOffset = standardOffsets[i + 1];
+45:                 Period p = new Period(trans[i], trans[i + 1], PeriodType.yearMonthDay());
+46:                 if (curOffset != nextOffset &&
+47:                         curStdOffset == nextStdOffset &&
+48:                         curNameKey.equals(nextNameKey) &&
+49:                         p.getYears() == 0 && p.getMonths() > 4 && p.getMonths() < 8 &&
+50:                         curNameKey.equals(zoneNameData[2]) &&
+51:                         curNameKey.equals(zoneNameData[4])) {
+52:                     
+53:                     System.out.println("Fixing duplicate name key - " + nextNameKey);
+54:                     System.out.println("     - " + new DateTime(trans[i]) + " - " + new DateTime(trans[i + 1]));
+55:                     if (curOffset > nextOffset) {
+56:                         nameKeys[i] = (curNameKey + "-Summer").intern();
+57:                     } else if (curOffset < nextOffset) {
+58:                         nameKeys[i + 1] = (nextNameKey + "-Summer").intern();
+59:                         i++;
+60:                     }
+61:                 }
+62:             }
+63:             if (tailZone != null) {
+64:                 if (tailZone.iStartRecurrence.getNameKey().equals(tailZone.iEndRecurrence.getNameKey())) {
+65:                     System.out.println("Fixing duplicate recurrent name key - " + tailZone.iStartRecurrence.getNameKey());
+66:                     if (tailZone.iStartRecurrence.getSaveMillis() > 0) {
+67:                         tailZone = new DSTZone(
+68:                             tailZone.getID(),
+69:                             tailZone.iStandardOffset,
+70:                             tailZone.iStartRecurrence.renameAppend("-Summer"),
+71:                             tailZone.iEndRecurrence);
+72:                     } else {
+73:                         tailZone = new DSTZone(
+74:                             tailZone.getID(),
+75:                             tailZone.iStandardOffset,
+76:                             tailZone.iStartRecurrence,
+77:                             tailZone.iEndRecurrence.renameAppend("-Summer"));
+78:                     }
+79:                 }
+80:             }
+81:             
+82:             return new PrecalculatedZone((outputID ? id : ""), trans, wallOffsets, standardOffsets, nameKeys, tailZone);
+83:         }
+
+Then, generate exactly 32 mutants. Each mutant must:
+- Violate a distinct behavioral property identified in your reasoning
+- Change executable code (not only comments)
+- Compile successfully
+
+The "line" field must refer to the numbered method lines shown above.
+The "precode" field must match the original line content without the numeric prefix.
+
+Output format (JSON):
+{
+  "mutants": [
+    {
+      "id": 1,
+      "reasoning": "<one sentence: which behavioral property is violated>",
+      "line": <line number>,
+      "precode": "<original line>",
+      "aftercode": "<mutated line>"
+    }
+  ]
+}

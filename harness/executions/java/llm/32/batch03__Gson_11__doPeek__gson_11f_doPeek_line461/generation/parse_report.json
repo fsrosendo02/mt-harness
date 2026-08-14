@@ -1,0 +1,423 @@
+{
+  "requested_count": 32,
+  "accepted_count": 0,
+  "rejected_count": 32,
+  "rejections": [
+    {
+      "index": 1,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 1,
+        "reasoning": "Incorrectly updates stack for empty array",
+        "line": 3,
+        "precode": "    if (peekStack == JsonScope.EMPTY_ARRAY)",
+        "aftercode": "    if (peekStack == JsonScope.NONEMPTY_ARRAY)",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 2,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 2,
+        "reasoning": "Fails to mark array as non-empty",
+        "line": 4,
+        "precode": "      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;",
+        "aftercode": "      stack[stackSize - 1] = JsonScope.EMPTY_ARRAY;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.EMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 3,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 3,
+        "reasoning": "Incorrect whitespace handling in array parsing",
+        "line": 7,
+        "precode": "      int c = nextNonWhitespace(true);",
+        "aftercode": "      int c = nextNonWhitespace(false);",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(false);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 4,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 4,
+        "reasoning": "Returns incorrect peeked value for array end",
+        "line": 10,
+        "precode": "        return peeked = PEEKED_END_ARRAY;",
+        "aftercode": "        return peeked = PEEKED_START_ARRAY;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_START_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 5,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 5,
+        "reasoning": "Skips leniency check for array comma",
+        "line": 12,
+        "precode": "        checkLenient(); // fall-through",
+        "aftercode": "        // fall-through",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 6,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 6,
+        "reasoning": "Incorrectly returns from array parsing",
+        "line": 14,
+        "precode": "        break;",
+        "aftercode": "        return peeked = PEEKED_UNQUOTED_NAME;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        return peeked = PEEKED_UNQUOTED_NAME;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 7,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 7,
+        "reasoning": "Throws incorrect error for unterminated array",
+        "line": 16,
+        "precode": "          throw syntaxError(\"Unterminated array\");",
+        "aftercode": "          throw syntaxError(\"Unexpected character\");",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unexpected character\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 8,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{{",
+      "payload": {
+        "id": 8,
+        "reasoning": "Incorrect object scope handling",
+        "line": 18,
+        "precode": "    else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT)",
+        "aftercode": "    else if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY)",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    else if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 9,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 9,
+        "reasoning": "Incorrectly updates object scope",
+        "line": 19,
+        "precode": "      stack[stackSize - 1] = JsonScope.DANGLING_NAME;",
+        "aftercode": "      stack[stackSize - 1] = JsonScope.EMPTY_ARRAY;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.EMPTY_ARRAY;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 10,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 10,
+        "reasoning": "Incorrectly skips object parsing",
+        "line": 21,
+        "precode": "      if (peekStack == JsonScope.NONEMPTY_OBJECT)",
+        "aftercode": "      if (peekStack == JsonScope.EMPTY_OBJECT)",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.EMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 11,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 11,
+        "reasoning": "Returns incorrect peeked value for object end",
+        "line": 25,
+        "precode": "        return peeked = PEEKED_END_OBJECT;",
+        "aftercode": "        return peeked = PEEKED_START_OBJECT;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_START_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 12,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 12,
+        "reasoning": "Skips leniency check for object comma",
+        "line": 26,
+        "precode": "        checkLenient(); // fall-through",
+        "aftercode": "        // fall-through",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 13,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 13,
+        "reasoning": "Incorrectly returns from object parsing",
+        "line": 28,
+        "precode": "        break;",
+        "aftercode": "        return peeked = PEEKED_UNQUOTED_NAME;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          return peeked = PEEKED_UNQUOTED_NAME;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 14,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 14,
+        "reasoning": "Throws incorrect error for unterminated object",
+        "line": 30,
+        "precode": "          throw syntaxError(\"Unterminated object\");",
+        "aftercode": "          throw syntaxError(\"Unexpected character\");",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unexpected character\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 15,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 15,
+        "reasoning": "Incorrect whitespace handling in object parsing",
+        "line": 34,
+        "precode": "      int c = nextNonWhitespace(true);",
+        "aftercode": "      int c = nextNonWhitespace(false);",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(false);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 16,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 16,
+        "reasoning": "Returns incorrect peeked value for quoted name",
+        "line": 36,
+        "precode": "        return peeked = PEEKED_DOUBLE_QUOTED_NAME;",
+        "aftercode": "        return peeked = PEEKED_DOUBLE_QUOTED_VALUE;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_VALUE;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 17,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 17,
+        "reasoning": "Skips leniency check for single quoted name",
+        "line": 38,
+        "precode": "        checkLenient();",
+        "aftercode": "        // checkLenient();",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        // checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_search_nearest_match"
+      }
+    },
+    {
+      "index": 18,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 18,
+        "reasoning": "Returns incorrect peeked value for single quoted name",
+        "line": 40,
+        "precode": "        return peeked = PEEKED_SINGLE_QUOTED_NAME;",
+        "aftercode": "        return peeked = PEEKED_SINGLE_QUOTED_VALUE;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_VALUE;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 19,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 19,
+        "reasoning": "Incorrectly handles object end in DANGLING_NAME",
+        "line": 42,
+        "precode": "        if (peekStack != JsonScope.NONEMPTY_OBJECT)",
+        "aftercode": "        if (peekStack != JsonScope.EMPTY_OBJECT)",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.EMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 20,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 20,
+        "reasoning": "Returns incorrect peeked value for object end",
+        "line": 43,
+        "precode": "          return peeked = PEEKED_END_OBJECT;",
+        "aftercode": "          return peeked = PEEKED_START_OBJECT;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_START_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 21,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 21,
+        "reasoning": "Throws incorrect error for missing name",
+        "line": 45,
+        "precode": "          throw syntaxError(\"Expected name\");",
+        "aftercode": "          throw syntaxError(\"Unexpected character\");",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Unexpected character\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 22,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 22,
+        "reasoning": "Skips leniency check for unquoted name",
+        "line": 48,
+        "precode": "        checkLenient();",
+        "aftercode": "        // checkLenient();",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        // checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 23,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 23,
+        "reasoning": "Incorrectly modifies position in unquoted name",
+        "line": 49,
+        "precode": "        pos--; // Don't consume the first character in an unquoted string.",
+        "aftercode": "        pos++; // Consume the first character in an unquoted string.",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos++; // Consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 24,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 24,
+        "reasoning": "Incorrectly checks for literal in unquoted name",
+        "line": 50,
+        "precode": "        if (isLiteral((char) c))",
+        "aftercode": "        if (isLiteral((char) (c + 1)))",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) (c + 1))) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 25,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 25,
+        "reasoning": "Returns incorrect peeked value for unquoted name",
+        "line": 51,
+        "precode": "          return peeked = PEEKED_UNQUOTED_NAME;",
+        "aftercode": "          return peeked = PEEKED_UNQUOTED_VALUE;",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_VALUE;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 26,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 26,
+        "reasoning": "Throws incorrect error for invalid name",
+        "line": 53,
+        "precode": "          throw syntaxError(\"Expected name\");",
+        "aftercode": "          throw syntaxError(\"Unexpected character\");",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Unexpected character\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 27,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 27,
+        "reasoning": "Incorrectly assigns peekStack variable",
+        "line": 2,
+        "precode": "    int peekStack = stack[stackSize - 1];",
+        "aftercode": "    int peekStack = stack[stackSize];",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 28,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{{",
+      "payload": {
+        "id": 28,
+        "reasoning": "Incorrectly checks for NONEMPTY_ARRAY",
+        "line": 5,
+        "precode": "    else if (peekStack == JsonScope.NONEMPTY_ARRAY)",
+        "aftercode": "    else if (peekStack == JsonScope.EMPTY_ARRAY)",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    else if (peekStack == JsonScope.EMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{{",
+      "payload": {
+        "id": 29,
+        "reasoning": "Incorrectly checks for object scope",
+        "line": 18,
+        "precode": "    else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT)",
+        "aftercode": "    else if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY)",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    else if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "line_fallback"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 30,
+        "reasoning": "Incorrectly modifies variable name in nextNonWhitespace",
+        "line": 7,
+        "precode": "      int c = nextNonWhitespace(true);",
+        "aftercode": "      int d = nextNonWhitespace(true);",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int d = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 31,
+        "reasoning": "Incorrectly modifies variable name in nextNonWhitespace",
+        "line": 22,
+        "precode": "      int c = nextNonWhitespace(true);",
+        "aftercode": "      int d = nextNonWhitespace(true);",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int d = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "non_executable_structural_change: unclosed delimiter(s): {{",
+      "payload": {
+        "id": 32,
+        "reasoning": "Incorrectly modifies variable name in nextNonWhitespace",
+        "line": 34,
+        "precode": "      int c = nextNonWhitespace(true);",
+        "aftercode": "      int d = nextNonWhitespace(true);",
+        "candidate_code": "  int doPeek() throws IOException {\n    int peekStack = stack[stackSize - 1];\n    if (peekStack == JsonScope.EMPTY_ARRAY) {\n      stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;\n    } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {\n      // Look for a comma before the next element.\n      int c = nextNonWhitespace(true);\n      switch (c) {\n      case ']':\n        return peeked = PEEKED_END_ARRAY;\n      case ';':\n        checkLenient(); // fall-through\n      case ',':\n        break;\n      default:\n        throw syntaxError(\"Unterminated array\");\n      }\n    } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {\n      stack[stackSize - 1] = JsonScope.DANGLING_NAME;\n      // Look for a comma before the next element.\n      if (peekStack == JsonScope.NONEMPTY_OBJECT) {\n        int c = nextNonWhitespace(true);\n        switch (c) {\n        case '}':\n          return peeked = PEEKED_END_OBJECT;\n        case ';':\n          checkLenient(); // fall-through\n        case ',':\n          break;\n        default:\n          throw syntaxError(\"Unterminated object\");\n        }\n      }\n      int d = nextNonWhitespace(true);\n      switch (c) {\n      case '\"':\n        return peeked = PEEKED_DOUBLE_QUOTED_NAME;\n      case '\\'':\n        checkLenient();\n        return peeked = PEEKED_SINGLE_QUOTED_NAME;\n      case '}':\n        if (peekStack != JsonScope.NONEMPTY_OBJECT) {\n          return peeked = PEEKED_END_OBJECT;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      default:\n        checkLenient();\n        pos--; // Don't consume the first character in an unquoted string.\n        if (isLiteral((char) c)) {\n          return peeked = PEEKED_UNQUOTED_NAME;\n        } else {\n          throw syntaxError(\"Expected name\");\n        }\n      }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}

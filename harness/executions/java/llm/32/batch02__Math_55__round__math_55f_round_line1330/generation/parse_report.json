@@ -1,0 +1,72 @@
+{
+  "requested_count": 32,
+  "accepted_count": 27,
+  "rejected_count": 5,
+  "rejections": [
+    {
+      "index": 28,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 28,
+        "reasoning": "Changes the assignment of the shifted value, causing incorrect mantissa handling.",
+        "line": 50,
+        "precode": "mant[mant.length-1] = rh;",
+        "aftercode": "mant[0] = rh;",
+        "candidate_code": "    protected int round(int n) {\n        boolean inc = false;\n        switch (field.getRoundingMode()) {\n            case ROUND_DOWN:\n                inc = false;\n                break;\n\n            case ROUND_UP:\n                inc = n != 0;       // round up if n!=0\n                break;\n\n            case ROUND_HALF_UP:\n                inc = n >= 5000;  // round half up\n                break;\n\n            case ROUND_HALF_DOWN:\n                inc = n > 5000;  // round half down\n                break;\n\n            case ROUND_HALF_EVEN:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even\n                break;\n\n            case ROUND_HALF_ODD:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd\n                break;\n\n            case ROUND_CEIL:\n                inc = sign == 1 && n != 0;  // round ceil\n                break;\n\n            case ROUND_FLOOR:\n            default:\n                inc = sign == -1 && n != 0;  // round floor\n                break;\n        }\n\n        if (inc) {\n            // increment if necessary\n            int rh = 1;\n            for (int i = 0; i < mant.length; i++) {\n                final int r = mant[i] + rh;\n                rh = r / RADIX;\n                mant[i] = r - rh * RADIX;\n            }\n\n            if (rh != 0) {\n                shiftRight();\n                mant[0] = rh;\n            }\n        }\n\n        // check for exceptional cases and raise signals if necessary\n        if (exp < MIN_EXP) {\n            // Gradual Underflow\n            field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);\n            return DfpField.FLAG_UNDERFLOW;\n        }\n\n        if (exp > MAX_EXP) {\n            // Overflow\n            field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);\n            return DfpField.FLAG_OVERFLOW;\n        }\n\n        if (n != 0) {\n            // Inexact\n            field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);\n            return DfpField.FLAG_INEXACT;\n        }\n\n        return 0;\n\n    }\n",
+        "resolution_reason": "exact_search_match"
+      }
+    },
+    {
+      "index": 29,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 29,
+        "reasoning": "Removes the check for exceptional cases, potentially missing signaling.",
+        "line": 54,
+        "precode": "if (exp < MIN_EXP) {",
+        "aftercode": "// if (exp < MIN_EXP) {",
+        "candidate_code": "    protected int round(int n) {\n        boolean inc = false;\n        switch (field.getRoundingMode()) {\n            case ROUND_DOWN:\n                inc = false;\n                break;\n\n            case ROUND_UP:\n                inc = n != 0;       // round up if n!=0\n                break;\n\n            case ROUND_HALF_UP:\n                inc = n >= 5000;  // round half up\n                break;\n\n            case ROUND_HALF_DOWN:\n                inc = n > 5000;  // round half down\n                break;\n\n            case ROUND_HALF_EVEN:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even\n                break;\n\n            case ROUND_HALF_ODD:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd\n                break;\n\n            case ROUND_CEIL:\n                inc = sign == 1 && n != 0;  // round ceil\n                break;\n\n            case ROUND_FLOOR:\n            default:\n                inc = sign == -1 && n != 0;  // round floor\n                break;\n        }\n\n        if (inc) {\n            // increment if necessary\n            int rh = 1;\n            for (int i = 0; i < mant.length; i++) {\n                final int r = mant[i] + rh;\n                rh = r / RADIX;\n                mant[i] = r - rh * RADIX;\n            }\n\n            if (rh != 0) {\n                shiftRight();\n                mant[mant.length-1] = rh;\n            }\n        }\n\n        // check for exceptional cases and raise signals if necessary\n        // if (exp < MIN_EXP) { {\n            // Gradual Underflow\n            field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);\n            return DfpField.FLAG_UNDERFLOW;\n        }\n\n        if (exp > MAX_EXP) {\n            // Overflow\n            field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);\n            return DfpField.FLAG_OVERFLOW;\n        }\n\n        if (n != 0) {\n            // Inexact\n            field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);\n            return DfpField.FLAG_INEXACT;\n        }\n\n        return 0;\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 30,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 30,
+        "reasoning": "Disables the setting of underflow flag, potentially missing signaling.",
+        "line": 56,
+        "precode": "field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);",
+        "aftercode": "// field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);",
+        "candidate_code": "    protected int round(int n) {\n        boolean inc = false;\n        switch (field.getRoundingMode()) {\n            case ROUND_DOWN:\n                inc = false;\n                break;\n\n            case ROUND_UP:\n                inc = n != 0;       // round up if n!=0\n                break;\n\n            case ROUND_HALF_UP:\n                inc = n >= 5000;  // round half up\n                break;\n\n            case ROUND_HALF_DOWN:\n                inc = n > 5000;  // round half down\n                break;\n\n            case ROUND_HALF_EVEN:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even\n                break;\n\n            case ROUND_HALF_ODD:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd\n                break;\n\n            case ROUND_CEIL:\n                inc = sign == 1 && n != 0;  // round ceil\n                break;\n\n            case ROUND_FLOOR:\n            default:\n                inc = sign == -1 && n != 0;  // round floor\n                break;\n        }\n\n        if (inc) {\n            // increment if necessary\n            int rh = 1;\n            for (int i = 0; i < mant.length; i++) {\n                final int r = mant[i] + rh;\n                rh = r / RADIX;\n                mant[i] = r - rh * RADIX;\n            }\n\n            if (rh != 0) {\n                shiftRight();\n                mant[mant.length-1] = rh;\n            }\n        }\n\n        // check for exceptional cases and raise signals if necessary\n        if (exp < MIN_EXP) {\n            // Gradual Underflow\n            // field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);\n            return DfpField.FLAG_UNDERFLOW;\n        }\n\n        if (exp > MAX_EXP) {\n            // Overflow\n            field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);\n            return DfpField.FLAG_OVERFLOW;\n        }\n\n        if (n != 0) {\n            // Inexact\n            field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);\n            return DfpField.FLAG_INEXACT;\n        }\n\n        return 0;\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 31,
+      "reason": "non_executable_structural_change: unmatched closing delimiter: }",
+      "payload": {
+        "id": 31,
+        "reasoning": "Removes the check for overflow, potentially allowing overflow without signaling.",
+        "line": 60,
+        "precode": "if (exp > MAX_EXP) {",
+        "aftercode": "// if (exp > MAX_EXP) {",
+        "candidate_code": "    protected int round(int n) {\n        boolean inc = false;\n        switch (field.getRoundingMode()) {\n            case ROUND_DOWN:\n                inc = false;\n                break;\n\n            case ROUND_UP:\n                inc = n != 0;       // round up if n!=0\n                break;\n\n            case ROUND_HALF_UP:\n                inc = n >= 5000;  // round half up\n                break;\n\n            case ROUND_HALF_DOWN:\n                inc = n > 5000;  // round half down\n                break;\n\n            case ROUND_HALF_EVEN:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even\n                break;\n\n            case ROUND_HALF_ODD:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd\n                break;\n\n            case ROUND_CEIL:\n                inc = sign == 1 && n != 0;  // round ceil\n                break;\n\n            case ROUND_FLOOR:\n            default:\n                inc = sign == -1 && n != 0;  // round floor\n                break;\n        }\n\n        if (inc) {\n            // increment if necessary\n            int rh = 1;\n            for (int i = 0; i < mant.length; i++) {\n                final int r = mant[i] + rh;\n                rh = r / RADIX;\n                mant[i] = r - rh * RADIX;\n            }\n\n            if (rh != 0) {\n                shiftRight();\n                mant[mant.length-1] = rh;\n            }\n        }\n\n        // check for exceptional cases and raise signals if necessary\n        if (exp < MIN_EXP) {\n            // Gradual Underflow\n            field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);\n            return DfpField.FLAG_UNDERFLOW;\n        }\n\n        // if (exp > MAX_EXP) { {\n            // Overflow\n            field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);\n            return DfpField.FLAG_OVERFLOW;\n        }\n\n        if (n != 0) {\n            // Inexact\n            field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);\n            return DfpField.FLAG_INEXACT;\n        }\n\n        return 0;\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    },
+    {
+      "index": 32,
+      "reason": "duplicate_mutant",
+      "payload": {
+        "id": 32,
+        "reasoning": "Disables the setting of overflow flag, potentially missing signaling.",
+        "line": 62,
+        "precode": "field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);",
+        "aftercode": "// field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);",
+        "candidate_code": "    protected int round(int n) {\n        boolean inc = false;\n        switch (field.getRoundingMode()) {\n            case ROUND_DOWN:\n                inc = false;\n                break;\n\n            case ROUND_UP:\n                inc = n != 0;       // round up if n!=0\n                break;\n\n            case ROUND_HALF_UP:\n                inc = n >= 5000;  // round half up\n                break;\n\n            case ROUND_HALF_DOWN:\n                inc = n > 5000;  // round half down\n                break;\n\n            case ROUND_HALF_EVEN:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 1);  // round half-even\n                break;\n\n            case ROUND_HALF_ODD:\n                inc = n > 5000 || (n == 5000 && (mant[0] & 1) == 0);  // round half-odd\n                break;\n\n            case ROUND_CEIL:\n                inc = sign == 1 && n != 0;  // round ceil\n                break;\n\n            case ROUND_FLOOR:\n            default:\n                inc = sign == -1 && n != 0;  // round floor\n                break;\n        }\n\n        if (inc) {\n            // increment if necessary\n            int rh = 1;\n            for (int i = 0; i < mant.length; i++) {\n                final int r = mant[i] + rh;\n                rh = r / RADIX;\n                mant[i] = r - rh * RADIX;\n            }\n\n            if (rh != 0) {\n                shiftRight();\n                mant[mant.length-1] = rh;\n            }\n        }\n\n        // check for exceptional cases and raise signals if necessary\n        if (exp < MIN_EXP) {\n            // Gradual Underflow\n            field.setIEEEFlagsBits(DfpField.FLAG_UNDERFLOW);\n            return DfpField.FLAG_UNDERFLOW;\n        }\n\n        if (exp > MAX_EXP) {\n            // Overflow\n            // field.setIEEEFlagsBits(DfpField.FLAG_OVERFLOW);\n            return DfpField.FLAG_OVERFLOW;\n        }\n\n        if (n != 0) {\n            // Inexact\n            field.setIEEEFlagsBits(DfpField.FLAG_INEXACT);\n            return DfpField.FLAG_INEXACT;\n        }\n\n        return 0;\n\n    }\n",
+        "resolution_reason": "exact_line_match"
+      }
+    }
+  ]
+}
