@@ -1,4 +1,6 @@
+import os
 import shutil
+import signal
 import subprocess
 import time
 from datetime import datetime
@@ -21,6 +23,31 @@ class Defects4JAdapter(BenchmarkAdapter):
 
     BUILD_TIMEOUT = 120
     TEST_TIMEOUT = 300
+
+    @staticmethod
+    def _run(cmd: list[str], cwd: str, timeout: int) -> subprocess.CompletedProcess:
+        # defects4j spawns ant/java as descendant processes; subprocess.run's
+        # timeout only kills the immediate child, leaving those descendants
+        # (e.g. major-rt.jar) running forever. Run in a new session so the
+        # whole process group can be killed on timeout.
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            proc.communicate()
+            raise
+        return subprocess.CompletedProcess(cmd, proc.returncode, stdout, stderr)
 
     def checkout_subject(self, subject: Subject, workdir: str) -> None:
         project, bug_id = subject.subject_id.split("_", 1)
@@ -48,13 +75,7 @@ class Defects4JAdapter(BenchmarkAdapter):
         t = time.time()
 
         try:
-            result = subprocess.run(
-                ["defects4j", "compile"],
-                cwd=workdir,
-                capture_output=True,
-                text=True,
-                timeout=self.BUILD_TIMEOUT,
-            )
+            result = self._run(["defects4j", "compile"], cwd=workdir, timeout=self.BUILD_TIMEOUT)
         except subprocess.TimeoutExpired as e:
             log("[build] TIMEOUT")
             return False, f"TIMEOUT after {self.BUILD_TIMEOUT}s\n{e}"
@@ -69,13 +90,7 @@ class Defects4JAdapter(BenchmarkAdapter):
         t = time.time()
 
         try:
-            result = subprocess.run(
-                ["defects4j", "test"],
-                cwd=workdir,
-                capture_output=True,
-                text=True,
-                timeout=self.TEST_TIMEOUT,
-            )
+            result = self._run(["defects4j", "test"], cwd=workdir, timeout=self.TEST_TIMEOUT)
         except subprocess.TimeoutExpired as e:
             log("[test] TIMEOUT")
             return False, f"TIMEOUT after {self.TEST_TIMEOUT}s\n{e}"
@@ -127,13 +142,7 @@ class Defects4JAdapter(BenchmarkAdapter):
         t = time.time()
 
         try:
-            result = subprocess.run(
-                ["defects4j", "test"],
-                cwd=workdir,
-                capture_output=True,
-                text=True,
-                timeout=self.TEST_TIMEOUT,
-            )
+            result = self._run(["defects4j", "test"], cwd=workdir, timeout=self.TEST_TIMEOUT)
         except subprocess.TimeoutExpired as e:
             log("[test] TIMEOUT")
             message = f"TIMEOUT after {self.TEST_TIMEOUT}s\n{e}"
